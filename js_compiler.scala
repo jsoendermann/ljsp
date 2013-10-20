@@ -29,7 +29,7 @@ case class SPrimMult() extends SPrim { override def toString = "*" }
 abstract class SForm
 abstract class SExp extends SForm
 case class SVarExp(x: SVar) extends SExp { override def toString = x.toString() }
-case class SConExp(i: SCon) extends SExp { override def toString = i.toString() }
+case class SConExp(c: SCon) extends SExp { override def toString = c.toString() }
 case class SIfExp(t: SExp, e1: SExp, e2: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + ")" }
 case class SLambdaExp(v: SVar, e: SExp) extends SExp { override def toString = "(lambda (" + v.toString() + ") " + e.toString() + ")" }
 // TODO multiple variables
