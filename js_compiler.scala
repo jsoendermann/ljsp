@@ -12,9 +12,12 @@ val fresh = (() =>  {
    }
 })()
 
-case class SVar(x: Idn) { override def toString = x }
 
-abstract class SCon
+abstract class SAtom
+
+case class SVar(x: Idn) extends SAtom { override def toString = x }
+
+abstract class SCon extends SAtom
 case class SInt(i: Int) extends SCon { override def toString = i.toString() }
 // TODO double
 case class SBool(b: Boolean) extends SCon { override def toString =  if (b) "#t" else "#f" }
@@ -26,10 +29,10 @@ case class SPrimMinus() extends SPrim { override def toString = "-" }
 case class SPrimMult() extends SPrim { override def toString = "*" }
 // TODO boolean operators
 
-abstract class SForm
+//abstract class SForm
 // TODO combination
 // TODO define
-abstract class SExp extends SForm
+abstract class SExp // extends SForm
 case class SVarExp(x: SVar) extends SExp { override def toString = x.toString() }
 case class SConExp(c: SCon) extends SExp { override def toString = c.toString() }
 case class SIfExp(t: SExp, e1: SExp, e2: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + ")" }
@@ -41,8 +44,6 @@ case class SPrimExp(p: SPrim, e1: SExp, e2: SExp) extends SExp { override def to
   e2.toString() + ")" }
 // TODO more than two expressions
 case class SAppExp(e1: SExp, e2: SExp) extends SExp { override def toString = "(" + e1.toString() + " " + e2.toString() + ")"}
-
-
 
 
 
