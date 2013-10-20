@@ -27,14 +27,16 @@ case class SPrimMult() extends SPrim { override def toString = "*" }
 // TODO boolean operators
 
 abstract class SForm
+// TODO combination
+// TODO define
 abstract class SExp extends SForm
 case class SVarExp(x: SVar) extends SExp { override def toString = x.toString() }
 case class SConExp(c: SCon) extends SExp { override def toString = c.toString() }
 case class SIfExp(t: SExp, e1: SExp, e2: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + ")" }
 case class SLambdaExp(v: SVar, e: SExp) extends SExp { override def toString = "(lambda (" + v.toString() + ") " + e.toString() + ")" }
 // TODO multiple variables
-// TODO define
 // TODO begin
+// TODO let
 case class SPrimExp(p: SPrim, e1: SExp, e2: SExp) extends SExp { override def toString = "(" + p.toString() + " " + e1.toString() + " " +
   e2.toString() + ")" }
 // TODO more than two expressions
