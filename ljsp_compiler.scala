@@ -99,26 +99,42 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     CPS(e1, (x: SExp) =>
         SIf0(x, CPS(e2, k), CPS(e3, k)))
   }
-  // TODO case SLambda
+  /*case SLambda(idns, e) => {
+    val f = SIdn(fresh(""))
+    k(SLambda(idns ::: List(f), CPS(e, f*/
   case SPrim(p, e1, e2) => {
     val f = SIdn(fresh(""))
     CPS(e1, (x: SExp) =>
         CPS(e2, (y: SExp) =>
             SLet(f, SPrim(p, x, y), k(f))))
   }
-  // TODO case SAppl
-  // TODO case SLet
-  // TODO case SHalt?
+  case SAppl(e1, e2) => {
+    val f = SIdn(fresh(""))
+    CPS(e1, (x: SExp) =>
+        CPS(e2, (y: SExp) =>
+            SLet(f, SAppl(x, y), k(f))))
+  }
+  /*case SLet(idn, e1, e2) => {
+    val f1 = SIdn(fresh(""))
+    val f2 = SIdn(fresh(""))
+    CPS(e1, (x: SExp) =>
+        CPS(e2, (y: SExp) =>
+          SLet(f1, x, SLet(f2, y, SLet(idn, */
+  case SHalt(e) => {
+    val f = SIdn(fresh(""))
+    CPS(e, (x: SExp) =>
+        SLet(f, x, SHalt(f)))
+  }
 }
 
 
 
 // ################ Simple Tests ####################
 
-val prog3 = JLispParsers.parseExpr("(if0 0 (+ 1 2) (* 4 2))")
-val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
+val prog3 = JLispParsers.parseExpr("(lambda (x y) (+ x y))")
+//val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
 
-println(prog3cps)
+println(prog3.toString())
 
 /*
 val prog0string = "(if0 ((lambda (x) (+ x 1)) 2) 1 0)"
