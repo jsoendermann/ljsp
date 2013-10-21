@@ -40,7 +40,7 @@ case class SLambda(idn: SIdn, e: SExp) extends SExp { override def toString = "(
 case class SPrim(p: Prim, e1: SExp, e2: SExp) extends SExp { override def toString = "(" + p.toString() + " " + e1.toString() + " " +  e2.toString() + ")" }
 // TODO more than two expressions
 case class SAppl(e1: SExp, e2: SExp) extends SExp { override def toString = "(" + e1.toString() + " " + e2.toString() + ")"}
-case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let (" + idn.toString() + " " + e1.toString() + ") " + e2.toString() + ")" }
+case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
 
 //abstract class SList(es: List[SExp]) extends SExp { override def toString = "(" + es.mkString(" ") + ")" }
 
@@ -79,8 +79,8 @@ object JLispParsers extends JavaTokenParsers {
   def application: Parser[SAppl] = "("~>expression~expression<~")" ^^ {
     case e1~e2 => SAppl(e1, e2)
   }
-  def let: Parser[SLet] = "("~>"let"~>"("~>identifier~expression~")"~expression<~")" ^^ {
-    case idn~e1~")"~e2 => SLet(idn, e1, e1)
+  def let: Parser[SLet] = "("~>"let"~>"("~"("~>identifier~expression~")"~")"~expression<~")" ^^ {
+    case idn~e1~")"~")"~e2 => SLet(idn, e1, e1)
   }
   def expression: Parser[SExp] = identifier | integer | if0 | lambda | prim | application | let
 
@@ -96,7 +96,7 @@ object JLispParsers extends JavaTokenParsers {
 val prog0string = "(if0 ((lambda (x) (+ x 1)) 2) 1 0)"
 val prog0tree = JLispParsers.parseExpr(prog0string)
 
-val prog1string = "(let (x 2) (+ x 3))"
+val prog1string = "(let ((x 2)) (+ x 3))"
 val prog1tree = JLispParsers.parseExpr(prog1string)
 
 println(prog0string)
