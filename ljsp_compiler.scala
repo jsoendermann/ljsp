@@ -96,9 +96,8 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 
   // TODO lambda
   /*case SLambda(idns, e) => {
-    CPS(e, (ce: SExp) =>
-      k(SLambda(idns, ce))
-    )
+    val f = fresh()
+    k(SLambda(idns ::: List(f), CPSTail(e, f)))
   }*/
 
   // For applications, evaluate proc first, then all the arguments
@@ -114,7 +113,7 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
       // the last call with an empty es creates a let and calls k on the result of the application
       def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
         case Nil => SLet(f, SAppl(cproc, ces), k(f))
-        case (e::es) => CPS(e, (ce: SExp) => aux(es, ces:::List(ce)))
+        case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
       }
     aux(es, Nil)
     })
@@ -131,11 +130,59 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   }
 }
 
+/*def CPSTail(e: SExp, c: SExp) : SExp = e match {
+  // For atomic values, no CPS-Translation is necessary. Simply apply k to e
+  case SIdn(idn) => SAppl(c, List(e))
+  case SInt(i) => SAppl(c, List(e))
+  case SBool(b) => SAppl(c, List(e))
+
+  // For if, evaluate e1 first, then branch with two recursive calls
+  case SIf(e1, e2, e3) => {
+    CPS(e1, (ce1: SExp) =>
+        SIf(ce1, CPSTail(e2, c), CPSTail(e3, c)))
+  }
+
+  // TODO lambda
+  //case SLambda(idns, e) => {
+  //  val f = fresh()
+  //  k(SLambda(idns ::: List(f), CPSTail(e, f)))
+  //}
+
+  // For applications, evaluate proc first, then all the arguments
+  case SAppl(proc, es) => {
+    // the result of the application will be assigned to this variable
+    // and k will be called with f as its parameter
+    val f = fresh()
+
+    // CPS-Translation the expression for the procedure first
+    CPS(proc, (cproc: SExp) => {
+
+      // this function calls CPS recursively for all expressions in es and accumulates the result in ces
+      // the last call with an empty es creates a let and calls k on the result of the application
+      def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
+        case Nil => SLet(f, SAppl(cproc, ces), SAppl(c, List(f)))
+        case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+      }
+    aux(es, Nil)
+    })
+  }
+
+  // TODO let
+
+  // For halt, evaluate the expression to halt with
+  // TODO maybe there is a better way to do this?
+  case SHalt(e) => {
+    val f = fresh()
+    CPS(e, (x: SExp) =>
+        SLet(f, x, SAppl(c, List(f))))
+  }
+}*/
+
 
 
 // ################ Simple Tests ####################
 
-val prog3 = JLispParsers.parseExpr("(if (= (+ 1 2) (- 4 1)) 1 2)")
+val prog3 = JLispParsers.parseExpr("(if #t 1 2)")
 val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
 
 println(prog3.toString())
