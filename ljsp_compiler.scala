@@ -3,14 +3,7 @@ import scala.util.parsing.combinator._
 //type Num = Int
 type Idn = String
 
-// fresh is a function that is called with a string and returns a unique identifier
-val fresh = (() =>  {
-   var counter = -1
-   (i: Idn) => {
-      counter +=1
-      (if (i == "") "new_var" else i) ++ "_" ++ counter.toString()
-   }
-})()
+
 
 // TODO test case for later: ((if #f + *) 3 4)
 
@@ -46,6 +39,17 @@ case class PrimPlus() extends Prim { override def toString = "+" }
 case class PrimMinus() extends Prim { override def toString = "-" }
 case class PrimMult() extends Prim { override def toString = "*" }
 // TODO boolean operators
+
+
+
+// fresh returns a new unique identifier
+val fresh = (() =>  {
+   var counter = -1
+   () => {
+      counter +=1
+      SIdn("nv" ++ "_" ++ counter.toString())
+   }
+})()
 
 
 
@@ -103,13 +107,13 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     val f = SIdn(fresh(""))
     k(SLambda(idns ::: List(f), CPS(e, f*/
   case SPrim(p, e1, e2) => {
-    val f = SIdn(fresh(""))
+    val f = fresh()
     CPS(e1, (x: SExp) =>
         CPS(e2, (y: SExp) =>
             SLet(f, SPrim(p, x, y), k(f))))
   }
   case SAppl(e1, e2) => {
-    val f = SIdn(fresh(""))
+    val f = fresh()
     CPS(e1, (x: SExp) =>
         CPS(e2, (y: SExp) =>
             SLet(f, SAppl(x, y), k(f))))
@@ -121,7 +125,7 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
         CPS(e2, (y: SExp) =>
           SLet(f1, x, SLet(f2, y, SLet(idn, */
   case SHalt(e) => {
-    val f = SIdn(fresh(""))
+    val f = fresh()
     CPS(e, (x: SExp) =>
         SLet(f, x, SHalt(f)))
   }
