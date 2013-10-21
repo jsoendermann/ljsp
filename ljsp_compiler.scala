@@ -18,11 +18,10 @@ type Idn = String
 abstract class SExp
 case class SIdn(idn: Idn) extends SExp { override def toString = idn }
 case class SInt(i: Int) extends SExp { override def toString = i.toString() }
+case class SBool(b: Boolean) extends SExp { override def toString = if (b) "#t" else "#f" }
 // TODO double
-// TODO bool
 // TODO symbols
-//case class SIfExp(t: SExp, e1: SExp, e2: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + ")" }
-case class SIf0(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if0 " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
+case class SIf(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
 case class SLambda(idns: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + idns.mkString(" ") + ") " + e.toString() + ")" }
 // TODO begin
 case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
@@ -51,9 +50,13 @@ val fresh = (() =>  {
 object JLispParsers extends JavaTokenParsers {
   def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-]*""".r ^^ (SIdn(_))
   def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
+  def boolean: Parser[SBool] = ("#t" | "#f") ^^ {
+    case "#t" => SBool(true)
+    case "#f" => SBool(false)
+  }
 
-  def if0: Parser[SIf0] = "("~>"if0"~>expression~expression~expression<~')' ^^ {
-    case e1~e2~e3 => SIf0(e1, e2, e3)
+  def _if: Parser[SIf] = "("~>"if"~>expression~expression~expression<~')' ^^ {
+    case e1~e2~e3 => SIf(e1, e2, e3)
   }
     
   def lambda: Parser[SLambda] = "("~>"lambda"~>"("~>rep1(identifier, identifier)~")"~expression<~")" ^^ {
@@ -67,12 +70,12 @@ object JLispParsers extends JavaTokenParsers {
   }
   def halt: Parser[SHalt] = "("~>"halt"~>expression<~")" ^^ (e => SHalt(e))
 
-  def expression: Parser[SExp] = identifier | integer | if0 | lambda | application | let | halt
+  def expression: Parser[SExp] = identifier | integer | boolean | _if | lambda | application | let | halt
 
-  def parseExpr(str: String) = parse(expression, str).get
+  def parseExpr(str: String) = parse(expression, str)
 }
 
-
+//def parseString(s: String) : SExp = JLispParsers.parseExpr(s)
 
 // ################ CPS Translation ####################
 
@@ -82,11 +85,12 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   // For atomic values, no CPS-Translation is necessary. Simply apply k to e
   case SIdn(idn) => k(e)
   case SInt(i) => k(e)
+  case SBool(b) => k(e)
 
   // For if, evaluate e1 first, then branch with two recursive calls
-  case SIf0(e1, e2, e3) => {
+  case SIf(e1, e2, e3) => {
     CPS(e1, (ce1: SExp) =>
-        SIf0(ce1, CPS(e2, k), CPS(e3, k)))
+        SIf(ce1, CPS(e2, k), CPS(e3, k)))
   }
 
   // TODO lambda
@@ -130,9 +134,10 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 
 // ################ Simple Tests ####################
 
-val prog3 = JLispParsers.parseExpr("(+ (- 2 1) 3)")
+val prog3 = JLispParsers.parseExpr("(if #t 1 3)").get
 val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
 
+println(prog3.toString())
 println(prog3cps.toString())
 
 /*
