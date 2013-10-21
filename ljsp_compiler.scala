@@ -72,7 +72,8 @@ object JLispParsers extends JavaTokenParsers {
 
   def expression: Parser[SExp] = identifier | integer | boolean | _if | lambda | application | let | halt
 
-  def parseExpr(str: String) = parse(expression, str)
+  // TODO this throws an exception instead of printing a nice error message when the input isn't well formed
+  def parseExpr(str: String) = parse(expression, str).get
 }
 
 //def parseString(s: String) : SExp = JLispParsers.parseExpr(s)
@@ -134,7 +135,7 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 
 // ################ Simple Tests ####################
 
-val prog3 = JLispParsers.parseExpr("(if #t 1 3)").get
+val prog3 = JLispParsers.parseExpr("(if (= (+ 1 2) (- 4 1)) 1 2)")
 val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
 
 println(prog3.toString())
