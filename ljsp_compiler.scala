@@ -30,8 +30,7 @@ case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 // TODO symbols
 //case class SIfExp(t: SExp, e1: SExp, e2: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + ")" }
 case class SIf0(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if0 " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
-case class SLambda(idn: SIdn, e: SExp) extends SExp { override def toString = "(lambda (" + idn.toString() + ") " + e.toString() + ")" }
-// TODO more than one variable lambda
+case class SLambda(idns: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + idns.mkString(" ") + ") " + e.toString() + ")" }
 // TODO begin
 case class SPrim(p: Prim, e1: SExp, e2: SExp) extends SExp { override def toString = "(" + p.toString() + " " + e1.toString() + " " +  e2.toString() + ")" }
 // TODO this is a special case of SAppl, find a way to implement this differently and 
@@ -68,8 +67,8 @@ object JLispParsers extends JavaTokenParsers {
     case e1~e2~e3 => SIf0(e1, e2, e3)
   }
     
-  def lambda: Parser[SLambda] = "("~>"lambda"~>"("~>identifier~")"~expression<~")" ^^ {
-    case idn~")"~e => SLambda(idn, e)
+  def lambda: Parser[SLambda] = "("~>"lambda"~>"("~>rep1(identifier, identifier)~")"~expression<~")" ^^ {
+    case idns~")"~e => SLambda(idns, e)
   }
   def prim: Parser[SPrim] = "("~>primitive_op~expression~expression<~")" ^^ {
     case prim~e1~e2 => SPrim(prim, e1, e2)
