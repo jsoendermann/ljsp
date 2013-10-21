@@ -25,20 +25,11 @@ case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 case class SIf0(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if0 " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
 case class SLambda(idns: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + idns.mkString(" ") + ") " + e.toString() + ")" }
 // TODO begin
-case class SPrim(p: Prim, e1: SExp, e2: SExp) extends SExp { override def toString = "(" + p.toString() + " " + e1.toString() + " " +  e2.toString() + ")" }
-// TODO this is a special case of SAppl, find a way to implement this differently and 
-//      remove class Prim and its subclasses
 case class SAppl(e1: SExp, e2: SExp) extends SExp { override def toString = "(" + e1.toString() + " " + e2.toString() + ")"}
 // TODO more than two expressions
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
 // TODO more than one variable let
 case class SHalt(e: SExp) extends SExp { override def toString = "(halt " + e.toString() + ")" }
-
-abstract class Prim
-case class PrimPlus() extends Prim { override def toString = "+" }
-case class PrimMinus() extends Prim { override def toString = "-" }
-case class PrimMult() extends Prim { override def toString = "*" }
-// TODO boolean operators
 
 
 
@@ -58,13 +49,7 @@ val fresh = (() =>  {
 
 
 object JLispParsers extends JavaTokenParsers {
-  def primitive_op: Parser[Prim] = ("+" | "-" | "*") ^^ {
-    case "+" => PrimPlus()
-    case "-" => PrimMinus()
-    case "*" => PrimMult()
-  }
-
-  def identifier: Parser[SIdn] = ident ^^ (SIdn(_))
+  def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?][a-zA-Z0-9=*+/<>!\?]*""".r ^^ (SIdn(_))
   def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
 
   def if0: Parser[SIf0] = "("~>"if0"~>expression~expression~expression<~')' ^^ {
@@ -74,9 +59,6 @@ object JLispParsers extends JavaTokenParsers {
   def lambda: Parser[SLambda] = "("~>"lambda"~>"("~>rep1(identifier, identifier)~")"~expression<~")" ^^ {
     case idns~")"~e => SLambda(idns, e)
   }
-  def prim: Parser[SPrim] = "("~>primitive_op~expression~expression<~")" ^^ {
-    case prim~e1~e2 => SPrim(prim, e1, e2)
-  }
   def application: Parser[SAppl] = "("~>expression~expression<~")" ^^ {
     case e1~e2 => SAppl(e1, e2)
   }
@@ -85,7 +67,7 @@ object JLispParsers extends JavaTokenParsers {
   }
   def halt: Parser[SHalt] = "("~>"halt"~>expression<~")" ^^ (e => SHalt(e))
 
-  def expression: Parser[SExp] = identifier | integer | if0 | lambda | prim | application | let | halt
+  def expression: Parser[SExp] = identifier | integer | if0 | lambda | application | let | halt
 
   def parseExpr(str: String) = parse(expression, str).get
 }
@@ -106,12 +88,6 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   /*case SLambda(idns, e) => {
     val f = SIdn(fresh(""))
     k(SLambda(idns ::: List(f), CPS(e, f*/
-  case SPrim(p, e1, e2) => {
-    val f = fresh()
-    CPS(e1, (x: SExp) =>
-        CPS(e2, (y: SExp) =>
-            SLet(f, SPrim(p, x, y), k(f))))
-  }
   case SAppl(e1, e2) => {
     val f = fresh()
     CPS(e1, (x: SExp) =>
@@ -135,7 +111,7 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 
 // ################ Simple Tests ####################
 
-val prog3 = JLispParsers.parseExpr("(lambda (x y) (+ x y))")
+val prog3 = JLispParsers.parseExpr("(+ 2 )")
 //val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
 
 println(prog3.toString())
