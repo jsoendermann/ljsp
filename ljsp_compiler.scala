@@ -25,7 +25,7 @@ case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 case class SIf0(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if0 " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
 case class SLambda(idns: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + idns.mkString(" ") + ") " + e.toString() + ")" }
 // TODO begin
-case class SAppl(e1: SExp, e2: SExp) extends SExp { override def toString = "(" + e1.toString() + " " + e2.toString() + ")"}
+case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
 // TODO more than two expressions
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
 // TODO more than one variable let
@@ -49,7 +49,7 @@ val fresh = (() =>  {
 
 
 object JLispParsers extends JavaTokenParsers {
-  def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?][a-zA-Z0-9=*+/<>!\?]*""".r ^^ (SIdn(_))
+  def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-]*""".r ^^ (SIdn(_))
   def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
 
   def if0: Parser[SIf0] = "("~>"if0"~>expression~expression~expression<~')' ^^ {
@@ -59,8 +59,8 @@ object JLispParsers extends JavaTokenParsers {
   def lambda: Parser[SLambda] = "("~>"lambda"~>"("~>rep1(identifier, identifier)~")"~expression<~")" ^^ {
     case idns~")"~e => SLambda(idns, e)
   }
-  def application: Parser[SAppl] = "("~>expression~expression<~")" ^^ {
-    case e1~e2 => SAppl(e1, e2)
+  def application: Parser[SAppl] = "("~>expression~rep1(expression, expression)<~")" ^^ {
+    case proc~es => SAppl(proc, es)
   }
   def let: Parser[SLet] = "("~>"let"~>"("~"("~>identifier~expression~")"~")"~expression<~")" ^^ {
     case idn~e1~")"~")"~e2 => SLet(idn, e1, e1)
@@ -79,31 +79,50 @@ object JLispParsers extends JavaTokenParsers {
 
 
 def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
-  case SIdn(idn) => k(SIdn(idn))
-  case SInt(i) => k(SInt(i))
+  // For atomic values, no CPS-Translation is necessary. Simply apply k to e
+  case SIdn(idn) => k(e)
+  case SInt(i) => k(e)
+
+  // For if, evaluate e1 first, then branch with two recursive calls
   case SIf0(e1, e2, e3) => {
-    CPS(e1, (x: SExp) =>
-        SIf0(x, CPS(e2, k), CPS(e3, k)))
+    CPS(e1, (ce1: SExp) =>
+        SIf0(ce1, CPS(e2, k), CPS(e3, k)))
   }
+
+  // TODO lambda
   /*case SLambda(idns, e) => {
-    val f = SIdn(fresh(""))
-    k(SLambda(idns ::: List(f), CPS(e, f*/
-  case SAppl(e1, e2) => {
+    CPS(e, (ce: SExp) =>
+      k(SLambda(idns, ce))
+    )
+  }*/
+
+  // For applications, evaluate proc first, then all the arguments
+  case SAppl(proc, es) => {
+    // the result of the application will be assigned to this variable
+    // and k will be called with f as its parameter
     val f = fresh()
-    CPS(e1, (x: SExp) =>
-        CPS(e2, (y: SExp) =>
-            SLet(f, SAppl(x, y), k(f))))
+
+    // CPS-Translation the expression for the procedure first
+    CPS(proc, (cproc: SExp) => {
+
+      // this function calls CPS recursively for all expressions in es and accumulates the result in ces
+      // the last call with an empty es creates a let and calls k on the result of the application
+      def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
+        case Nil => SLet(f, SAppl(cproc, ces), k(f))
+        case (e::es) => CPS(e, (ce: SExp) => aux(es, ces:::List(ce)))
+      }
+    aux(es, Nil)
+    })
   }
-  /*case SLet(idn, e1, e2) => {
-    val f1 = SIdn(fresh(""))
-    val f2 = SIdn(fresh(""))
-    CPS(e1, (x: SExp) =>
-        CPS(e2, (y: SExp) =>
-          SLet(f1, x, SLet(f2, y, SLet(idn, */
+
+  // TODO let
+
+  // For halt, evaluate the expression to halt with
+  // TODO maybe there is a better way to do this?
   case SHalt(e) => {
     val f = fresh()
     CPS(e, (x: SExp) =>
-        SLet(f, x, SHalt(f)))
+        SLet(f, x, k(SHalt(f))))
   }
 }
 
@@ -111,10 +130,10 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 
 // ################ Simple Tests ####################
 
-val prog3 = JLispParsers.parseExpr("(+ 2 )")
-//val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
+val prog3 = JLispParsers.parseExpr("(+ (- 2 1) 3)")
+val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
 
-println(prog3.toString())
+println(prog3cps.toString())
 
 /*
 val prog0string = "(if0 ((lambda (x) (+ x 1)) 2) 1 0)"
