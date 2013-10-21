@@ -1,3 +1,5 @@
+import scala.util.parsing.combinator._
+
 //type Num = Int
 type Idn = String
 
@@ -15,9 +17,15 @@ val fresh = (() =>  {
 
 // TODO test case for later: ((if #f + *) 3 4)
 
+
+
+// ################ Classes ####################
+
+
+
 // TODO define
 abstract class SExp // extends SForm
-case class SVar(x: Idn) extends SExp { override def toString = x }
+case class SIdn(idn: Idn) extends SExp { override def toString = idn }
 case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 // TODO double
 // case class SBool(b: Boolean) extends SCon { override def toString =  if (b) "#t" else "#f" }
@@ -25,8 +33,8 @@ case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 //case class SVar(x: SVar) extends SExp { override def toString = x.toString() }
 //case class SCon(c: SCon) extends SExp { override def toString = c.toString() }
 //case class SIfExp(t: SExp, e1: SExp, e2: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + ")" }
-case class SIf0(t: SExp, e1: SExp, e2: SExp) extends SExp { override def toString = "(if0 " + e1.toString() + " " + e2.toString() + ")" }
-case class SLambda(v: SVar, e: SExp) extends SExp { override def toString = "(lambda (" + v.toString() + ") " + e.toString() + ")" }
+case class SIf0(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if0 " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
+case class SLambda(idn: SIdn, e: SExp) extends SExp { override def toString = "(lambda (" + idn.toString() + ") " + e.toString() + ")" }
 // TODO multiple variables lambda
 // TODO begin
 // TODO let
@@ -37,15 +45,54 @@ case class SAppl(e1: SExp, e2: SExp) extends SExp { override def toString = "(" 
 //abstract class SList(es: List[SExp]) extends SExp { override def toString = "(" + es.mkString(" ") + ")" }
 
 abstract class Prim
-case class PrimPlus() extends SPrim { override def toString = "+" }
-case class PrimMinus() extends SPrim { override def toString = "-" }
-case class PrimMult() extends SPrim { override def toString = "*" }
+case class PrimPlus() extends Prim { override def toString = "+" }
+case class PrimMinus() extends Prim { override def toString = "-" }
+case class PrimMult() extends Prim { override def toString = "*" }
 // TODO boolean operators
 
 
 
-val prog0 = SPrimExp(SPrimPlus(), SConExp(SInt(1)), SConExp(SInt(2)))
-val prog1 = SApplExp(SLambdaExp(SVar("x"), SPrimExp(SPrimMult(), SConExp(SInt(1)), SVarExp(SVar("x")))), SConExp(SInt(3)))
+// ################ Parser ####################
 
-println(prog0.toString())
-println(prog1.toString())
+
+
+// inspired by proginscala chapter 33 & http://stackoverflow.com/questions/4363871/parsing-scheme-using-scala-parser-combinators
+object JLispParsers extends JavaTokenParsers {
+  def primitive_op: Parser[Prim] = ("+" | "-" | "*") ^^ {
+    case "+" => PrimPlus()
+    case "-" => PrimMinus()
+    case "*" => PrimMult()
+  }
+
+  def identifier: Parser[SIdn] = ident ^^ (SIdn(_))
+  def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
+
+  def if0: Parser[SIf0] = "("~>"if0"~>expression~expression~expression<~')' ^^ {
+    case e1~e2~e3 => SIf0(e1, e2, e3)
+  }
+    
+  def lambda: Parser[SLambda] = "("~>"lambda"~>"("~>identifier~")"~expression<~")" ^^ {
+    case idn~")"~e => SLambda(idn, e)
+  }
+  def prim: Parser[SPrim] = "("~>primitive_op~expression~expression<~")" ^^ {
+    case prim~e1~e2 => SPrim(prim, e1, e2)
+  }
+  def application: Parser[SAppl] = "("~>expression~expression<~")" ^^ {
+    case e1~e2 => SAppl(e1, e2)
+  }
+  def expression: Parser[SExp] = identifier | integer | if0 | lambda | prim | application
+
+  def parseExpr(str: String) = parse(expression, str)
+}
+
+
+
+// ################ Simple Tests ####################
+
+
+
+val prog0string = "(if0 ((lambda (x) (+ x 1)) 2) 1 0)"
+val prog0tree = JLispParsers.parseExpr(prog0string)
+
+println(prog0string)
+println(prog0tree.toString())
