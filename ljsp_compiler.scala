@@ -35,7 +35,7 @@ case class SLambda(idn: SIdn, e: SExp) extends SExp { override def toString = "(
 // TODO begin
 case class SPrim(p: Prim, e1: SExp, e2: SExp) extends SExp { override def toString = "(" + p.toString() + " " + e1.toString() + " " +  e2.toString() + ")" }
 // TODO this is a special case of SAppl, find a way to implement this differently and 
-//      also get rid of the Prim class and its subclasses
+//      remove class Prim and its subclasses
 case class SAppl(e1: SExp, e2: SExp) extends SExp { override def toString = "(" + e1.toString() + " " + e2.toString() + ")"}
 // TODO more than two expressions
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
