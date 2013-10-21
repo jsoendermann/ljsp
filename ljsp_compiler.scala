@@ -40,6 +40,7 @@ case class SAppl(e1: SExp, e2: SExp) extends SExp { override def toString = "(" 
 // TODO more than two expressions
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
 // TODO more than one variable let
+case class SHalt(e: SExp) extends SExp { override def toString = "(halt " + e.toString() + ")" }
 
 abstract class Prim
 case class PrimPlus() extends Prim { override def toString = "+" }
@@ -79,17 +80,48 @@ object JLispParsers extends JavaTokenParsers {
   def let: Parser[SLet] = "("~>"let"~>"("~"("~>identifier~expression~")"~")"~expression<~")" ^^ {
     case idn~e1~")"~")"~e2 => SLet(idn, e1, e1)
   }
-  def expression: Parser[SExp] = identifier | integer | if0 | lambda | prim | application | let
+  def halt: Parser[SHalt] = "("~>"halt"~>expression<~")" ^^ (e => SHalt(e))
 
-  def parseExpr(str: String) = parse(expression, str)
+  def expression: Parser[SExp] = identifier | integer | if0 | lambda | prim | application | let | halt
+
+  def parseExpr(str: String) = parse(expression, str).get
+}
+
+
+
+// ################ CPS Translation ####################
+
+
+
+def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
+  case SIdn(idn) => k(SIdn(idn))
+  case SInt(i) => k(SInt(i))
+  case SIf0(e1, e2, e3) => {
+    CPS(e1, (x: SExp) =>
+        SIf0(x, CPS(e2, k), CPS(e3, k)))
+  }
+  // TODO case SLambda
+  case SPrim(p, e1, e2) => {
+    val f = SIdn(fresh(""))
+    CPS(e1, (x: SExp) =>
+        CPS(e2, (y: SExp) =>
+            SLet(f, SPrim(p, x, y), k(f))))
+  }
+  // TODO case SAppl
+  // TODO case SLet
+  // TODO case SHalt?
 }
 
 
 
 // ################ Simple Tests ####################
 
+val prog3 = JLispParsers.parseExpr("(if0 0 (+ 1 2) (* 4 2))")
+val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
 
+println(prog3cps)
 
+/*
 val prog0string = "(if0 ((lambda (x) (+ x 1)) 2) 1 0)"
 val prog0tree = JLispParsers.parseExpr(prog0string)
 
@@ -102,4 +134,4 @@ println(prog0tree.toString())
 println(prog1string)
 println(prog1tree.toString())
 
-
+*/
