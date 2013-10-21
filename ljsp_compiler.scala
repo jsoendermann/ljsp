@@ -24,25 +24,25 @@ val fresh = (() =>  {
 
 
 // TODO define
+// TODO set!
 abstract class SExp // extends SForm
 case class SIdn(idn: Idn) extends SExp { override def toString = idn }
 case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 // TODO double
-// case class SBool(b: Boolean) extends SCon { override def toString =  if (b) "#t" else "#f" }
+// TODO bool
 // TODO symbols
-//case class SVar(x: SVar) extends SExp { override def toString = x.toString() }
-//case class SCon(c: SCon) extends SExp { override def toString = c.toString() }
 //case class SIfExp(t: SExp, e1: SExp, e2: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + ")" }
 case class SIf0(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if0 " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
 case class SLambda(idn: SIdn, e: SExp) extends SExp { override def toString = "(lambda (" + idn.toString() + ") " + e.toString() + ")" }
-// TODO multiple variables lambda
+// TODO more than one variable lambda
 // TODO begin
 case class SPrim(p: Prim, e1: SExp, e2: SExp) extends SExp { override def toString = "(" + p.toString() + " " + e1.toString() + " " +  e2.toString() + ")" }
-// TODO more than two expressions
+// TODO this is a special case of SAppl, find a way to implement this differently and 
+//      also get rid of the Prim class and its subclasses
 case class SAppl(e1: SExp, e2: SExp) extends SExp { override def toString = "(" + e1.toString() + " " + e2.toString() + ")"}
+// TODO more than two expressions
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
-
-//abstract class SList(es: List[SExp]) extends SExp { override def toString = "(" + es.mkString(" ") + ")" }
+// TODO more than one variable let
 
 abstract class Prim
 case class PrimPlus() extends Prim { override def toString = "+" }
