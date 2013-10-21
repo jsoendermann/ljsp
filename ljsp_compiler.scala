@@ -25,7 +25,6 @@ case class SIf(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toStrin
 case class SLambda(idns: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + idns.mkString(" ") + ") " + e.toString() + ")" }
 // TODO begin
 case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
-// TODO more than two expressions
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
 // TODO more than one variable let
 case class SHalt(e: SExp) extends SExp { override def toString = "(halt " + e.toString() + ")" }
