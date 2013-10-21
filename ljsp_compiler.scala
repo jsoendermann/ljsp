@@ -3,8 +3,7 @@ import scala.util.parsing.combinator._
 //type Num = Int
 type Idn = String
 
-
-// this anonymous function returns a function that returns unique identifiers
+// fresh is a function that is called with a string and returns a unique identifier
 val fresh = (() =>  {
    var counter = -1
    (i: Idn) => {
@@ -23,7 +22,7 @@ val fresh = (() =>  {
 
 // TODO define
 // TODO set!
-abstract class SExp // extends SForm
+abstract class SExp
 case class SIdn(idn: Idn) extends SExp { override def toString = idn }
 case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 // TODO double
