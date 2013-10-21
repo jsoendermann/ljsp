@@ -4,14 +4,12 @@ import scala.util.parsing.combinator._
 type Idn = String
 
 
-// this anonymous function returns a function that turns Idn's
-// into unique Strings
+// this anonymous function returns a function that returns unique identifiers
 val fresh = (() =>  {
    var counter = -1
    (i: Idn) => {
       counter +=1
-      // TODO change or explain this
-      i ++ "Z" ++ counter.toString()
+      (if (i == "") "new_var" else i) ++ "_" ++ counter.toString()
    }
 })()
 
