@@ -57,7 +57,6 @@ case class PrimMult() extends Prim { override def toString = "*" }
 
 
 
-// inspired by proginscala chapter 33 & http://stackoverflow.com/questions/4363871/parsing-scheme-using-scala-parser-combinators
 object JLispParsers extends JavaTokenParsers {
   def primitive_op: Parser[Prim] = ("+" | "-" | "*") ^^ {
     case "+" => PrimPlus()
