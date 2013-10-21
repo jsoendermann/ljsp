@@ -37,7 +37,6 @@ case class SIf0(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toStri
 case class SLambda(idn: SIdn, e: SExp) extends SExp { override def toString = "(lambda (" + idn.toString() + ") " + e.toString() + ")" }
 // TODO multiple variables lambda
 // TODO begin
-// TODO let
 case class SPrim(p: Prim, e1: SExp, e2: SExp) extends SExp { override def toString = "(" + p.toString() + " " + e1.toString() + " " +  e2.toString() + ")" }
 // TODO more than two expressions
 case class SAppl(e1: SExp, e2: SExp) extends SExp { override def toString = "(" + e1.toString() + " " + e2.toString() + ")"}
