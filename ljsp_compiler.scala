@@ -18,7 +18,6 @@ case class SIdn(idn: Idn) extends SExp { override def toString = idn }
 case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 case class SBool(b: Boolean) extends SExp { override def toString = if (b) "#t" else "#f" }
 // TODO double
-// TODO symbols
 case class SIf(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
 case class SLambda(params: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + params.mkString(" ") + ") " + e.toString() + ")" }
 case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +
@@ -31,8 +30,8 @@ case class SHalt(e: SExp) extends SExp { override def toString = "(halt " + e.to
 
 
 
-// fresh returns a new unique identifier
-val fresh = (() =>  {
+// fresh_variable returns a new unique identifier that begins with "new_var_"
+val fresh_variable = (() =>  {
    var counter = -1
    () => {
       counter +=1
@@ -40,6 +39,7 @@ val fresh = (() =>  {
    }
 })()
 
+// fresh_continuation_function returns a new unique identifier that begins with "cont_"
 val fresh_continuation_function = (() =>  {
    var counter = -1
    () => {
@@ -88,7 +88,7 @@ object JLispParsers extends JavaTokenParsers {
   def parseExpr(str: String) = parse(expression, str).get
 }
 
-//def parseString(s: String) : SExp = JLispParsers.parseExpr(s)
+
 
 // ################ CPS Translation ####################
 
@@ -106,11 +106,12 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
         SIf(ce1, CPS(e2, k), CPS(e3, k)))
   }
 
+  // for lambdas and defines, add an additional parameter that will hold the continuation
+  // and call it with the result when the function is done
   case SLambda(params, e) => {
     val c = fresh_continuation_function()
     k(SLambda(params ::: List(c), CPSTail(e, c)))
   }
-
   case SDefine(name, params, e) => {
     val c = fresh_continuation_function()
     k(SDefine(name, params ::: List(c), CPSTail(e, c)))
@@ -118,15 +119,15 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 
   // For applications, evaluate proc first, then all the arguments
   case SAppl(proc, es) => {
-    // the result of the application will be assigned to this variable
-    // and k will be called with f as its parameter
-    val f = fresh()
+    // the application will have (lambda (f) k(f)) added as additional parameter
+    // which will be the continuation for the function that is being called
+    val f = fresh_variable()
 
-    // CPS-Translation the expression for the procedure first
+    // CPS-Translate the expression for the procedure first
     CPS(proc, (cproc: SExp) => {
 
       // this function calls CPS recursively for all expressions in es and accumulates the result in ces
-      // the last call with an empty es creates a let and calls k on the result of the application
+      // the last call with an empty es creates calls the function with the additional lambda mentioned above
       def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
         case Nil => SAppl(cproc, ces ::: List(SLambda(List(f), k(f)))) //SLet(f, SAppl(cproc, ces), k(f))
         case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
@@ -142,25 +143,24 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
             SLet(idn, ce1, k(ce2))))
   }*/
 
-  // For halt, evaluate the expression to halt with
-  // TODO maybe there is a better way to do this?
   case SHalt(e) => {
-    val f = fresh()
+    val f = fresh_variable()
     CPS(e, (x: SExp) =>
-        SLet(f, x, k(SHalt(f))))
+      SLet(f, x, k(SHalt(f))))
   }
 }
 
+// This function is very similar to CPS, the difference being that for CPSTail the second parameter is an
+// identifier which will point to a continuation function that has to be called with the result of e.
+// For explanations, please see the comments to CPS
 def CPSTail(e: SExp, c: SExp) : SExp = e match {
-  // For atomic values, no CPS-Translation is necessary. Simply apply k to e
   case SIdn(idn) => SAppl(c, List(e))
   case SInt(i) => SAppl(c, List(e))
   case SBool(b) => SAppl(c, List(e))
 
-  // For if, evaluate e1 first, then branch with two recursive calls
   case SIf(e1, e2, e3) => {
     CPS(e1, (ce1: SExp) =>
-        SIf(ce1, CPSTail(e2, c), CPSTail(e3, c)))
+      SIf(ce1, CPSTail(e2, c), CPSTail(e3, c)))
   }
 
   case SLambda(params, e) => {
@@ -173,21 +173,11 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
     SAppl(c, List((SDefine(name, params ::: List(c_), CPSTail(e, c_)))))
   }
 
-
-  // For applications, evaluate proc first, then all the arguments
   case SAppl(proc, es) => {
-    // the result of the application will be assigned to this variable
-    // and k will be called with f as its parameter
-    val f = fresh()
-
-    // CPS-Translation the expression for the procedure first
+    val f = fresh_variable()
     CPS(proc, (cproc: SExp) => {
-
-      // this function calls CPS recursively for all expressions in es and accumulates the result in ces
-      // the last call with an empty es creates a let and calls k on the result of the application
       def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
-        case Nil => SAppl(cproc, ces ::: List(SLambda(List(f), SAppl(c, List(f))))) //SLet(f, SAppl(cproc, ces), k(f))
-        //case Nil => SLet(f, SAppl(cproc, ces), SAppl(c, List(f)))
+        case Nil => SAppl(cproc, ces ::: List(SLambda(List(f), SAppl(c, List(f)))))
         case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
       }
     aux(es, Nil)
@@ -201,12 +191,10 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
             SLet(idn, ce1, SAppl(c, List(ce2)))))
   }*/
 
-  // For halt, evaluate the expression to halt with
-  // TODO maybe there is a better way to do this?
   case SHalt(e) => {
-    val f = fresh()
+    val f = fresh_variable()
     CPS(e, (x: SExp) =>
-        SLet(f, x, SAppl(c, List(f))))
+      SLet(f, x, SAppl(c, List(f))))
   }
 }
 
@@ -221,17 +209,3 @@ val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
 println(prog3.toString())
 println(prog3cps.toString())
 
-/*
-val prog0string = "(if0 ((lambda (x) (+ x 1)) 2) 1 0)"
-val prog0tree = JLispParsers.parseExpr(prog0string)
-
-val prog1string = "(let ((x 2)) (+ x 3))"
-val prog1tree = JLispParsers.parseExpr(prog1string)
-
-println(prog0string)
-println(prog0tree.toString())
-
-println(prog1string)
-println(prog1tree.toString())
-
-*/
