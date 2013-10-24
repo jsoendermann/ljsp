@@ -102,8 +102,11 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 
   // For if, evaluate e1 first, then branch with two recursive calls
   case SIf(e1, e2, e3) => {
+    val z = fresh_variable()
+    val p = fresh_variable()
     CPS(e1, (ce1: SExp) =>
-        SIf(ce1, CPS(e2, k), CPS(e3, k)))
+        SLet(z, SLambda(List(p), k(p)),
+          SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
   }
 
   // for lambdas and defines, add an additional parameter that will hold the continuation
@@ -159,8 +162,11 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
   case SBool(b) => SAppl(c, List(e))
 
   case SIf(e1, e2, e3) => {
+    val z = fresh_variable()
+    val p = fresh_variable()
     CPS(e1, (ce1: SExp) =>
-      SIf(ce1, CPSTail(e2, c), CPSTail(e3, c)))
+        SLet(z, SLambda(List(p), SAppl(c, List(p))),
+          SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
   }
 
   case SLambda(params, e) => {
@@ -203,7 +209,7 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 // ################ Simple Tests ####################
 
 //val prog3 = JLispParsers.parseExpr("(let ((z 1)) (+ z 3)))")
-val prog3 = JLispParsers.parseExpr("((lambda (z) (+ z 3)) 1)")
+val prog3 = JLispParsers.parseExpr("((lambda (x y) (if #t x y)) 1 3)")
 val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
 
 println(prog3.toString())
