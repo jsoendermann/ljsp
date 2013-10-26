@@ -208,10 +208,17 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 
 // ################ Simple Tests ####################
 
-//val prog3 = JLispParsers.parseExpr("(let ((z 1)) (+ z 3)))")
-val prog3 = JLispParsers.parseExpr("((lambda (x y) (if #t x y)) 1 3)")
-val prog3cps = CPS(prog3, (x: SExp) => SHalt(x))
+val progs = "(let ((z 1)) (+ z 3)))" ::
+"((lambda (z) (+ z 3)) 1)" ::
+Nil
 
-println(prog3.toString())
-println(prog3cps.toString())
+for (prog <- progs) {
+  val tree = JLispParsers.parseExpr(prog)
+  val cps = CPS(tree, (x: SExp) => SHalt(x))
+
+  println("Code: " + tree.toString())
+  println("CPS:  " + cps.toString())
+  println()
+}
+
 
