@@ -31,20 +31,11 @@ case class SHalt(e: SExp) extends SExp { override def toString = "(halt " + e.to
 
 
 // fresh_variable returns a new unique identifier that begins with "new_var_"
-val fresh_variable = (() =>  {
+val fresh = (() =>  {
    var counter = -1
-   () => {
+   (s: String) => {
       counter +=1
-      SIdn("new_var" ++ "_" ++ counter.toString())
-   }
-})()
-
-// fresh_continuation_function returns a new unique identifier that begins with "cont_"
-val fresh_continuation_function = (() =>  {
-   var counter = -1
-   () => {
-      counter +=1
-      SIdn("cont" ++ "_" ++ counter.toString())
+      SIdn(s ++ "_" ++ counter.toString())
    }
 })()
 
@@ -102,8 +93,8 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 
   // For if, evaluate e1 first, then branch with two recursive calls
   case SIf(e1, e2, e3) => {
-    val z = fresh_variable()
-    val p = fresh_variable()
+    val z = fresh("var")
+    val p = fresh("var")
     CPS(e1, (ce1: SExp) =>
         SLet(z, SLambda(List(p), k(p)),
           SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
@@ -112,11 +103,11 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   // for lambdas and defines, add an additional parameter that will hold the continuation
   // and call it with the result when the function is done
   case SLambda(params, e) => {
-    val c = fresh_continuation_function()
+    val c = fresh("cont")
     k(SLambda(params ::: List(c), CPSTail(e, c)))
   }
   case SDefine(name, params, e) => {
-    val c = fresh_continuation_function()
+    val c = fresh("cont")
     k(SDefine(name, params ::: List(c), CPSTail(e, c)))
   }
 
@@ -124,7 +115,7 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   case SAppl(proc, es) => {
     // the application will have (lambda (f) k(f)) added as additional parameter
     // which will be the continuation for the function that is being called
-    val f = fresh_variable()
+    val f = fresh("var")
 
     // CPS-Translate the expression for the procedure first
     CPS(proc, (cproc: SExp) => {
@@ -147,7 +138,7 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   }*/
 
   case SHalt(e) => {
-    val f = fresh_variable()
+    val f = fresh("var")
     CPS(e, (x: SExp) =>
       SLet(f, x, k(SHalt(f))))
   }
@@ -162,25 +153,25 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
   case SBool(b) => SAppl(c, List(e))
 
   case SIf(e1, e2, e3) => {
-    val z = fresh_variable()
-    val p = fresh_variable()
+    val z = fresh("var")
+    val p = fresh("var")
     CPS(e1, (ce1: SExp) =>
         SLet(z, SLambda(List(p), SAppl(c, List(p))),
           SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
   }
 
   case SLambda(params, e) => {
-    val c_ = fresh_continuation_function()
+    val c_ = fresh("cont")
     SAppl(c, List((SLambda(params ::: List(c_), CPSTail(e, c_)))))
   }
   
   case SDefine(name, params, e) => {
-    val c_ = fresh_continuation_function()
+    val c_ = fresh("cont")
     SAppl(c, List((SDefine(name, params ::: List(c_), CPSTail(e, c_)))))
   }
 
   case SAppl(proc, es) => {
-    val f = fresh_variable()
+    val f = fresh("var")
     CPS(proc, (cproc: SExp) => {
       def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
         case Nil => SAppl(cproc, ces ::: List(SLambda(List(f), SAppl(c, List(f)))))
@@ -198,7 +189,7 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
   }*/
 
   case SHalt(e) => {
-    val f = fresh_variable()
+    val f = fresh("var")
     CPS(e, (x: SExp) =>
       SLet(f, x, SAppl(c, List(f))))
   }
@@ -208,7 +199,8 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 
 // ################ Simple Tests ####################
 
-val progs = "(let ((z 1)) (+ z 3)))" ::
+val progs = 
+//"(let ((z 1)) (+ z 3)))" ::
 "((lambda (z) (+ z 3)) 1)" ::
 Nil
 
