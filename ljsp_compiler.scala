@@ -108,8 +108,8 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     val z = fresh("var")
     val p = fresh("var")
     CPS(e1, (ce1: SExp) =>
-        SLet(z, SLambda(List(p), k(p)),
-          SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
+      SLet(z, SLambda(List(p), k(p)),
+        SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
   }
 
   // for lambdas and defines, add an additional parameter that will hold the continuation
@@ -142,12 +142,14 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     })
   }
 
-  // TODO is this correct?
-  /*case SLet(idn, e1, e2) => {
-    CPS(e1, (ce1: SExp) =>
-        CPS(e2, (ce2: SExp) =>
-            SLet(idn, ce1, k(ce2))))
-  }*/
+  case SLet(idn, e1, e2) => {
+    val f = fresh("var")
+    val c = SLambda(List(f), k(f))
+
+    val ce2 = CPSTail(e2, c)
+
+    CPSTail(e1, SLambda(List(idn), ce2))
+  }
 
   case SHalt(e) => {
     val f = fresh("var")
@@ -193,12 +195,14 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
     })
   }
 
-  // TODO is this correct?
-  /*case SLet(idn, e1, e2) => {
-    CPS(e1, (ce1: SExp) =>
-        CPS(e2, (ce2: SExp) =>
-            SLet(idn, ce1, SAppl(c, List(ce2)))))
-  }*/
+  case SLet(idn, e1, e2) => {
+    val f = fresh("var")
+    val c_ = SLambda(List(f), SAppl(c, List(f)))
+
+    val ce2 = CPSTail(e2, c_)
+
+    CPSTail(e1, SLambda(List(idn), ce2))
+  }
 
   case SHalt(e) => {
     val f = fresh("var")
@@ -212,7 +216,7 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 // ################ Simple Tests ####################
 
 val progs = 
-//"(let ((z 1)) (+ z 3)))" ::
+"(let ((z 1)) (+ z 3)))" ::
 "((lambda (z) (+ z 3)) 1)" ::
 Nil
 
