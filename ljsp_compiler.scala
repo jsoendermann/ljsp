@@ -30,12 +30,25 @@ case class SHalt(e: SExp) extends SExp { override def toString = "(halt " + e.to
 
 
 
-// fresh_variable returns a new unique identifier that begins with "new_var_"
+// fresh returns a new unique identifier that begins with s
 val fresh = (() =>  {
-   var counter = -1
-   (s: String) => {
-      counter +=1
-      SIdn(s ++ "_" ++ counter.toString())
+  // This is a map that maps identifier prefixes to their counters
+  // New prefixes get added to the map automatically, it's not necessary
+  // to initialize this map with all prefixes that will be used
+  var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1)
+
+    // this is the function that fresh will be bound to
+    (s: String) => {
+      counters get s match {
+        case Some(counter) => {
+          counters(s) = counter + 1
+          SIdn(s ++ "_" ++ counters(s).toString())
+        }
+        case None => {
+          counters ++ scala.collection.mutable.Map(s -> 0)
+          SIdn(s ++ "_0")
+        }
+      }
    }
 })()
 
