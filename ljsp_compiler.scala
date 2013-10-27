@@ -221,6 +221,7 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 val progs = 
 "(let ((z 1)) (+ z 3)))" ::
 "((lambda (z) (+ z 3)) 1)" ::
+"(let ((inc (lambda (x) (+ x 1)))) (* (inc 1) (inc 3)))" ::
 Nil
 
 for (prog <- progs) {
