@@ -20,8 +20,7 @@ case class SBool(b: Boolean) extends SExp { override def toString = if (b) "#t" 
 // TODO double
 case class SIf(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
 case class SLambda(params: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + params.mkString(" ") + ") " + e.toString() + ")" }
-case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +
-  params.mkString(" ") + ") " + e.toString() + ")" }
+case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
 // TODO begin
 case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
@@ -37,19 +36,19 @@ val fresh = (() =>  {
   // to initialize this map with all prefixes that will be used
   var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1)
 
-    // this is the function that fresh will be bound to
-    (s: String) => {
-      counters get s match {
-        case Some(counter) => {
-          counters(s) = counter + 1
-          SIdn(s ++ "_" ++ counters(s).toString())
-        }
-        case None => {
-          counters ++ scala.collection.mutable.Map(s -> 0)
-          SIdn(s ++ "_0")
-        }
+  // this is the function that fresh will be bound to
+  (s: String) => {
+    counters get s match {
+      case Some(counter) => {
+        counters(s) = counter + 1
+        SIdn(s ++ "_" ++ counters(s).toString())
       }
-   }
+      case None => {
+        counters ++ scala.collection.mutable.Map(s -> 0)
+        SIdn(s ++ "_0")
+      }
+    }
+ }
 })()
 
 
