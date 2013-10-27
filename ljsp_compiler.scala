@@ -214,22 +214,19 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
   }
 }
 
+//TODO better option handling
 
-
-// ################ Simple Tests ####################
-
-val progs = 
-"(let ((z 1)) (+ z 3)))" ::
-"((lambda (z) (+ z 3)) 1)" ::
-Nil
-
-for (prog <- progs) {
-  val tree = JLispParsers.parseExpr(prog)
-  val cps = CPS(tree, (x: SExp) => SHalt(x))
-
-  println("Code: " + tree.toString())
-  println("CPS:  " + cps.toString())
-  println()
+if (args.length == 0) {
+  // TODO more helpful usage
+  println("try <cmd> --cps")
+  System.exit(-1)
 }
 
-
+args(0) match {
+  case "--cps" => {
+    val progTree = JLispParsers.parseExpr(args(1))
+    val progCps = CPS(progTree, (x: SExp) => SAppl(SIdn("display"), List(x)))
+    println(progCps.toString())
+  }
+  case _ => println("Wrong argument: " + args(0))
+}
