@@ -143,11 +143,14 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   }
 
   case SLet(idn, e1, e2) => {
+    // c is a simple continuation lambda
     val f = fresh("var")
     val c = SLambda(List(f), k(f))
 
     val ce2 = CPSTail(e2, c)
 
+    // This creates a lambda with a parameter of the same name as the identifier in the let
+    // e1 is CPS translated and applied to this new lambda
     CPSTail(e1, SLambda(List(idn), ce2))
   }
 
@@ -170,8 +173,8 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
     val z = fresh("var")
     val p = fresh("var")
     CPS(e1, (ce1: SExp) =>
-        SLet(z, SLambda(List(p), SAppl(c, List(p))),
-          SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
+      SLet(z, SLambda(List(p), SAppl(c, List(p))),
+        SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
   }
 
   case SLambda(params, e) => {
