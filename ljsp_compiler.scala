@@ -61,7 +61,7 @@ val fresh = (() =>  {
 
 object JLispParsers extends JavaTokenParsers {
   def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-]*""".r ^^ (SIdn(_))
-  def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "and" | "or" | "equal?") ^^ (SIdn(_))
+  def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "and" | "or" | "equal?") ^^ (SIdn(_))
   def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
   def boolean: Parser[SBool] = ("#t" | "#f") ^^ {
     case "#t" => SBool(true)
