@@ -23,6 +23,7 @@ case class SLambda(params: List[SIdn], e: SExp) extends SExp { override def toSt
 case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
 // TODO begin
 case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
+case class SApplPrimitive(proc: SIdn, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
 // TODO more than one variable let
 case class SHalt(e: SExp) extends SExp { override def toString = "(halt " + e.toString() + ")" }
@@ -60,6 +61,7 @@ val fresh = (() =>  {
 
 object JLispParsers extends JavaTokenParsers {
   def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-]*""".r ^^ (SIdn(_))
+  def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "and" | "or" | "equal?") ^^ (SIdn(_))
   def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
   def boolean: Parser[SBool] = ("#t" | "#f") ^^ {
     case "#t" => SBool(true)
@@ -77,6 +79,9 @@ object JLispParsers extends JavaTokenParsers {
   def define: Parser[SDefine] = "("~>"define"~>"("~>identifier~rep(identifier)~")"~expression<~")" ^^ {
     case name~params~")"~e => SDefine(name, params, e)
   }
+  def primitive_application: Parser[SApplPrimitive] = "("~>primitive_proc~rep1(expression, expression)<~")" ^^ {
+    case proc~es => SApplPrimitive(proc, es)
+  }
   def application: Parser[SAppl] = "("~>expression~rep1(expression, expression)<~")" ^^ {
     case proc~es => SAppl(proc, es)
   }
@@ -85,7 +90,7 @@ object JLispParsers extends JavaTokenParsers {
   }
   def halt: Parser[SHalt] = "("~>"halt"~>expression<~")" ^^ (e => SHalt(e))
 
-  def expression: Parser[SExp] = identifier | integer | boolean | _if | lambda | define| application | let | halt
+  def expression: Parser[SExp] = identifier | integer | boolean | _if | lambda | define| primitive_application | application | let | halt
 
   // TODO this throws an exception instead of printing a nice error message when the input isn't well formed
   def parseExpr(str: String) = parse(expression, str).get
@@ -142,6 +147,21 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     })
   }
 
+  // For primitive applications, translate all the arguments
+  // and continue with let f=SAppl in k(f)
+  case SApplPrimitive(proc, es) => {
+    val z = fresh("var")
+
+    // this function calls CPS recursively for all expressions in es and accumulates the result in ces
+    // the last call with an empty es creates calls the function with the additional lambda mentioned above
+    def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
+      case Nil => SLet(z, SAppl(proc, ces), k(z))
+      case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+    }
+    aux(es, Nil)
+  }
+
+
   case SLet(idn, e1, e2) => {
     // c is a simple continuation lambda
     val f = fresh("var")
@@ -196,6 +216,16 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
       }
     aux(es, Nil)
     })
+  }
+
+  case SApplPrimitive(proc, es) => {
+    val z = fresh("var")
+
+    def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
+      case Nil => SLet(z, SAppl(proc, ces), SAppl(c, List(z)))
+      case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+    }
+    aux(es, Nil)
   }
 
   case SLet(idn, e1, e2) => {
