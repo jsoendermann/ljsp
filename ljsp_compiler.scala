@@ -26,7 +26,6 @@ case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toStrin
 case class SApplPrimitive(proc: SIdn, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
 // TODO more than one variable let
-case class SHalt(e: SExp) extends SExp { override def toString = "(halt " + e.toString() + ")" }
 
 
 
@@ -88,9 +87,7 @@ object JLispParsers extends JavaTokenParsers {
   def let: Parser[SLet] = "("~>"let"~>"("~"("~>identifier~expression~")"~")"~expression<~")" ^^ {
     case idn~e1~")"~")"~e2 => SLet(idn, e1, e2)
   }
-  def halt: Parser[SHalt] = "("~>"halt"~>expression<~")" ^^ (e => SHalt(e))
-
-  def expression: Parser[SExp] = identifier | integer | boolean | _if | lambda | define| primitive_application | application | let | halt
+  def expression: Parser[SExp] = identifier | integer | boolean | _if | lambda | define| primitive_application | application | let
 
   // TODO this throws an exception instead of printing a nice error message when the input isn't well formed
   def parseExpr(str: String) = parse(expression, str).get
@@ -173,12 +170,6 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     // e1 is CPS translated and applied to this new lambda
     CPSTail(e1, SLambda(List(idn), ce2))
   }
-
-  case SHalt(e) => {
-    val f = fresh("var")
-    CPS(e, (x: SExp) =>
-      SLet(f, x, k(SHalt(f))))
-  }
 }
 
 // This function is very similar to CPS, the difference being that for CPSTail the second parameter is an
@@ -236,12 +227,6 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 
     CPSTail(e1, SLambda(List(idn), ce2))
   }
-
-  case SHalt(e) => {
-    val f = fresh("var")
-    CPS(e, (x: SExp) =>
-      SLet(f, x, SAppl(c, List(f))))
-  }
 }
 
 
@@ -254,23 +239,22 @@ def ClConv(e: SExp) : SExp = e match {
   case SIdn(idn) => ClConv(e)
   case SInt(i) => ClConv(e)
   case SBool(b) => ClConv(e)
-  case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3)
+  case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3))
   case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
-  case SHalt(e) => SHalt(ClConv(e))
 
-  case SLambda(params, e) => {
-    val env = fresh("env")
+  //case SLambda(params, e) => {
+  //  val env = fresh("env")
 
-  }
-  
-  case SDefine(name, params, e) => {
-  }
+  //}
+  //
+  //case SDefine(name, params, e) => {
+  //}
 
-  case SAppl(proc, es) => {
-  }
+  //case SAppl(proc, es) => {
+  //}
 
-  case SApplPrimitive(proc, es) => {
-  }
+  //case SApplPrimitive(proc, es) => {
+  //}
 
 
 }
