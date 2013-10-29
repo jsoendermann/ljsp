@@ -244,6 +244,41 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
   }
 }
 
+
+
+// ################ Closure conversion ####################
+
+
+def ClConv(e: SExp) : SExp = e match {
+  // Trivial cases
+  case SIdn(idn) => ClConv(e)
+  case SInt(i) => ClConv(e)
+  case SBool(b) => ClConv(e)
+  case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3)
+  case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
+  case SHalt(e) => SHalt(ClConv(e))
+
+  case SLambda(params, e) => {
+    val env = fresh("env")
+
+  }
+  
+  case SDefine(name, params, e) => {
+  }
+
+  case SAppl(proc, es) => {
+  }
+
+  case SApplPrimitive(proc, es) => {
+  }
+
+
+}
+
+
+
+
+
 //TODO better option handling
 
 if (args.length == 0) {
