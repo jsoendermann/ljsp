@@ -253,10 +253,6 @@ def ClConv(e: SExp) : SExp = e match {
   //case SAppl(proc, es) => {
   //}
 
-  //case SApplPrimitive(proc, es) => {
-  //}
-
-
 }
 
 
