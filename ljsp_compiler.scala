@@ -107,11 +107,11 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 
   // For if, evaluate e1 first, then branch with two recursive calls
   case SIf(e1, e2, e3) => {
-    val z = fresh("var")
+    val c = fresh("var")
     val p = fresh("var")
     CPS(e1, (ce1: SExp) =>
-      SLet(z, SLambda(List(p), k(p)),
-        SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
+      SLet(c, SLambda(List(p), k(p)),
+        SIf(ce1, CPSTail(e2, c), CPSTail(e3, c))))
   }
 
   // for lambdas and defines, add an additional parameter that will hold the continuation
@@ -181,11 +181,11 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
   case SBool(b) => SAppl(c, List(e))
 
   case SIf(e1, e2, e3) => {
-    val z = fresh("var")
+    val c = fresh("var")
     val p = fresh("var")
     CPS(e1, (ce1: SExp) =>
-      SLet(z, SLambda(List(p), SAppl(c, List(p))),
-        SIf(ce1, CPSTail(e2, z), CPSTail(e3, z))))
+      SLet(c, SLambda(List(p), SAppl(c, List(p))),
+        SIf(ce1, CPSTail(e2, c), CPSTail(e3, c))))
   }
 
   case SLambda(params, e) => {
@@ -241,14 +241,10 @@ def ClConv(e: SExp) : SExp = e match {
   case SBool(b) => ClConv(e)
   case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3))
   case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
+  case SDefine(name, params, e) => SDefine(name, params, CLConv(e))
 
   //case SLambda(params, e) => {
   //  val env = fresh("env")
-
-  //}
-  //
-  //case SDefine(name, params, e) => {
-  //}
 
   //case SAppl(proc, es) => {
   //}
