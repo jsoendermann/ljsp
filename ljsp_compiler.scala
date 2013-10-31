@@ -12,15 +12,15 @@ type Idn = String
 // ################ Classes ####################
 
 
-
-abstract class SExp
+abstract class SDefOrExp
+case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SDefOrExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
+abstract class SExp extends SDefOrExp
 case class SIdn(idn: Idn) extends SExp { override def toString = idn }
 case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 case class SBool(b: Boolean) extends SExp { override def toString = if (b) "#t" else "#f" }
 // TODO double
 case class SIf(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
 case class SLambda(params: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + params.mkString(" ") + ") " + e.toString() + ")" }
-case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
 // TODO begin
 case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
 case class SApplPrimitive(proc: SIdn, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
@@ -87,10 +87,12 @@ object JLispParsers extends JavaTokenParsers {
   def let: Parser[SLet] = "("~>"let"~>"("~"("~>identifier~expression~")"~")"~expression<~")" ^^ {
     case idn~e1~")"~")"~e2 => SLet(idn, e1, e2)
   }
-  def expression: Parser[SExp] = identifier | integer | boolean | _if | lambda | define| primitive_application | application | let
+  def expression: Parser[SExp] = identifier | integer | boolean | _if | lambda | primitive_application | application | let
+  def defOrExp: Parser[SDefOrExp] = expression | define
+  def prog: Parser[List[SDefOrExp]] = rep1(defOrExp, defOrExp)
 
   // TODO this throws an exception instead of printing a nice error message when the input isn't well formed
-  def parseExpr(str: String) = parse(expression, str).get
+  def parseExpr(str: String) = parse(prog, str).get
 }
 
 
@@ -120,10 +122,10 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     val c = fresh("cont")
     k(SLambda(params ::: List(c), CPSTail(e, c)))
   }
-  case SDefine(name, params, e) => {
-    val c = fresh("cont")
-    k(SDefine(name, params ::: List(c), CPSTail(e, c)))
-  }
+//  case SDefine(name, params, e) => {
+//    val c = fresh("cont")
+//    k(SDefine(name, params ::: List(c), CPSTail(e, c)))
+//  }
 
   // For applications, evaluate proc first, then all the arguments
   case SAppl(proc, es) => {
@@ -193,10 +195,10 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
     SAppl(c, List((SLambda(params ::: List(c_), CPSTail(e, c_)))))
   }
   
-  case SDefine(name, params, e) => {
-    val c_ = fresh("cont")
-    SAppl(c, List((SDefine(name, params ::: List(c_), CPSTail(e, c_)))))
-  }
+//  case SDefine(name, params, e) => {
+//    val c_ = fresh("cont")
+//    SAppl(c, List((SDefine(name, params ::: List(c_), CPSTail(e, c_)))))
+//  }
 
   case SAppl(proc, es) => {
     val f = fresh("var")
@@ -250,7 +252,7 @@ def ClConv(e: SExp) : SExp = e match {
   case SBool(b) => ClConv(e)
   case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3))
   case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
-  case SDefine(name, params, e) => SDefine(name, params, CLConv(e))
+//  case SDefine(name, params, e) => SDefine(name, params, CLConv(e))
 
   //case SLambda(params, e) => {
   //  val env = fresh("env")
@@ -275,8 +277,8 @@ if (args.length == 0) {
 args(0) match {
   case "--cps" => {
     val progTree = JLispParsers.parseExpr(args(1))
-    val progCps = CPS(progTree, (x: SExp) => SAppl(SIdn("display"), List(x)))
-    println(progCps.toString())
+    // val progCps = CPS(progTree, (x: SExp) => SAppl(SIdn("display"), List(x)))
+    //println(progCps.toString())
   }
   case _ => println("Wrong argument: " + args(0))
 }
