@@ -233,6 +233,15 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 
 // ################ Closure conversion ####################
 
+def FreeVars(e: SExp) : Set[Idn] = e match {
+  case SIdn(idn) => Set(idn)
+  case SInt(_) => Set()
+  case SBool(_) => Set()
+  case SIf(e1, e2, e3) => FreeVars(e1) ++ FreeVars(e2) ++ FreeVars(e3)
+  case SLet(idn, e1, e2) => FreeVars(e1) ++ (FreeVars(e2) - idn)
+  // TODO remaining cases
+}
+
 
 def ClConv(e: SExp) : SExp = e match {
   // Trivial cases
