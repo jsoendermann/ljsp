@@ -16,7 +16,6 @@ type Idn = String
 abstract class SExp
 case class SIdn(idn: Idn) extends SExp { override def toString = idn }
 case class SInt(i: Int) extends SExp { override def toString = i.toString() }
-case class SBool(b: Boolean) extends SExp { override def toString = if (b) "#t" else "#f" }
 // TODO double
 case class SIf(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
 case class SLambda(params: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + params.mkString(" ") + ") " + e.toString() + ")" }
@@ -62,10 +61,6 @@ object JLispParsers extends JavaTokenParsers {
   def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-]*""".r ^^ (SIdn(_))
   def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "and" | "or" | "equal?") ^^ (SIdn(_))
   def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
-  def boolean: Parser[SBool] = ("#t" | "#f") ^^ {
-    case "#t" => SBool(true)
-    case "#f" => SBool(false)
-  }
 
   def _if: Parser[SIf] = "("~>"if"~>expression~expression~expression<~')' ^^ {
     case e1~e2~e3 => SIf(e1, e2, e3)
@@ -87,7 +82,7 @@ object JLispParsers extends JavaTokenParsers {
   def let: Parser[SLet] = "("~>"let"~>"("~"("~>identifier~expression~")"~")"~expression<~")" ^^ {
     case idn~e1~")"~")"~e2 => SLet(idn, e1, e2)
   }
-  def expression: Parser[SExp] = identifier | integer | boolean | _if | lambda | define| primitive_application | application | let
+  def expression: Parser[SExp] = identifier | integer | _if | lambda | define| primitive_application | application | let
 
   // TODO this throws an exception instead of printing a nice error message when the input isn't well formed
   def parseExpr(str: String) = parse(expression, str).get
@@ -103,7 +98,6 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   // For atomic values, no CPS-Translation is necessary. Simply apply k to e
   case SIdn(idn) => k(e)
   case SInt(i) => k(e)
-  case SBool(b) => k(e)
 
   // For if, evaluate e1 first, then branch with two recursive calls
   case SIf(e1, e2, e3) => {
@@ -178,7 +172,6 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
 def CPSTail(e: SExp, c: SExp) : SExp = e match {
   case SIdn(idn) => SAppl(c, List(e))
   case SInt(i) => SAppl(c, List(e))
-  case SBool(b) => SAppl(c, List(e))
 
   case SIf(e1, e2, e3) => {
     val c = fresh("var")
@@ -236,7 +229,6 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 def FreeVars(e: SExp) : Set[Idn] = e match {
   case SIdn(idn) => Set(idn)
   case SInt(_) => Set()
-  case SBool(_) => Set()
   case SIf(e1, e2, e3) => FreeVars(e1) ++ FreeVars(e2) ++ FreeVars(e3)
   // idn.idn is necessary becase idn is of type SIdn but Idn is required
   case SLet(idn, e1, e2) => FreeVars(e1) ++ (FreeVars(e2) - idn.idn)
@@ -249,7 +241,6 @@ def ClConv(e: SExp) : SExp = e match {
   // Trivial cases
   case SIdn(idn) => ClConv(e)
   case SInt(i) => ClConv(e)
-  case SBool(b) => ClConv(e)
   case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3))
   case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
   case SDefine(name, params, e) => SDefine(name, params, ClConv(e))
