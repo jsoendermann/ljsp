@@ -240,7 +240,8 @@ def FreeVars(e: SExp) : Set[Idn] = e match {
   case SIf(e1, e2, e3) => FreeVars(e1) ++ FreeVars(e2) ++ FreeVars(e3)
   // idn.idn is necessary becase idn is of type SIdn but Idn is required
   case SLet(idn, e1, e2) => FreeVars(e1) ++ (FreeVars(e2) - idn.idn)
-  // TODO remaining cases
+  // TODO case sdefine?
+  case SLambda(params, e) => FreeVars(e) -- params.map(sIdn => sIdn.idn)
 }
 
 
@@ -251,7 +252,7 @@ def ClConv(e: SExp) : SExp = e match {
   case SBool(b) => ClConv(e)
   case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3))
   case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
-  case SDefine(name, params, e) => SDefine(name, params, CLConv(e))
+  case SDefine(name, params, e) => SDefine(name, params, ClConv(e))
 
   //case SLambda(params, e) => {
   //  val env = fresh("env")
