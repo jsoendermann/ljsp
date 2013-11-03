@@ -24,6 +24,7 @@ case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { overr
 case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
 case class SApplPrimitive(proc: SIdn, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
+case class SList(es: SExp) extends SExp { override def toString = "'(" + es.mkString(" ") + ")"}
 // TODO more than one variable let
 
 
@@ -82,7 +83,10 @@ object JLispParsers extends JavaTokenParsers {
   def let: Parser[SLet] = "("~>"let"~>"("~"("~>identifier~expression~")"~")"~expression<~")" ^^ {
     case idn~e1~")"~")"~e2 => SLet(idn, e1, e2)
   }
-  def expression: Parser[SExp] = identifier | integer | _if | lambda | define| primitive_application | application | let
+  def list: Parser[SList] = "("~>"list"~>rep1(expression, expression)<~")" ^^ {
+    case es => SList(es)
+  }
+  def expression: Parser[SExp] = identifier | integer | _if | lambda | define| primitive_application | application | let | list
 
   // TODO this throws an exception instead of printing a nice error message when the input isn't well formed
   def parseExpr(str: String) = parse(expression, str).get
@@ -164,6 +168,8 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     // e1 is CPS translated and applied to this new lambda
     CPSTail(e1, SLambda(List(idn), ce2))
   }
+  
+  //TODO cps translation for SList
 }
 
 // This function is very similar to CPS, the difference being that for CPSTail the second parameter is an
