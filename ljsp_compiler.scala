@@ -86,7 +86,7 @@ object JLispParsers extends JavaTokenParsers {
   def list: Parser[SList] = "("~>"list"~>rep1(expression, expression)<~")" ^^ {
     case es => SList(es)
   }
-  def expression: Parser[SExp] = identifier | integer | _if | lambda | define | primitive_application | application | let | list
+  def expression: Parser[SExp] = identifier | integer | _if | lambda | primitive_application | application | let | list
   def defOrExp: Parser[SDefOrExp] = expression | define
   def prog: Parser[List[SDefOrExp]] = rep1(defOrExp, defOrExp)
   
@@ -251,7 +251,7 @@ def ClConv(e: SExp) : SExp = e match {
   case SInt(i) => ClConv(e)
   case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3))
   case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
-  case SDefine(name, params, e) => SDefine(name, params, ClConv(e))
+  //case SDefine(name, params, e) => SDefine(name, params, ClConv(e))
 
   //case SLambda(params, e) => {
   //  val env = fresh("env")
