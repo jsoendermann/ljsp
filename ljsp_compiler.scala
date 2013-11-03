@@ -24,7 +24,7 @@ case class SLambda(params: List[SIdn], e: SExp) extends SExp { override def toSt
 case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
 case class SApplPrimitive(proc: SIdn, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
 case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
-case class SList(es: SExp) extends SExp { override def toString = "'(" + es.mkString(" ") + ")"}
+case class SList(es: List[SExp]) extends SExp { override def toString = "'(" + es.mkString(" ") + ")"}
 // TODO more than one variable let
 
 
