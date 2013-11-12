@@ -60,7 +60,8 @@ val fresh = (() =>  {
 
 object JLispParsers extends JavaTokenParsers {
   def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-]*""".r ^^ (SIdn(_))
-  def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "and" | "or" | "equal?") ^^ (SIdn(_))
+  // TODO: Add all primitive operations
+  def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "and" | "or" | "equal?" | "car" | "cdr") ^^ (SIdn(_))
   def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
 
   def _if: Parser[SIf] = "("~>"if"~>expression~expression~expression<~')' ^^ {
@@ -253,8 +254,10 @@ def ClConv(e: SExp) : SExp = e match {
   case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
   //case SDefine(name, params, e) => SDefine(name, params, ClConv(e))
 
-  //case SLambda(params, e) => {
-  //  val env = fresh("env")
+  case SLambda(params, e) => {
+    val env = fresh("env")
+    val free_vars = FreeVars(e).toList
+  }
 
   //case SAppl(proc, es) => {
   //}
