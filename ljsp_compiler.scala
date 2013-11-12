@@ -252,8 +252,10 @@ def ClConv(e: SExp) : SExp = e match {
   case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
   case SDefine(name, params, e) => SDefine(name, params, ClConv(e))
 
-  //case SLambda(params, e) => {
-  //  val env = fresh("env")
+  case SLambda(params, e) => {
+    val env = fresh("env")
+    val free_vars = FreeVars(e).toList
+  }
 
   //case SAppl(proc, es) => {
   //}
