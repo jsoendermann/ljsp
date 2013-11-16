@@ -60,6 +60,16 @@ val fresh = (() =>  {
 
 
 object JLispParsers extends JavaTokenParsers {
+  def expression: Parser[SExp] = identifier | integer | _if | lambda | primitive_application | application | let
+
+  def prog: Parser[SProgram] = rep(define)~expression ^^ {
+    case ds~e => SProgram(ds, e)
+  }
+
+  def define: Parser[SDefine] = "("~>"define"~>"("~>identifier~rep(identifier)~")"~expression<~")" ^^ {
+    case name~params~")"~e => SDefine(name, params, e)
+  }
+
   def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-]*""".r ^^ (SIdn(_))
   // TODO: Add all primitive operations
   def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "and" | "or" | "equal?" | "car" | "cdr") ^^ (SIdn(_))
@@ -73,10 +83,7 @@ object JLispParsers extends JavaTokenParsers {
     case params~")"~e => SLambda(params, e)
   }
 
-  def define: Parser[SDefine] = "("~>"define"~>"("~>identifier~rep(identifier)~")"~expression<~")" ^^ {
-    case name~params~")"~e => SDefine(name, params, e)
-  }
-  def primitive_application: Parser[SApplPrimitive] = "("~>primitive_proc~rep1(expression, expression)<~")" ^^ {
+    def primitive_application: Parser[SApplPrimitive] = "("~>primitive_proc~rep1(expression, expression)<~")" ^^ {
     case proc~es => SApplPrimitive(proc, es)
   }
   def application: Parser[SAppl] = "("~>expression~rep1(expression, expression)<~")" ^^ {
@@ -85,11 +92,6 @@ object JLispParsers extends JavaTokenParsers {
   def let: Parser[SLet] = "("~>"let"~>"("~"("~>identifier~expression~")"~")"~expression<~")" ^^ {
     case idn~e1~")"~")"~e2 => SLet(idn, e1, e2)
   }
-  def expression: Parser[SExp] = identifier | integer | _if | lambda | primitive_application | application | let
-  def prog: Parser[SProgram] = rep(define)~expression ^^ {
-    case ds~e => SProgram(ds, e)
-  }
-
   
   // TODO this throws an exception instead of printing a nice error message when the input isn't well formed
   def parseExpr(str: String) = parse(prog, str).get
@@ -108,6 +110,9 @@ def CPS_translate_prog(p : SProgram, k : SExp => SExp) : SProgram = {
 }
 
 def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
+  // For SDefine case see further down, as its CPS translation is very similar to that
+  // of SLambda, the two are grouped together
+
   // For atomic values, no CPS-Translation is necessary. Simply apply k to e
   case SIdn(idn) => k(e)
   case SInt(i) => k(e)
@@ -197,12 +202,6 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
   case SLambda(params, e) => {
     val c_ = fresh("cont")
     SAppl(c, List((SLambda(c_ :: params, CPSTail(e, c_)))))
-  }
-  
-  // TODO redundant?
-  case SDefine(name, params, e) => {
-    val c_ = fresh("cont")
-    SAppl(c, List((SDefine(name, c_ :: params, CPSTail(e, c_)))))
   }
 
   case SAppl(proc, es) => {
