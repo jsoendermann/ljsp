@@ -125,11 +125,11 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   // and call it with the result when the function is done
   case SLambda(params, e) => {
     val c = fresh("cont")
-    k(SLambda(params ::: List(c), CPSTail(e, c)))
+    k(SLambda(c :: params, CPSTail(e, c)))
   }
   case SDefine(name, params, e) => {
     val c = fresh("cont")
-    k(SDefine(name, params ::: List(c), CPSTail(e, c)))
+    k(SDefine(name, c :: params, CPSTail(e, c)))
   }
 
   // For applications, evaluate proc first, then all the arguments
@@ -144,7 +144,7 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
       // this function calls CPS recursively for all expressions in es and accumulates the result in ces
       // the last call with an empty es creates calls the function with the additional lambda mentioned above
       def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
-        case Nil => SAppl(cproc, ces ::: List(SLambda(List(f), k(f)))) //SLet(f, SAppl(cproc, ces), k(f))
+        case Nil => SAppl(cproc, SLambda(List(f), k(f)) :: ces) //SLet(f, SAppl(cproc, ces), k(f))
         case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
       }
       aux(es, Nil)
@@ -196,20 +196,20 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 
   case SLambda(params, e) => {
     val c_ = fresh("cont")
-    SAppl(c, List((SLambda(params ::: List(c_), CPSTail(e, c_)))))
+    SAppl(c, List((SLambda(c_ :: params, CPSTail(e, c_)))))
   }
   
   // TODO redundant?
   case SDefine(name, params, e) => {
     val c_ = fresh("cont")
-    SAppl(c, List((SDefine(name, params ::: List(c_), CPSTail(e, c_)))))
+    SAppl(c, List((SDefine(name, c_ :: params, CPSTail(e, c_)))))
   }
 
   case SAppl(proc, es) => {
     val f = fresh("var")
     CPS(proc, (cproc: SExp) => {
       def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
-        case Nil => SAppl(cproc, ces ::: List(SLambda(List(f), SAppl(c, List(f)))))
+        case Nil => SAppl(cproc, SLambda(List(f), SAppl(c, List(f))) :: ces)
         case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
       }
     aux(es, Nil)
