@@ -151,7 +151,7 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     // this function calls CPS recursively for all expressions in es and accumulates the result in ces
     // the last call with an empty es creates calls the function with the additional lambda mentioned above
     def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
-      case Nil => SLet(z, SAppl(proc, ces), k(z))
+      case Nil => SLet(z, SApplPrimitive(proc, ces), k(z))
       case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
     }
     aux(es, Nil)
@@ -213,7 +213,7 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
     val z = fresh("var")
 
     def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
-      case Nil => SLet(z, SAppl(proc, ces), SAppl(c, List(z)))
+      case Nil => SLet(z, SApplPrimitive(proc, ces), SAppl(c, List(z)))
       case (e::es) => CPS(e, (ce: SExp) => aux(es, ces ::: List(ce)))
     }
     aux(es, Nil)
@@ -233,6 +233,10 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 
 // ################ Closure conversion ####################
 
+case class SMakeEnv(idns: List[SIdn]) extends SExp { override def toString = "(make-env " + idns.mkString(" ") + ")" }
+case class SMakeLambda(lambda: SLambda, env: SExp) extends SExp { override def toString = "(make-lambda " + lambda.toString + " " + env.toString + ")" }
+case class SNth(n: Int, e: SExp) extends SExp { override def toString = "(nth " + n.toString + " " + e.toString + ")" }
+
 def FreeVars(e: SExp) : Set[Idn] = e match {
   case SIdn(idn) => Set(idn)
   case SInt(_) => Set()
@@ -241,6 +245,8 @@ def FreeVars(e: SExp) : Set[Idn] = e match {
   case SLet(idn, e1, e2) => FreeVars(e1) ++ (FreeVars(e2) - idn.idn)
   // TODO case sdefine?
   case SLambda(params, e) => FreeVars(e) -- params.map(sIdn => sIdn.idn)
+  case SAppl(proc, es) => FreeVars(proc) ++ es.flatMap{FreeVars}.toSet
+  case SApplPrimitive(proc, es) => es.flatMap{FreeVars}.toSet
 }
 
 
@@ -253,12 +259,18 @@ def ClConv(e: SExp) : SExp = e match {
   case SDefine(name, params, e) => SDefine(name, params, ClConv(e))
 
   case SLambda(params, e) => {
+    val free_vars = FreeVars(SLambda(params, e)).toList
+
     val env = fresh("env")
-    val free_vars = FreeVars(e).toList
+    val free_vars_with_index = free_vars.zipWithIndex
+    val body_with_free_vars_from_env = free_vars_with_index.foldRight(e) {
+      case ((x, n), e) => SLet(SIdn(x), SNth(n, env), e)
+    }
+
+    SMakeLambda(SLambda(env :: params, body_with_free_vars_from_env), SMakeEnv(free_vars.map{SIdn(_)}))
   }
 
-  //case SAppl(proc, es) => {
-  //}
+  case SAppl(proc, es) => SAppl(proc, es)
 
 }
 
@@ -277,8 +289,9 @@ if (args.length == 0) {
 args(0) match {
   case "--cps" => {
     val progTree = JLispParsers.parseExpr(args(1))
-    val progCps = CPS(progTree, (x: SExp) => SAppl(SIdn("display"), List(x)))
-    println(progCps.toString())
+    val progCps = CPS(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
+    val progCC = ClConv(progCps)
+    println(progCC.toString())
   }
   case _ => println("Wrong argument: " + args(0))
 }
