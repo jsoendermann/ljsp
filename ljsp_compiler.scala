@@ -12,9 +12,11 @@ type Idn = String
 // ################ Classes ####################
 
 
-abstract class SDefOrExp
-case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SDefOrExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
-abstract class SExp extends SDefOrExp
+case class SProgram(ds: List[SDefine], e: SExp) { override def toString = ds.mkString("\n") + "\n" + e.toString }
+
+  abstract class SExp
+case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
+
 case class SIdn(idn: Idn) extends SExp { override def toString = idn }
 case class SInt(i: Int) extends SExp { override def toString = i.toString() }
 // TODO double
@@ -88,8 +90,10 @@ object JLispParsers extends JavaTokenParsers {
     case es => SList(es)
   }
   def expression: Parser[SExp] = identifier | integer | _if | lambda | primitive_application | application | let | list
-  def defOrExp: Parser[SDefOrExp] = expression | define
-  def prog: Parser[List[SDefOrExp]] = rep1(defOrExp, defOrExp)
+  def prog: Parser[SProgram] = rep(define)~expression ^^ {
+    case ds~e => SProgram(ds, e)
+  }
+
   
   // TODO this throws an exception instead of printing a nice error message when the input isn't well formed
   def parseExpr(str: String) = parse(prog, str).get
@@ -310,13 +314,13 @@ val progTree = JLispParsers.parseExpr(args(0))
 println(progTree.toString)
 println()
 
-println("CPS translated program:")
-val progCps = CPS(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
-println(progCps.toString)
-println()
-
-println("Closure converted program:")
-val progCC = ClConv(progCps)
-println(progCC.toString())
-println()
+//println("CPS translated program:")
+//val progCps = CPS(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
+//println(progCps.toString)
+//println()
+//
+//println("Closure converted program:")
+//val progCC = ClConv(progCps)
+//println(progCC.toString())
+//println()
 
