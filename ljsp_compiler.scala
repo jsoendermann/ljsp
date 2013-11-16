@@ -233,9 +233,18 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
 
 // ################ Closure conversion ####################
 
-case class SMakeEnv(idns: List[SIdn]) extends SExp { override def toString = "(make-env " + idns.mkString(" ") + ")" }
+case class SMakeEnv(idns: List[SIdn]) extends SExp { 
+  override def toString = {
+    if (idns.size == 0)
+      "(make-env)"
+    else
+      "(make-env " + idns.mkString(" ") + ")" 
+  }
+}
 case class SMakeLambda(lambda: SLambda, env: SExp) extends SExp { override def toString = "(make-lambda " + lambda.toString + " " + env.toString + ")" }
 case class SNth(n: Int, e: SExp) extends SExp { override def toString = "(nth " + n.toString + " " + e.toString + ")" }
+case class SGetEnv(converted_lambda: SMakeLambda) extends SExp { override def toString = "(get-env " + converted_lambda.toString + ")" }
+case class SGetProc(converted_lambda: SMakeLambda) extends SExp { override def toString = "(get-proc " + converted_lambda.toString + ")" }
 
 def FreeVars(e: SExp) : Set[Idn] = e match {
   case SIdn(idn) => Set(idn)
@@ -252,8 +261,8 @@ def FreeVars(e: SExp) : Set[Idn] = e match {
 
 def ClConv(e: SExp) : SExp = e match {
   // Trivial cases
-  case SIdn(idn) => ClConv(e)
-  case SInt(i) => ClConv(e)
+  case SIdn(idn) => e
+  case SInt(i) => e
   case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3))
   case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
   case SDefine(name, params, e) => SDefine(name, params, ClConv(e))
@@ -270,28 +279,41 @@ def ClConv(e: SExp) : SExp = e match {
     SMakeLambda(SLambda(env :: params, body_with_free_vars_from_env), SMakeEnv(free_vars.map{SIdn(_)}))
   }
 
-  case SAppl(proc, es) => SAppl(proc, es)
+  case SAppl(proc, es) => {
+    val converted_proc = ClConv(proc)
+    converted_proc match {
+      case SMakeLambda(lambda, env) => {
+        val converted_lambda = SMakeLambda(lambda, env)
+        SAppl(SGetProc(converted_lambda), SGetEnv(converted_lambda) :: es.map{ClConv})
+      }
+      case _ => SAppl(converted_proc, es.map{ClConv})
+    }
+  }
 
+  case SApplPrimitive(proc, es) => SApplPrimitive(proc, es.map{ClConv})
 }
-
-
-
 
 
 //TODO better option handling
 
 if (args.length == 0) {
   // TODO more helpful usage
-  println("try <cmd> --cps")
+  println("<cmd> <source>")
   System.exit(-1)
 }
 
-args(0) match {
-  case "--cps" => {
-    val progTree = JLispParsers.parseExpr(args(1))
-    val progCps = CPS(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
-    val progCC = ClConv(progCps)
-    println(progCC.toString())
-  }
-  case _ => println("Wrong argument: " + args(0))
-}
+println("Parsed program:")
+val progTree = JLispParsers.parseExpr(args(0))
+println(progTree.toString)
+println()
+
+println("CPS translated program:")
+val progCps = CPS(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
+println(progCps.toString)
+println()
+
+println("Closure converted program:")
+val progCC = ClConv(progCps)
+println(progCC.toString())
+println()
+
