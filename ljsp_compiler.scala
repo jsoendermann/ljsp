@@ -11,10 +11,10 @@ type Idn = String
 
 // ################ Classes ####################
 
-
-case class SProgram(ds: List[SDefine], e: SExp) { override def toString = ds.mkString("\n") + "\n" + e.toString }
-
 abstract class SExp
+
+case class SProgram(ds: List[SDefine], e: SExp) extends SExp { override def toString = ds.mkString("\n") + "\n" + e.toString }
+
 case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
 
 case class SIdn(idn: Idn) extends SExp { override def toString = idn }
@@ -104,6 +104,12 @@ object JLispParsers extends JavaTokenParsers {
 // ################ CPS Translation ####################
 
 
+def CPS_translate_prog(p : SProgram, k : SExp => SExp) : SProgram = {
+  SProgram(p.ds.map{d => 
+    val c = fresh("cont")
+    SDefine(d.name, c :: d.params, CPSTail(d.e, c))
+  }, CPS(p.e, k))
+}
 
 def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
   // For atomic values, no CPS-Translation is necessary. Simply apply k to e
@@ -125,10 +131,10 @@ def CPS(e: SExp, k: SExp => SExp) : SExp = e match {
     val c = fresh("cont")
     k(SLambda(params ::: List(c), CPSTail(e, c)))
   }
-//  case SDefine(name, params, e) => {
-//    val c = fresh("cont")
-//    k(SDefine(name, params ::: List(c), CPSTail(e, c)))
-//  }
+  case SDefine(name, params, e) => {
+    val c = fresh("cont")
+    k(SDefine(name, params ::: List(c), CPSTail(e, c)))
+  }
 
   // For applications, evaluate proc first, then all the arguments
   case SAppl(proc, es) => {
@@ -199,10 +205,11 @@ def CPSTail(e: SExp, c: SExp) : SExp = e match {
     SAppl(c, List((SLambda(params ::: List(c_), CPSTail(e, c_)))))
   }
   
-//  case SDefine(name, params, e) => {
-//    val c_ = fresh("cont")
-//    SAppl(c, List((SDefine(name, params ::: List(c_), CPSTail(e, c_)))))
-//  }
+  // TODO redundant?
+  case SDefine(name, params, e) => {
+    val c_ = fresh("cont")
+    SAppl(c, List((SDefine(name, params ::: List(c_), CPSTail(e, c_)))))
+  }
 
   case SAppl(proc, es) => {
     val f = fresh("var")
@@ -252,29 +259,34 @@ case class SNth(n: Int, e: SExp) extends SExp { override def toString = "(nth " 
 case class SGetEnv(e: SExp) extends SExp { override def toString = "(get-env " + e.toString + ")" }
 case class SGetProc(e: SExp) extends SExp { override def toString = "(get-proc " + e.toString + ")" }
 
-def FreeVars(e: SExp) : Set[Idn] = e match {
+def FreeVars(p: SProgram, e: SExp) : Set[Idn] = e match {
+  case SDefine(name, params, e) => FreeVars(p, e) -- Set(name.idn) -- params.map(sIdn => sIdn.idn)
   case SIdn(idn) => Set(idn)
   case SInt(_) => Set()
-  case SIf(e1, e2, e3) => FreeVars(e1) ++ FreeVars(e2) ++ FreeVars(e3)
+  case SIf(e1, e2, e3) => FreeVars(p, e1) ++ FreeVars(p, e2) ++ FreeVars(p, e3)
   // idn.idn is necessary becase idn is of type SIdn but Idn is required
-  case SLet(idn, e1, e2) => FreeVars(e1) ++ (FreeVars(e2) - idn.idn)
+  case SLet(idn, e1, e2) => FreeVars(p, e1) ++ (FreeVars(p, e2) - idn.idn)
   // TODO case sdefine?
-  case SLambda(params, e) => FreeVars(e) -- params.map(sIdn => sIdn.idn)
-  case SAppl(proc, es) => FreeVars(proc) ++ es.flatMap{FreeVars}.toSet
-  case SApplPrimitive(proc, es) => es.flatMap{FreeVars}.toSet
+  case SLambda(params, e) => FreeVars(p, e) -- params.map(sIdn => sIdn.idn)
+  case SAppl(proc, es) => (FreeVars(p, proc) -- p.ds.map{d => d.name.idn}) ++ es.flatMap{e => FreeVars(p, e)}.toSet
+  case SApplPrimitive(proc, es) => es.flatMap{e => FreeVars(p, e)}.toSet
 }
 
 
-def ClConv(e: SExp) : SExp = e match {
+
+def ClConv(p: SProgram, e: SExp) : SExp = e match {
+  case SProgram(ds, e) => SProgram(ds.map{d => SDefine(d.name, d.params, ClConv(p, d.e))}, ClConv(p, e))
+  case SDefine(name, params, e) => SDefine(name, params, ClConv(p, e))
   // Trivial cases
   case SIdn(idn) => e
   case SInt(i) => e
-  case SIf(e1, e2, e3) => SIf(ClConv(e1), ClConv(e2), ClConv(e3))
-  case SLet(idn, e1, e2) => SLet(idn, ClConv(e1), ClConv(e2))
+  case SIf(e1, e2, e3) => SIf(ClConv(p, e1), ClConv(p, e2), ClConv(p, e3))
+  case SLet(idn, e1, e2) => SLet(idn, ClConv(p, e1), ClConv(p, e2))
   //case SDefine(name, params, e) => SDefine(name, params, ClConv(e))
 
+  // TODO closure convert e)
   case SLambda(params, e) => {
-    val free_vars = FreeVars(SLambda(params, e)).toList
+    val free_vars = FreeVars(p, SLambda(params, e)).toList
 
     val env = fresh("env")
     val free_vars_with_index = free_vars.zipWithIndex
@@ -286,18 +298,18 @@ def ClConv(e: SExp) : SExp = e match {
   }
 
   case SAppl(proc, es) => {
-    val converted_proc = ClConv(proc)
+    val converted_proc = ClConv(p, proc)
     converted_proc match {
       case SMakeLambda(lambda, env) => {
         val converted_lambda = SMakeLambda(lambda, env)
         val converted_lambda_var = fresh("converted_lambda")
-        SLet(converted_lambda_var, converted_lambda, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{ClConv}))
+        SLet(converted_lambda_var, converted_lambda, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{e => ClConv(p, e)}))
       }
-      case _ => SAppl(converted_proc, es.map{ClConv})
+      case _ => SAppl(converted_proc, es.map{e => ClConv(p, e)})
     }
   }
 
-  case SApplPrimitive(proc, es) => SApplPrimitive(proc, es.map{ClConv})
+  case SApplPrimitive(proc, es) => SApplPrimitive(proc, es.map{e => ClConv(p, e)})
 }
 
 
@@ -314,13 +326,13 @@ val progTree = JLispParsers.parseExpr(args(0))
 println(progTree.toString)
 println()
 
-//println("CPS translated program:")
-//val progCps = CPS(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
-//println(progCps.toString)
-//println()
-//
-//println("Closure converted program:")
-//val progCC = ClConv(progCps)
-//println(progCC.toString())
-//println()
+println("CPS translated program:")
+val progCps = CPS_translate_prog(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
+println(progCps.toString)
+println()
+
+println("Closure converted program:")
+val progCC = ClConv(progCps, progCps)
+println(progCC.toString())
+println()
 
