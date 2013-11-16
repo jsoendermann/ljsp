@@ -243,8 +243,8 @@ case class SMakeEnv(idns: List[SIdn]) extends SExp {
 }
 case class SMakeLambda(lambda: SLambda, env: SExp) extends SExp { override def toString = "(make-lambda " + lambda.toString + " " + env.toString + ")" }
 case class SNth(n: Int, e: SExp) extends SExp { override def toString = "(nth " + n.toString + " " + e.toString + ")" }
-case class SGetEnv(converted_lambda: SMakeLambda) extends SExp { override def toString = "(get-env " + converted_lambda.toString + ")" }
-case class SGetProc(converted_lambda: SMakeLambda) extends SExp { override def toString = "(get-proc " + converted_lambda.toString + ")" }
+case class SGetEnv(e: SExp) extends SExp { override def toString = "(get-env " + e.toString + ")" }
+case class SGetProc(e: SExp) extends SExp { override def toString = "(get-proc " + e.toString + ")" }
 
 def FreeVars(e: SExp) : Set[Idn] = e match {
   case SIdn(idn) => Set(idn)
@@ -284,7 +284,8 @@ def ClConv(e: SExp) : SExp = e match {
     converted_proc match {
       case SMakeLambda(lambda, env) => {
         val converted_lambda = SMakeLambda(lambda, env)
-        SAppl(SGetProc(converted_lambda), SGetEnv(converted_lambda) :: es.map{ClConv})
+        val converted_lambda_var = fresh("converted_lambda")
+        SLet(converted_lambda_var, converted_lambda, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{ClConv}))
       }
       case _ => SAppl(converted_proc, es.map{ClConv})
     }
