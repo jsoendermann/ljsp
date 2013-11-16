@@ -62,6 +62,7 @@ val fresh = (() =>  {
 object JLispParsers extends JavaTokenParsers {
   def expression: Parser[SExp] = identifier | integer | _if | lambda | primitive_application | application | let
 
+  // TODO make e optional
   def prog: Parser[SProgram] = rep(define)~expression ^^ {
     case ds~e => SProgram(ds, e)
   }
