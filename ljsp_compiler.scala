@@ -101,15 +101,19 @@ object JLispParsers extends JavaTokenParsers {
 
 // ################ CPS Translation ####################
 
-
+// this function only exists for typecasting, maybe there is a better way to do this
 def CPS_trans_prog(p : SProgram, k : SExp => SExp) : SProgram = {
-  SProgram(p.ds.map{d => 
-    val c = fresh("cont")
-    SDefine(d.name, c :: d.params, CPS_tail_trans(d.e, c))
-  }, CPS_trans(p.e, k))
+  CPS_trans(p, k).asInstanceOf[SProgram]
 }
 
 def CPS_trans(e: SExp, k: SExp => SExp) : SExp = e match {
+  case SProgram(ds, e) => {
+    SProgram(ds.map{d => 
+      val c = fresh("cont")
+      SDefine(d.name, c :: d.params, CPS_tail_trans(d.e, c))
+    }, CPS_trans(e, k))
+  }
+
   // For SDefine case see further down, as its CPS translation is very similar to that
   // of SLambda, the two are grouped together
 
@@ -266,7 +270,10 @@ def free_vars(p: SProgram, e: SExp) : Set[Idn] = e match {
   case SApplPrimitive(proc, es) => es.flatMap{e => free_vars(p, e)}.toSet
 }
 
-
+// this function only exists for typecasting, maybe there is a better way to do this
+def cl_conv_prog(p: SProgram) : SProgram = {
+  cl_conv(p, p).asInstanceOf[SProgram]
+}
 
 def cl_conv(p: SProgram, e: SExp) : SExp = e match {
   case SProgram(ds, e) => SProgram(ds.map{d => SDefine(d.name, d.params, cl_conv(p, d.e))}, cl_conv(p, e))
@@ -327,7 +334,7 @@ println(progCps.toString)
 println()
 
 println("Closure converted program:")
-val progCC = cl_conv(progCps, progCps)
+val progCC = cl_conv_prog(progCps)
 println(progCC.toString())
 println()
 
