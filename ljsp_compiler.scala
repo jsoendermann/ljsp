@@ -285,7 +285,7 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
     // TODO tidy up variable names
     val env = fresh("env")
     val free_vars_with_index = fv.zipWithIndex
-    val body_with_free_vars_from_env = free_vars_with_index.foldRight(e) {
+    val body_with_free_vars_from_env = free_vars_with_index.foldRight(cl_conv(p, e)) {
       case ((x, n), e) => SLet(SIdn(x), SNth(n, env), e)
     }
 
