@@ -35,7 +35,8 @@ val fresh = (() =>  {
   // This is a map that maps identifier prefixes to their counters
   // New prefixes get added to the map automatically, it's not necessary
   // to initialize this map with all prefixes that will be used
-  var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1)
+  // TODO this function doesn't work if the prefix it's called with isn't part of this collection
+  var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1, "env" -> -1, "func" -> -1)
 
   // this is the function that fresh will be bound to
   (s: String) => {
@@ -312,6 +313,64 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
 }
 
 
+
+// ########################## Hoisting ##########################
+
+
+
+case class SHoistedLambda(f: SIdn, env: SExp) extends SExp { override def toString = "(hoisted-lambda " + f.toString + " " + env.toString + ")" }
+
+def hoist_prog(p: SProgram) : SProgram = {
+  val hp = hoist(p)
+
+  val hoisted_prog : SProgram = hp._1.asInstanceOf[SProgram]
+  val new_procs = hp._2
+
+  SProgram(new_procs ::: hoisted_prog.ds, hoisted_prog.e)
+}
+
+def hoist(e: SExp) : (SExp, List[SDefine]) = e match {
+  case SProgram(ds, e) => {
+    val hds = ds.map{hoist}
+    val he = hoist(e)
+    (SProgram(hds.map{hd => hd._1.asInstanceOf[SDefine]}, he._1), hds.flatMap{hd => hd._2} ::: he._2)
+  }
+  case SDefine(name, params, e) => {
+    val he = hoist(e)
+    (SDefine(name, params, he._1), he._2)
+  }
+  case SIf(e1, e2, e3) => {
+    val he1 = hoist(e1)
+    val he2 = hoist(e2)
+    val he3 = hoist(e3)
+    (SIf(he1._1, he2._1, he3._1), he1._2 ::: he2._2 ::: he3._2)
+  }
+  case SLet(idn, e1, e2) => {
+    val he1 = hoist(e1)
+    val he2 = hoist(e2)
+    (SLet(idn, he1._1, he2._1), he1._2 ::: he2._2)
+  }
+  case SAppl(proc, es) => {
+    val h_proc = hoist(proc)
+    val hes = es.map{hoist}
+    (SAppl(h_proc._1, hes.map{hd => hd._1}), h_proc._2 ::: hes.flatMap{hd => hd._2})
+
+  }
+  case SApplPrimitive(proc, es) => {
+    val hes = es.map{hoist}
+    (SApplPrimitive(proc, hes.map{hd => hd._1}), hes.flatMap{hd => hd._2})
+  }
+  case SMakeLambda(l, env) => {
+    val f = fresh("func")
+    val hl = hoist(l)
+    val casted_hl = hl._1.asInstanceOf[SLambda]
+
+    (SHoistedLambda(f, env), SDefine(f, casted_hl.params, casted_hl.e) :: hl._2)
+  }
+
+  case _ => (e, Nil)
+}
+
 //TODO better option handling
 
 if (args.length == 0) {
@@ -333,5 +392,10 @@ println()
 println("Closure converted program:")
 val progCC = cl_conv_prog(progCps)
 println(progCC.toString())
+println()
+
+println("Hoisted program:")
+val progH = hoist_prog(progCC)
+println(progH.toString())
 println()
 
