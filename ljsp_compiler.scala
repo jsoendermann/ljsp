@@ -102,16 +102,16 @@ object JLispParsers extends JavaTokenParsers {
 // ################ CPS Translation ####################
 
 // this function only exists for typecasting, maybe there is a better way to do this
-def CPS_trans_prog(p : SProgram, k : SExp => SExp) : SProgram = {
-  CPS_trans(p, k).asInstanceOf[SProgram]
+def cps_trans_prog(p : SProgram, k : SExp => SExp) : SProgram = {
+  cps_trans(p, k).asInstanceOf[SProgram]
 }
 
-def CPS_trans(e: SExp, k: SExp => SExp) : SExp = e match {
+def cps_trans(e: SExp, k: SExp => SExp) : SExp = e match {
   case SProgram(ds, e) => {
     SProgram(ds.map{d => 
       val c = fresh("cont")
-      SDefine(d.name, c :: d.params, CPS_tail_trans(d.e, c))
-    }, CPS_trans(e, k))
+      SDefine(d.name, c :: d.params, cps_tail_trans(d.e, c))
+    }, cps_trans(e, k))
   }
 
   // For SDefine case see further down, as its CPS translation is very similar to that
@@ -125,20 +125,20 @@ def CPS_trans(e: SExp, k: SExp => SExp) : SExp = e match {
   case SIf(e1, e2, e3) => {
     val c = fresh("var")
     val p = fresh("var")
-    CPS_trans(e1, (ce1: SExp) =>
+    cps_trans(e1, (ce1: SExp) =>
       SLet(c, SLambda(List(p), k(p)),
-        SIf(ce1, CPS_tail_trans(e2, c), CPS_tail_trans(e3, c))))
+        SIf(ce1, cps_tail_trans(e2, c), cps_tail_trans(e3, c))))
   }
 
   // for lambdas and defines, add an additional parameter that will hold the continuation
   // and call it with the result when the function is done
   case SLambda(params, e) => {
     val c = fresh("cont")
-    k(SLambda(c :: params, CPS_tail_trans(e, c)))
+    k(SLambda(c :: params, cps_tail_trans(e, c)))
   }
   case SDefine(name, params, e) => {
     val c = fresh("cont")
-    k(SDefine(name, c :: params, CPS_tail_trans(e, c)))
+    k(SDefine(name, c :: params, cps_tail_trans(e, c)))
   }
 
   // For applications, evaluate proc first, then all the arguments
@@ -148,13 +148,13 @@ def CPS_trans(e: SExp, k: SExp => SExp) : SExp = e match {
     val f = fresh("var")
 
     // CPS-Translate the expression for the procedure first
-    CPS_trans(proc, (cproc: SExp) => {
+    cps_trans(proc, (cproc: SExp) => {
 
       // this function calls CPS recursively for all expressions in es and accumulates the result in ces
       // the last call with an empty es creates calls the function with the additional lambda mentioned above
       def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
         case Nil => SAppl(cproc, SLambda(List(f), k(f)) :: ces) //SLet(f, SAppl(cproc, ces), k(f))
-        case (e::es) => CPS_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+        case (e::es) => cps_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
       }
       aux(es, Nil)
     })
@@ -169,7 +169,7 @@ def CPS_trans(e: SExp, k: SExp => SExp) : SExp = e match {
     // the last call with an empty es creates calls the function with the additional lambda mentioned above
     def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
       case Nil => SLet(z, SApplPrimitive(proc, ces), k(z))
-      case (e::es) => CPS_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+      case (e::es) => cps_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
     }
     aux(es, Nil)
   }
@@ -180,40 +180,40 @@ def CPS_trans(e: SExp, k: SExp => SExp) : SExp = e match {
     val f = fresh("var")
     val c = SLambda(List(f), k(f))
 
-    val ce2 = CPS_tail_trans(e2, c)
+    val ce2 = cps_tail_trans(e2, c)
 
     // This creates a lambda with a parameter of the same name as the identifier in the let
     // e1 is CPS translated and applied to this new lambda
-    CPS_tail_trans(e1, SLambda(List(idn), ce2))
+    cps_tail_trans(e1, SLambda(List(idn), ce2))
   }
 }
 
 // This function is very similar to CPS, the difference being that for CPSTail the second parameter is an
 // identifier which will point to a continuation function that has to be called with the result of e.
 // For explanations, please see the comments to CPS
-def CPS_tail_trans(e: SExp, c: SExp) : SExp = e match {
+def cps_tail_trans(e: SExp, c: SExp) : SExp = e match {
   case SIdn(idn) => SAppl(c, List(e))
   case SInt(i) => SAppl(c, List(e))
 
   case SIf(e1, e2, e3) => {
     val c = fresh("var")
     val p = fresh("var")
-    CPS_trans(e1, (ce1: SExp) =>
+    cps_trans(e1, (ce1: SExp) =>
       SLet(c, SLambda(List(p), SAppl(c, List(p))),
-        SIf(ce1, CPS_tail_trans(e2, c), CPS_tail_trans(e3, c))))
+        SIf(ce1, cps_tail_trans(e2, c), cps_tail_trans(e3, c))))
   }
 
   case SLambda(params, e) => {
     val c_ = fresh("cont")
-    SAppl(c, List((SLambda(c_ :: params, CPS_tail_trans(e, c_)))))
+    SAppl(c, List((SLambda(c_ :: params, cps_tail_trans(e, c_)))))
   }
 
   case SAppl(proc, es) => {
     val f = fresh("var")
-    CPS_trans(proc, (cproc: SExp) => {
+    cps_trans(proc, (cproc: SExp) => {
       def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
         case Nil => SAppl(cproc, SLambda(List(f), SAppl(c, List(f))) :: ces)
-        case (e::es) => CPS_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+        case (e::es) => cps_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
       }
     aux(es, Nil)
     })
@@ -224,7 +224,7 @@ def CPS_tail_trans(e: SExp, c: SExp) : SExp = e match {
 
     def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
       case Nil => SLet(z, SApplPrimitive(proc, ces), SAppl(c, List(z)))
-      case (e::es) => CPS_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+      case (e::es) => cps_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
     }
     aux(es, Nil)
   }
@@ -233,9 +233,9 @@ def CPS_tail_trans(e: SExp, c: SExp) : SExp = e match {
     val f = fresh("var")
     val c_ = SLambda(List(f), SAppl(c, List(f)))
 
-    val ce2 = CPS_tail_trans(e2, c_)
+    val ce2 = cps_tail_trans(e2, c_)
 
-    CPS_tail_trans(e1, SLambda(List(idn), ce2))
+    cps_tail_trans(e1, SLambda(List(idn), ce2))
   }
 }
 
@@ -329,7 +329,7 @@ println(progTree.toString)
 println()
 
 println("CPS translated program:")
-val progCps = CPS_trans_prog(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
+val progCps = cps_trans_prog(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
 println(progCps.toString)
 println()
 
