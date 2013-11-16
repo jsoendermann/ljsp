@@ -199,11 +199,11 @@ def cps_tail_trans(e: SExp, c: SExp) : SExp = e match {
   case SInt(i) => SAppl(c, List(e))
 
   case SIf(e1, e2, e3) => {
-    val c = fresh("var")
+    val c_ = fresh("var")
     val p = fresh("var")
     cps_trans(e1, (ce1: SExp) =>
-      SLet(c, SLambda(List(p), SAppl(c, List(p))),
-        SIf(ce1, cps_tail_trans(e2, c), cps_tail_trans(e3, c))))
+      SLet(c_, SLambda(List(p), SAppl(c, List(p))),
+        SIf(ce1, cps_tail_trans(e2, c_), cps_tail_trans(e3, c_))))
   }
 
   case SLambda(params, e) => {
