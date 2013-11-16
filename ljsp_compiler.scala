@@ -101,17 +101,20 @@ object JLispParsers extends JavaTokenParsers {
 
 // ################ CPS Translation ####################
 
+
+
 // this function only exists for typecasting, maybe there is a better way to do this
 def cps_trans_prog(p : SProgram, k : SExp => SExp) : SProgram = {
   cps_trans(p, k).asInstanceOf[SProgram]
 }
 
 def cps_trans(e: SExp, k: SExp => SExp) : SExp = e match {
+  // CPS-translate all function definitions and the expression
   case SProgram(ds, e) => {
     SProgram(ds.map{d => 
-      val c = fresh("cont")
-      SDefine(d.name, c :: d.params, cps_tail_trans(d.e, c))
-    }, cps_trans(e, k))
+        val c = fresh("cont")
+        SDefine(d.name, c :: d.params, cps_tail_trans(d.e, c))
+      }, cps_trans(e, k))
   }
 
   // For SDefine case see further down, as its CPS translation is very similar to that
@@ -243,14 +246,7 @@ def cps_tail_trans(e: SExp, c: SExp) : SExp = e match {
 
 // ################ Closure conversion ####################
 
-case class SMakeEnv(idns: List[SIdn]) extends SExp { 
-  override def toString = {
-    if (idns.size == 0)
-      "(make-env)"
-    else
-      "(make-env " + idns.mkString(" ") + ")" 
-  }
-}
+case class SMakeEnv(idns: List[SIdn]) extends SExp { override def toString = { "(make-env" + (if (idns.size == 0) ")" else " " + idns.mkString(" ") + ")") }}
 case class SMakeLambda(lambda: SLambda, env: SExp) extends SExp { override def toString = "(make-lambda " + lambda.toString + " " + env.toString + ")" }
 case class SNth(n: Int, e: SExp) extends SExp { override def toString = "(nth " + n.toString + " " + e.toString + ")" }
 case class SGetEnv(e: SExp) extends SExp { override def toString = "(get-env " + e.toString + ")" }
@@ -264,6 +260,7 @@ def free_vars(p: SProgram, e: SExp) : Set[Idn] = e match {
   // idn.idn is necessary becase idn is of type SIdn but Idn is required
   case SLet(idn, e1, e2) => free_vars(p, e1) ++ (free_vars(p, e2) - idn.idn)
   case SLambda(params, e) => free_vars(p, e) -- params.map(sIdn => sIdn.idn)
+  // If the proc is in the definitions block, it's not free
   // TODO is there a better way to give this case access to the name of definitions in the program
   // than to have p as an additional parameter to both free_vars and cl_conv?
   case SAppl(proc, es) => (free_vars(p, proc) -- p.ds.map{d => d.name.idn}) ++ es.flatMap{e => free_vars(p, e)}.toSet
@@ -276,31 +273,30 @@ def cl_conv_prog(p: SProgram) : SProgram = {
 }
 
 def cl_conv(p: SProgram, e: SExp) : SExp = e match {
+  // Trivial cases
   case SProgram(ds, e) => SProgram(ds.map{d => SDefine(d.name, d.params, cl_conv(p, d.e))}, cl_conv(p, e))
   case SDefine(name, params, e) => SDefine(name, params, cl_conv(p, e))
-  // Trivial cases
   case SIdn(idn) => e
   case SInt(i) => e
   case SIf(e1, e2, e3) => SIf(cl_conv(p, e1), cl_conv(p, e2), cl_conv(p, e3))
   case SLet(idn, e1, e2) => SLet(idn, cl_conv(p, e1), cl_conv(p, e2))
-  //case SDefine(name, params, e) => SDefine(name, params, cl_conv(e))
 
-  // TODO closure convert e)
   case SLambda(params, e) => {
-    val fv = free_vars(p, SLambda(params, e)).toList
+    // free vars
+    val fvs = free_vars(p, SLambda(params, e)).toList
 
-    // TODO tidy up variable names
     val env = fresh("env")
-    val free_vars_with_index = fv.zipWithIndex
-    val body_with_free_vars_from_env = free_vars_with_index.foldRight(cl_conv(p, e)) {
+    val fvs_with_index = fvs.zipWithIndex
+    val e_with_fvs_bound = fvs_with_index.foldRight(cl_conv(p, e)) {
       case ((x, n), e) => SLet(SIdn(x), SNth(n, env), e)
     }
 
-    SMakeLambda(SLambda(env :: params, body_with_free_vars_from_env), SMakeEnv(fv.map{SIdn(_)}))
+    SMakeLambda(SLambda(env :: params, e_with_fvs_bound), SMakeEnv(fvs.map{SIdn(_)}))
   }
 
   case SAppl(proc, es) => {
     val converted_proc = cl_conv(p, proc)
+    // if the proc is a lambda constructor, calling it is more complex
     converted_proc match {
       case SMakeLambda(lambda, env) => {
         val converted_lambda = SMakeLambda(lambda, env)
