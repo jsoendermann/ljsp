@@ -14,7 +14,7 @@ type Idn = String
 
 case class SProgram(ds: List[SDefine], e: SExp) { override def toString = ds.mkString("\n") + "\n" + e.toString }
 
-  abstract class SExp
+abstract class SExp
 case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
 
 case class SIdn(idn: Idn) extends SExp { override def toString = idn }
