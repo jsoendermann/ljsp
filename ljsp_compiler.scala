@@ -36,7 +36,7 @@ val fresh = (() =>  {
   // New prefixes get added to the map automatically, it's not necessary
   // to initialize this map with all prefixes that will be used
   // TODO this function doesn't work if the prefix it's called with isn't part of this collection
-  var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1, "env" -> -1, "func" -> -1)
+  var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1, "env" -> -1, "func" -> -1, "conv_lambda" -> -1)
 
   // this is the function that fresh will be bound to
   (s: String) => {
@@ -302,7 +302,7 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
     converted_proc match {
       case SMakeLambda(lambda, env) => {
         val converted_lambda = SMakeLambda(lambda, env)
-        val converted_lambda_var = fresh("converted_lambda")
+        val converted_lambda_var = fresh("conv_lambda")
         SLet(converted_lambda_var, converted_lambda, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{e => cl_conv(p, e)}))
       }
       case _ => SAppl(converted_proc, es.map{e => cl_conv(p, e)})
