@@ -1,5 +1,5 @@
 (define (make-env . args) 
-  (map (lambda (x) (if (list? x) x (eval x))) args))
+  (map (lambda (x) (if (or (list? x) (procedure? x) (integer? x)) x (eval x))) args))
 
 (define (nth n l) (if (= n 0)
   (car l)

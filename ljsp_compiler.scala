@@ -348,6 +348,14 @@ def hoist(e: SExp) : HoistedExpression = e match {
     val he2 = hoist(e2)
     HoistedExpression(SLet(idn, he1.e, he2.e), he1.new_defs ::: he2.new_defs)
   }
+  // This deals with calls to closure converted lambdas. 
+  // As they have been hoisted in this step, they no longer need special attention
+  case SAppl(SGetProc(e), es) => {
+    val he = hoist(e)
+    val hes = es.map{hoist}
+
+    HoistedExpression(SAppl(he.e, hes.map{he => he.e}.tail), he.new_defs ::: hes.flatMap{he => he.new_defs})
+  }
   case SAppl(proc, es) => {
     val h_proc = hoist(proc)
     val hes = es.map{hoist}
