@@ -167,6 +167,7 @@ def cps_trans(e: SExp, k: SExp => SExp) : SExp = e match {
 
   // For primitive applications, translate all the arguments
   // and continue with let f=SAppl in k(f)
+  // TODO translate expressions with more than 2 arguments
   case SApplPrimitive(proc, es) => {
     val z = fresh("var")
 
