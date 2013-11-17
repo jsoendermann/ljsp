@@ -297,7 +297,7 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
 
   case SAppl(proc, es) => {
     val converted_proc = cl_conv(p, proc)
-    // if the proc is a lambda constructor, calling it is more complex
+    // TODO this doesn't work because proc could be a variable holding a converted lambda
     converted_proc match {
       case SMakeLambda(lambda, env) => {
         val converted_lambda = SMakeLambda(lambda, env)
