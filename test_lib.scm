@@ -2,12 +2,10 @@
   (map (lambda (x) (eval x)) args))
 
 (define (nth n l) (if (= n 0)
-					(car l)
-                    (nth (- n 1) (cdr l))))
+  (car l)
+  (nth (- n 1) (cdr l))))
 
-(define (make-lambda l e) (if (eq? e '())
-							`(,l ())
-							`(,l ,e)))
+(define (make-lambda l e) `(,l ,e))
 
 (define (get-proc l*) (nth 0 l*))
 
