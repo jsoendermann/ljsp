@@ -311,7 +311,6 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
   case SApplPrimitive(proc, es) => SApplPrimitive(proc, es.map{e => cl_conv(p, e)})
 }
 
-
 //TODO better option handling
 
 if (args.length == 0) {
@@ -320,18 +319,30 @@ if (args.length == 0) {
   System.exit(-1)
 }
 
-println("Parsed program:")
-val progTree = JLispParsers.parseExpr(args(0))
-println(progTree.toString)
-println()
+args(0) match {
+  case "--cps" => {
+    val progTree = JLispParsers.parseExpr(args(1))
+    println(cps_trans_prog(progTree, (r: SExp) => r))
+  }
+  case "--cc" => {
+    val progTree = JLispParsers.parseExpr(args(1))
+    val progCps = cps_trans_prog(progTree, (x: SExp) => x)
+    println(cl_conv_prog(progCps))
+  }
+  case _ => {
+    println("Parsed program:")
+    val progTree = JLispParsers.parseExpr(args(0))
+    println(progTree.toString)
+    println()
 
-println("CPS translated program:")
-val progCps = cps_trans_prog(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
-println(progCps.toString)
-println()
+    println("CPS translated program:")
+    val progCps = cps_trans_prog(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
+    println(progCps.toString)
+    println()
 
-println("Closure converted program:")
-val progCC = cl_conv_prog(progCps)
-println(progCC.toString())
-println()
-
+    println("Closure converted program:")
+    val progCC = cl_conv_prog(progCps)
+    println(progCC.toString())
+    println()
+  }
+}
