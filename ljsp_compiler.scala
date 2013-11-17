@@ -317,63 +317,61 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
 
 
 
+case class HoistedExpression(e: SExp, new_defs: List[SDefine])
 case class SHoistedLambda(f: SIdn, env: SExp) extends SExp { override def toString = "(hoisted-lambda " + f.toString + " " + env.toString + ")" }
 
 def hoist_prog(p: SProgram) : SProgram = {
   val hp = hoist(p)
-
-  val hoisted_prog : SProgram = hp._1.asInstanceOf[SProgram]
-  val new_defs = hp._2
-
-  SProgram(new_defs ::: hoisted_prog.ds, hoisted_prog.e)
+  val casted_hp_e : SProgram = hp.e.asInstanceOf[SProgram]
+  SProgram(hp.new_defs ::: casted_hp_e.ds, casted_hp_e.e)
 }
 
-def hoist(e: SExp) : (SExp, List[SDefine]) = e match {
+def hoist(e: SExp) : HoistedExpression = e match {
   case SProgram(ds, e) => {
     val hds = ds.map{hoist}
-    val (he_e, he_new_ds) = hoist(e)
-    (SProgram(hds.map{hd => hd._1.asInstanceOf[SDefine]}, he_e), hds.flatMap{hd => hd._2} ::: he_new_ds)
+    val he = hoist(e)
+    HoistedExpression(SProgram(hds.map{hd => hd.e.asInstanceOf[SDefine]}, he.e), hds.flatMap{hd => hd.new_defs} ::: he.new_defs)
   }
   case SDefine(name, params, e) => {
-    val (he_e, he_new_ds) = hoist(e)
-    (SDefine(name, params, he_e), he_new_ds)
+    val he = hoist(e)
+    HoistedExpression(SDefine(name, params, he.e), he.new_defs)
   }
   case SIf(e1, e2, e3) => {
-    val (he1_e, he1_new_ds) = hoist(e1)
-    val (he2_e, he2_new_ds) = hoist(e2)
-    val (he3_e, he3_new_ds) = hoist(e3)
-    (SIf(he1_e, he2_e, he3_e), he1_new_ds ::: he2_new_ds ::: he3_new_ds)
+    val he1 = hoist(e1)
+    val he2 = hoist(e2)
+    val he3 = hoist(e3)
+    HoistedExpression(SIf(he1.e, he2.e, he3.e), he1.new_defs ::: he2.new_defs ::: he3.new_defs)
   }
   case SLet(idn, e1, e2) => {
-    val (he1_e, he1_new_ds) = hoist(e1)
-    val (he2_e, he2_new_ds) = hoist(e2)
-    (SLet(idn, he1_e, he2_e), he1_new_ds ::: he2_new_ds)
+    val he1 = hoist(e1)
+    val he2 = hoist(e2)
+    HoistedExpression(SLet(idn, he1.e, he2.e), he1.new_defs ::: he2.new_defs)
   }
   case SAppl(proc, es) => {
-    val (h_proc_e, h_proc_new_ds) = hoist(proc)
+    val h_proc = hoist(proc)
     val hes = es.map{hoist}
-    (SAppl(h_proc_e, hes.map{he => he._1}), h_proc_new_ds ::: hes.flatMap{hd => hd._2})
+    HoistedExpression(SAppl(h_proc.e, hes.map{he => he.e}), h_proc.new_defs ::: hes.flatMap{hd => hd.new_defs})
 
   }
   case SApplPrimitive(proc, es) => {
     val hes = es.map{hoist}
-    (SApplPrimitive(proc, hes.map{he => he._1}), hes.flatMap{hd => hd._2})
+    HoistedExpression(SApplPrimitive(proc, hes.map{he => he.e}), hes.flatMap{hd => hd.new_defs})
   }
   case SMakeLambda(l, env) => {
     val f = fresh("func")
-    val (hl_e, hl_new_ds) = hoist(l)
-    val casted_hl = hl_e.asInstanceOf[SLambda]
+    val hl = hoist(l)
+    val casted_hl_e = hl.e.asInstanceOf[SLambda]
 
-    (SHoistedLambda(f, env), SDefine(f, casted_hl.params, casted_hl.e) :: hl_new_ds)
+    HoistedExpression(SHoistedLambda(f, env), SDefine(f, casted_hl_e.params, casted_hl_e.e) :: hl.new_defs)
   }
   case SLambda(params, e) => {
-    val (he_e, he_new_ds) = hoist(e)
-    (SLambda(params, he_e), he_new_ds)
+    val he = hoist(e)
+    HoistedExpression(SLambda(params, he.e), he.new_defs)
   }
 
   case _ => {
     //println("Ignoring " + e.toString)
-    (e, Nil)
+    HoistedExpression(e, Nil)
   }
 }
 
