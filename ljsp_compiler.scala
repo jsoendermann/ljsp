@@ -353,12 +353,12 @@ def hoist(e: SExp) : (SExp, List[SDefine]) = e match {
   case SAppl(proc, es) => {
     val h_proc = hoist(proc)
     val hes = es.map{hoist}
-    (SAppl(h_proc._1, hes.map{hd => hd._1}), h_proc._2 ::: hes.flatMap{hd => hd._2})
+    (SAppl(h_proc._1, hes.map{he => he._1}), h_proc._2 ::: hes.flatMap{hd => hd._2})
 
   }
   case SApplPrimitive(proc, es) => {
     val hes = es.map{hoist}
-    (SApplPrimitive(proc, hes.map{hd => hd._1}), hes.flatMap{hd => hd._2})
+    (SApplPrimitive(proc, hes.map{he => he._1}), hes.flatMap{hd => hd._2})
   }
   case SMakeLambda(l, env) => {
     val f = fresh("func")
@@ -367,8 +367,15 @@ def hoist(e: SExp) : (SExp, List[SDefine]) = e match {
 
     (SHoistedLambda(f, env), SDefine(f, casted_hl.params, casted_hl.e) :: hl._2)
   }
+  case SLambda(params, e) => {
+    val he = hoist(e)
+    (SLambda(params, he._1), he._2)
+  }
 
-  case _ => (e, Nil)
+  case _ => {
+    //println("Ignoring " + e.toString)
+    (e, Nil)
+  }
 }
 
 //TODO better option handling
