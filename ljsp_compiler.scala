@@ -297,15 +297,15 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
 
   case SAppl(proc, es) => {
     val converted_proc = cl_conv(p, proc)
-    // TODO this doesn't work because proc could be a variable holding a converted lambda
-    converted_proc match {
-      case SMakeLambda(lambda, env) => {
-        val converted_lambda = SMakeLambda(lambda, env)
+    // TODO this doesn't work if we're calling a function instead of a converted lambda
+    //converted_proc match {
+    //  case SMakeLambda(lambda, env) => {
+        //val converted_lambda = SMakeLambda(lambda, env)
         val converted_lambda_var = fresh("converted_lambda")
-        SLet(converted_lambda_var, converted_lambda, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{e => cl_conv(p, e)}))
-      }
-      case _ => SAppl(converted_proc, es.map{e => cl_conv(p, e)})
-    }
+        SLet(converted_lambda_var, converted_proc, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{e => cl_conv(p, e)}))
+    //  }
+    //  case _ => SAppl(converted_proc, es.map{e => cl_conv(p, e)})
+    //}
   }
 
   case SApplPrimitive(proc, es) => SApplPrimitive(proc, es.map{e => cl_conv(p, e)})

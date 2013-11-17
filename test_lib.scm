@@ -5,7 +5,9 @@
 					(car l)
                     (nth (- n 1) (cdr l))))
 
-(define (make-lambda l e) `(,l ,e))
+(define (make-lambda l e) (if (eq? e '())
+							`(,l ())
+							`(,l ,e)))
 
 (define (get-proc l*) (nth 0 l*))
 
