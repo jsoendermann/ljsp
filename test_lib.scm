@@ -12,3 +12,5 @@
 (define (get-proc l*) (nth 0 l*))
 
 (define (get-env l*) (nth 1 l*))
+
+(define (hoisted-lambda f e) (lambda args (apply f (cons e args))))

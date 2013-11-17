@@ -35,7 +35,7 @@ val fresh = (() =>  {
   // This is a map that maps identifier prefixes to their counters
   // New prefixes get added to the map automatically, it's not necessary
   // to initialize this map with all prefixes that will be used
-  // TODO this function doesn't work if the prefix it's called with isn't part of this collection
+  // FIXME this function doesn't work if the prefix it's called with isn't part of this collection
   var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1, "env" -> -1, "func" -> -1, "conv_lambda" -> -1)
 
   // this is the function that fresh will be bound to
@@ -298,11 +298,11 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
 
   case SAppl(proc, es) => {
     val converted_proc = cl_conv(p, proc)
-    // TODO this doesn't work if we're calling a function instead of a converted lambda
+    // FIXME this doesn't work if we're calling a function instead of a converted lambda
     //converted_proc match {
     //  case SMakeLambda(lambda, env) => {
         //val converted_lambda = SMakeLambda(lambda, env)
-        val converted_lambda_var = fresh("converted_lambda")
+        val converted_lambda_var = fresh("conv_lambda")
         SLet(converted_lambda_var, converted_proc, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{e => cl_conv(p, e)}))
     //  }
     //  case _ => SAppl(converted_proc, es.map{e => cl_conv(p, e)})
@@ -401,7 +401,12 @@ args(0) match {
 
     println("Closure converted program:")
     val progCC = cl_conv_prog(progCps)
-    println(progCC.toString())
+    println(progCC.toString)
+    println()
+
+    println("Hoisted program:")
+    val progH = hoist_prog(progCC)
+    println(progH.toString)
     println()
   }
 }
