@@ -35,6 +35,8 @@ for source_file_path in glob.glob("./tests/*.ljsp"):
 		cps = call_prog(["scala", "ljsp_compiler.scala", "--cps", source])
 		print "   Compiling to CC..."
 		cc = call_prog(["scala", "ljsp_compiler.scala", "--cc", source])
+		print "   Comipling to H..."
+		h = call_prog(["scala", "ljsp_compiler.scala", "--h", source])
 		# TODO this shouldn't succeed when both evaluations fail with the same error
 		print "   Evaluating source..."
 		res_source = scheme_eval(source)
@@ -42,13 +44,23 @@ for source_file_path in glob.glob("./tests/*.ljsp"):
 		res_cps = scheme_eval(cps)
 		print "   Evaluating CC..."
 		res_cc = scheme_eval(test_lib + cc)
+		print "   Evaluating H..."
+		res_h = scheme_eval(test_lib + h)
 		if res_source == res_cps:
 			print GREEN + "   CPS Success" + OFF
 		else:
 			print RED + "   CPS Fail!" + OFF
+
 		if res_source == res_cc:
 			print GREEN + "   CC Success" + OFF
 		else:
 			print RED + "   CC Fail!" + OFF
+
+		if res_source == res_h:
+			print GREEN + "   H Success" + OFF
+		else:
+			print RED + "   H Fail!" + OFF
+
 		print ""
+
 

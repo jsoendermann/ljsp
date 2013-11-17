@@ -387,6 +387,13 @@ args(0) match {
     val progCps = cps_trans_prog(progTree, (x: SExp) => x)
     println(cl_conv_prog(progCps))
   }
+  case "--h" => {
+    val progTree = JLispParsers.parseExpr(args(1))
+    val progCps = cps_trans_prog(progTree, (x: SExp) => x)
+    val progCC = cl_conv_prog(progCps)
+    println(hoist_prog(progCC))
+  }
+
   case _ => {
     println("Parsed program:")
     val progTree = JLispParsers.parseExpr(args(0))
