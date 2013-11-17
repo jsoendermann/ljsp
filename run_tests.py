@@ -27,7 +27,7 @@ test_lib = ""
 with open("test_lib.scm", "r") as test_lib_file:
 	test_lib = test_lib_file.read()
 
-for source_file_path in glob.glob("./tests/*.ljsp"):
+for source_file_path in glob.glob("./tests/*.scm"):
 	with open(source_file_path, "r") as source_file:
 		print "Testing "+os.path.basename(source_file_path)
 		source = source_file.read()
