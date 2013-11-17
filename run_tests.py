@@ -23,6 +23,10 @@ def call_prog(prog_and_args):
 	return output.strip()
 
 
+test_lib = ""
+with open("test_lib.scm", "r") as test_lib_file:
+	test_lib = test_lib_file.read()
+
 for source_file_path in glob.glob("./tests/*.ljsp"):
 	with open(source_file_path, "r") as source_file:
 		print "Testing "+os.path.basename(source_file_path)
@@ -37,7 +41,7 @@ for source_file_path in glob.glob("./tests/*.ljsp"):
 		print "   Evaluating CPS..."
 		res_cps = scheme_eval(cps)
 		print "   Evaluating CC..."
-		res_cc = scheme_eval(cc)
+		res_cc = scheme_eval(test_lib + cc)
 		if res_source == res_cps:
 			print GREEN + "   CPS Success" + OFF
 		else:
