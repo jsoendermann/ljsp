@@ -323,36 +323,36 @@ def hoist_prog(p: SProgram) : SProgram = {
   val hp = hoist(p)
 
   val hoisted_prog : SProgram = hp._1.asInstanceOf[SProgram]
-  val new_procs = hp._2
+  val new_defs = hp._2
 
-  SProgram(new_procs ::: hoisted_prog.ds, hoisted_prog.e)
+  SProgram(new_defs ::: hoisted_prog.ds, hoisted_prog.e)
 }
 
 def hoist(e: SExp) : (SExp, List[SDefine]) = e match {
   case SProgram(ds, e) => {
     val hds = ds.map{hoist}
-    val he = hoist(e)
-    (SProgram(hds.map{hd => hd._1.asInstanceOf[SDefine]}, he._1), hds.flatMap{hd => hd._2} ::: he._2)
+    val (he_e, he_new_ds) = hoist(e)
+    (SProgram(hds.map{hd => hd._1.asInstanceOf[SDefine]}, he_e), hds.flatMap{hd => hd._2} ::: he_new_ds)
   }
   case SDefine(name, params, e) => {
-    val he = hoist(e)
-    (SDefine(name, params, he._1), he._2)
+    val (he_e, he_new_ds) = hoist(e)
+    (SDefine(name, params, he_e), he_new_ds)
   }
   case SIf(e1, e2, e3) => {
-    val he1 = hoist(e1)
-    val he2 = hoist(e2)
-    val he3 = hoist(e3)
-    (SIf(he1._1, he2._1, he3._1), he1._2 ::: he2._2 ::: he3._2)
+    val (he1_e, he1_new_ds) = hoist(e1)
+    val (he2_e, he2_new_ds) = hoist(e2)
+    val (he3_e, he3_new_ds) = hoist(e3)
+    (SIf(he1_e, he2_e, he3_e), he1_new_ds ::: he2_new_ds ::: he3_new_ds)
   }
   case SLet(idn, e1, e2) => {
-    val he1 = hoist(e1)
-    val he2 = hoist(e2)
-    (SLet(idn, he1._1, he2._1), he1._2 ::: he2._2)
+    val (he1_e, he1_new_ds) = hoist(e1)
+    val (he2_e, he2_new_ds) = hoist(e2)
+    (SLet(idn, he1_e, he2_e), he1_new_ds ::: he2_new_ds)
   }
   case SAppl(proc, es) => {
-    val h_proc = hoist(proc)
+    val (h_proc_e, h_proc_new_ds) = hoist(proc)
     val hes = es.map{hoist}
-    (SAppl(h_proc._1, hes.map{he => he._1}), h_proc._2 ::: hes.flatMap{hd => hd._2})
+    (SAppl(h_proc_e, hes.map{he => he._1}), h_proc_new_ds ::: hes.flatMap{hd => hd._2})
 
   }
   case SApplPrimitive(proc, es) => {
@@ -361,14 +361,14 @@ def hoist(e: SExp) : (SExp, List[SDefine]) = e match {
   }
   case SMakeLambda(l, env) => {
     val f = fresh("func")
-    val hl = hoist(l)
-    val casted_hl = hl._1.asInstanceOf[SLambda]
+    val (hl_e, hl_new_ds) = hoist(l)
+    val casted_hl = hl_e.asInstanceOf[SLambda]
 
-    (SHoistedLambda(f, env), SDefine(f, casted_hl.params, casted_hl.e) :: hl._2)
+    (SHoistedLambda(f, env), SDefine(f, casted_hl.params, casted_hl.e) :: hl_new_ds)
   }
   case SLambda(params, e) => {
-    val he = hoist(e)
-    (SLambda(params, he._1), he._2)
+    val (he_e, he_new_ds) = hoist(e)
+    (SLambda(params, he_e), he_new_ds)
   }
 
   case _ => {
