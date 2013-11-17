@@ -297,16 +297,15 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
   }
 
   case SAppl(proc, es) => {
-    val converted_proc = cl_conv(p, proc)
-    // FIXME this doesn't work if we're calling a function instead of a converted lambda
-    //converted_proc match {
-    //  case SMakeLambda(lambda, env) => {
-        //val converted_lambda = SMakeLambda(lambda, env)
-        val converted_lambda_var = fresh("conv_lambda")
-        SLet(converted_lambda_var, converted_proc, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{e => cl_conv(p, e)}))
-    //  }
-    //  case _ => SAppl(converted_proc, es.map{e => cl_conv(p, e)})
-    //}
+    // This checks if this call is to a function defined in the defines of the program
+    // FIXME: This does not work if a function is being returned as result of a more complex expression
+    if (proc.isInstanceOf[SIdn] && p.ds.foldLeft(false) {(v, d) => v || d.name == proc})
+      SAppl(proc, es.map{e => cl_conv(p, e)})
+    else {
+      val converted_proc = cl_conv(p, proc)
+      val converted_lambda_var = fresh("conv_lambda")
+      SLet(converted_lambda_var, converted_proc, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{e => cl_conv(p, e)}))
+    }
   }
 
   case SApplPrimitive(proc, es) => SApplPrimitive(proc, es.map{e => cl_conv(p, e)})
