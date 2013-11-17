@@ -27,16 +27,24 @@ for source_file_path in glob.glob("./tests/*.ljsp"):
 	with open(source_file_path, "r") as source_file:
 		print "Testing "+os.path.basename(source_file_path)
 		source = source_file.read()
-		print " Compiling to CPS..."
+		print "   Compiling to CPS..."
 		cps = call_prog(["scala", "ljsp_compiler.scala", "--cps", source])
+		print "   Compiling to CC..."
+		cc = call_prog(["scala", "ljsp_compiler.scala", "--cc", source])
 		# TODO this shouldn't succeed when both evaluations fail with the same error
-		print " Evaluating source..."
+		print "   Evaluating source..."
 		res_source = scheme_eval(source)
-		print " Evaluating CPS..."
+		print "   Evaluating CPS..."
 		res_cps = scheme_eval(cps)
+		print "   Evaluating CC..."
+		res_cc = scheme_eval(cc)
 		if res_source == res_cps:
-			print GREEN + " Success" + OFF
+			print GREEN + "   CPS Success" + OFF
 		else:
-			print RED + " Fail!" + OFF
+			print RED + "   CPS Fail!" + OFF
+		if res_source == res_cc:
+			print GREEN + "   CC Success" + OFF
+		else:
+			print RED + "   CC Fail!" + OFF
 		print ""
 
