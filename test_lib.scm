@@ -1,5 +1,5 @@
 ; This file contains functions that are used in intermediate stages
-; in the compiler to test those stages.
+; in the compiler. They are used by run_tests.py to test those stages.
 
 
 
