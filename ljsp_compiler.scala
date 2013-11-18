@@ -304,8 +304,7 @@ def cl_conv(p: SProgram, e: SExp) : SExp = e match {
       SAppl(proc, es.map{e => cl_conv(p, e)})
     else {
       val converted_proc = cl_conv(p, proc)
-      val converted_lambda_var = fresh("conv_lambda")
-      SLet(converted_lambda_var, converted_proc, SAppl(SGetProc(converted_lambda_var), SGetEnv(converted_lambda_var) :: es.map{e => cl_conv(p, e)}))
+      SAppl(SGetProc(converted_proc), SGetEnv(converted_proc) :: es.map{e => cl_conv(p, e)})
     }
   }
 
