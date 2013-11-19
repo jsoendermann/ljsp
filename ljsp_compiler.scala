@@ -1,6 +1,6 @@
 import scala.util.parsing.combinator._
 
-//type Num = Int
+type Num = Int
 type Idn = String
 
 
@@ -18,7 +18,7 @@ case class SProgram(ds: List[SDefine], e: SExp) extends SExp { override def toSt
 case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
 
 case class SIdn(idn: Idn) extends SExp { override def toString = idn }
-case class SInt(i: Int) extends SExp { override def toString = i.toString() }
+case class SInt(i: Num) extends SExp { override def toString = i.toString() }
 // TODO double
 case class SIf(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
 case class SLambda(params: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + params.mkString(" ") + ") " + e.toString() + ")" }
