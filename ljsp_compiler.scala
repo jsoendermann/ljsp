@@ -64,8 +64,8 @@ object JLispParsers extends JavaTokenParsers {
   def expression: Parser[SExp] = identifier | integer | _if | lambda | primitive_application | application | let
 
   // TODO make e optional
-  def prog: Parser[SProgram] = rep(define)~expression ^^ {
-    case ds~e => SProgram(ds, e)
+  def prog: Parser[SProgram] = rep(define)~expression~rep(define) ^^ {
+    case ds1~e~ds2 => SProgram(ds1 ::: ds2, e)
   }
 
   def define: Parser[SDefine] = "("~>"define"~>"("~>identifier~rep(identifier)~")"~expression<~")" ^^ {
