@@ -389,6 +389,89 @@ def hoist(e: SExp) : HoistedExpression = e match {
   }
 }
 
+def local_vars(instructions: List[AExp]) : Set[Idn] = instructions match {
+  case Nil => Set()
+  case (i::is) => local_vars(is) ++ (i match {
+    case AVarAssignment(i, v) => Set(i.idn)
+    case _ => Set()
+  })
+}
+
+
+
+case class AModule()
+case class AIdn(idn: Idn) { override def toString = { idn }}
+case class AFunction(name: String, params: List[AIdn], instructions: List[AExp]) { 
+  override def toString = { 
+    val lv = local_vars(instructions)
+    "function " + name + "(" + params.mkString(", ") + ")" + 
+    "{\n" + params.map{p => p.toString() + " = " + p.toString() + "|0;\n"}.mkString("") + "\n" +
+    (if (lv.size > 0) "var " + lv.mkString(", ") + ";\n\n"; else "") +
+    instructions.map{i => i.toString() + ";\n"}.mkString("") + "\n}" 
+  }
+}
+
+abstract class AExp
+case class AVarAssignment(idn: AIdn, value: AValue) extends AExp { override def toString = { idn.toString + " = " + value.toString() }}
+case class AHeapAssignment(index: AValue, value: AValue) extends AExp { override def toString = { "H32[(" + index.toString + ")>>2] = " + value.toString() }}
+//case class AIf(cond: AValue, block1: List[AInstruction], block2: List[AInstruction]) extends AInstruction { override def toString = { "if (" + cond.toString() + ") {\n" + block1.toString() + "\n} else {\n" + block2.toString() + "}" }}
+
+abstract class AValue extends AExp
+case class AStaticValue(i: Int) extends AValue { override def toString = { i.toString() }}
+case class AFunctionCallByName(f: AIdn, params: List[AValue]) extends AValue { override def toString = { f + "(" + params.mkString(", ") + ")" }}
+case class AFunctionCallByIndex(fi: AValue, params: List[AValue]) extends AValue
+case class APrimitiveInstruction(op: String, operand1: AValue, operand2: AValue) extends AValue { override def toString = { operand1.toString() + op + operand2.toString() }}
+case class AVarAccess(idn: AIdn) extends AValue { override def toString = { idn.toString }}
+case class AHeapAccess(index: AValue) extends AValue { override def toString = { "H32[(" + index.toString + ")>>2]" }}
+case class AArrayAccess(index: AValue, adr: AValue) extends AValue { override def toString = { "H32[(" + APrimitiveInstruction("+", adr, index).toString() + ") >> 2]" }}
+case object ATODO extends AValue { override def toString = { "/*TODO*/" }}
+
+
+def make_array(length: Int) : Int = 0
+
+/*def convert_prog_to_asmjs(p: SProgram) : AModule = {
+
+  println(p.ds.map{convert_expression_to_asmjs})
+}*/
+
+
+
+def convert_define_to_asmjs(p: SProgram, d: SDefine) : AFunction = {
+  val instructions = convert_instruction_to_asmjs(p, d.e)
+  AFunction(d.name.idn, d.params.map{si => AIdn(si.idn)}, instructions)
+}
+
+def convert_instruction_to_asmjs(p: SProgram, e: SExp) : List[AExp] = e match {
+  case SLet(i: SIdn, e1: SExp, e2: SExp) => {
+    List(AVarAssignment(AIdn(i.idn), convert_value_to_asmjs(e1))) ++
+    convert_instruction_to_asmjs(p, e2)
+  }
+  case SAppl(proc, es) => {
+    // This checks if this call is to a function defined in the defines of the program
+    // FIXME: This does not work if a function is being returned as result of a more complex expression
+    if (proc.isInstanceOf[SIdn] && p.ds.foldLeft(false) {(v, d) => v || d.name == proc}) {
+      List(AFunctionCallByName(AIdn(proc.asInstanceOf[SIdn].idn), es.map{e => convert_value_to_asmjs(e)}))
+    } else {
+      // TODO
+      Nil
+    }
+  }
+
+  case _ => Nil
+}
+
+def convert_value_to_asmjs(e: SExp) : AValue = e match {
+  case SInt(i) => AStaticValue(i)
+  case SNth(n, e) => AArrayAccess(AStaticValue(n), convert_value_to_asmjs(e))
+  case SIdn(i) => AVarAccess(AIdn(i))
+  // FIXME this only uses the first two operands. this should be fixed in the cps conv. function
+  // a primitive application with more than two operands should be converted into several with two each
+  case SApplPrimitive(proc, es) => APrimitiveInstruction(proc.idn, convert_value_to_asmjs(es(0)), convert_value_to_asmjs(es(1)))
+  case SHoistedLambda(f, env) => ATODO
+}
+
+
+
 args(0) match {
   case "--cps" => {
     val progTree = JLispParsers.parseExpr(args(1))
@@ -426,6 +509,14 @@ args(0) match {
     val progH = hoist_prog(progCC)
     println(progH.toString)
     println()
+
+    for(d <- progH.ds) 
+      println(convert_define_to_asmjs(progH, d))
+
   }
 }
+
+
+//println(AFunction("my_func", AIdn("par_a") :: AIdn("par_b") :: Nil, AVarAssignment(AIdn("par_a"), AFunctionCallByName(AIdn("f1"), AHeapAccess(AStaticValue(5)) :: Nil)) :: AHeapAssignment(AStaticValue(3), AStaticValue(3)) :: Nil))
+
 
