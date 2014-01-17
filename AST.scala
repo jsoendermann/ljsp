@@ -51,10 +51,10 @@ object AST {
   case class AIdn(idn: Idn) { override def toString = { idn }}
   case class AFunction(name: String, params: List[AIdn], instructions: List[AExp]) { 
     override def toString = { 
-      val lv = local_vars(instructions) ++ Set("env_temp")
+      val lv = local_vars(instructions)
       "function " + name + "(" + params.mkString(", ") + ")" + 
       "{\n" + params.map{p => p.toString() + " = " + p.toString() + "|0;\n"}.mkString("") + "\n" +
-      (if (lv.size > 0) "var " + lv.mkString(", ") + ";\n\n"; else ""/*TODO else will not happen because there's always at least "env_temp"*/) +
+      (if (lv.size > 0) "var " + lv.mkString(", ") + ";\n\n"; else "") +
       instructions.map{i => i.toString() + ";\n"}.mkString("") + "\n}" 
     }
   }

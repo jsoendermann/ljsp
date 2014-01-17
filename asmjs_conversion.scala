@@ -16,7 +16,31 @@ object asmjs_conversion {
   }
 
   def convert_instruction_to_asmjs(p: SProgram, e: SExp) : List[AExp] = e match {
-    case SLet(i: SIdn, e1: SExp, e2: SExp) => {
+    case SLet(i, SMakeEnv(idns), e2) => {
+      val num_idns = idns.size
+      val ai = AIdn(i.idn)
+
+      val setEnvValues: List[AExp] = idns.zipWithIndex.map{ case (idn, index) => AHeapAssignment(APrimitiveInstruction("+", AVarAccess(ai), AStaticValue(index)), AVarAccess(AIdn(idn.idn))) }
+
+      List(AVarAssignment(ai, AAlloc(num_idns))) ++
+      setEnvValues ++
+      convert_instruction_to_asmjs(p, e2)
+    }
+
+    case SLet(i, SHoistedLambda(f, env), e2) => {
+      val ai = AIdn(i.idn)
+
+
+      List(AVarAssignment(ai, AAlloc(2)),
+        AHeapAssignment(AVarAccess(ai), AStaticValue(-999)), // TODO: Look up index of function
+        AHeapAssignment(APrimitiveInstruction("+", AVarAccess(ai), AStaticValue(1)), AVarAccess(AIdn(env.asInstanceOf[SIdn].idn)))) ++
+      convert_instruction_to_asmjs(p, e2)
+    
+    }
+
+
+    //  AVarAssignment(
+    case SLet(i, e1, e2) => {
       List(AVarAssignment(AIdn(i.idn), convert_value_to_asmjs(e1))) ++
       convert_instruction_to_asmjs(p, e2)
     }
@@ -27,11 +51,11 @@ object asmjs_conversion {
         List(AFunctionCallByName(AIdn(proc.asInstanceOf[SIdn].idn), es.map{e => convert_value_to_asmjs(e)}))
       } else {
         // TODO
-        Nil
+        List(ATODO)
       }
     }
 
-    case _ => Nil
+    case _ => List(ATODO)
   }
 
   def convert_value_to_asmjs(e: SExp) : AValue = e match {
