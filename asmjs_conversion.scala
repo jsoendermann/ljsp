@@ -41,7 +41,12 @@ object asmjs_conversion {
     // FIXME this only uses the first two operands. this should be fixed in the cps conv. function
     // a primitive application with more than two operands should be converted into several with two each
     case SApplPrimitive(proc, es) => APrimitiveInstruction(proc.idn, convert_value_to_asmjs(es(0)), convert_value_to_asmjs(es(1)))
-    case SHoistedLambda(f, env) => ATODO
+    /*case SHoistedLambda(f, SMakeEnv(idns)) => {
+      val num_vars = idns.size
+
+      AVarAssignment(AIdn("env_temp"), AAlloc(num_vars));
+    }*/
+    case _ => ATODO //TODO this shouldn't happen
   }
 
 }

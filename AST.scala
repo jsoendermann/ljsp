@@ -33,7 +33,6 @@ object AST {
 
 
   // Classes used in hoisting phase
-  case class HoistedExpression(e: SExp, new_defs: List[SDefine])
   case class SHoistedLambda(f: SIdn, env: SExp) extends SExp { override def toString = "(hoisted-lambda " + f.toString + " " + env.toString + ")" }
 
 
@@ -52,10 +51,10 @@ object AST {
   case class AIdn(idn: Idn) { override def toString = { idn }}
   case class AFunction(name: String, params: List[AIdn], instructions: List[AExp]) { 
     override def toString = { 
-      val lv = local_vars(instructions)
+      val lv = local_vars(instructions) ++ Set("env_temp")
       "function " + name + "(" + params.mkString(", ") + ")" + 
       "{\n" + params.map{p => p.toString() + " = " + p.toString() + "|0;\n"}.mkString("") + "\n" +
-      (if (lv.size > 0) "var " + lv.mkString(", ") + ";\n\n"; else "") +
+      (if (lv.size > 0) "var " + lv.mkString(", ") + ";\n\n"; else ""/*TODO else will not happen because there's always at least "env_temp"*/) +
       instructions.map{i => i.toString() + ";\n"}.mkString("") + "\n}" 
     }
   }
@@ -73,6 +72,7 @@ object AST {
   case class AVarAccess(idn: AIdn) extends AValue { override def toString = { idn.toString }}
   case class AHeapAccess(index: AValue) extends AValue { override def toString = { "H32[(" + index.toString + ")>>2]" }}
   case class AArrayAccess(index: AValue, adr: AValue) extends AValue { override def toString = { "H32[(" + APrimitiveInstruction("+", adr, index).toString() + ") >> 2]" }}
+  case class AAlloc(size: Int) extends AValue { override def toString = { "alloc("+size.toString()+")" }}
   case object ATODO extends AValue { override def toString = { "/*TODO*/" }}
 
 }

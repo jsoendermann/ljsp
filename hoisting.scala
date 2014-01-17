@@ -4,10 +4,14 @@ import ljsp.AST._
 import ljsp.util._
 
 object hoisting {
+  case class HoistedExpression(e: SExp, new_defs: List[SDefine])
+
   def hoist_prog(p: SProgram) : SProgram = {
     val hp = hoist(p)
     val casted_hp_e : SProgram = hp.e.asInstanceOf[SProgram]
-    SProgram(hp.new_defs ::: casted_hp_e.ds, casted_hp_e.e)
+    val tp = SProgram(hp.new_defs ::: casted_hp_e.ds, casted_hp_e.e)
+    SProgram(tp.ds.map{d => SDefine(d.name, d.params, move_hoisted_lambdas(d.e))}, move_hoisted_lambdas(tp.e))
+    
   }
 
   def hoist(e: SExp) : HoistedExpression = e match {
@@ -64,5 +68,43 @@ object hoisting {
       //println("Ignoring " + e.toString)
       HoistedExpression(e, Nil)
     }
+  }
+
+  // This function moves SHoistedLambda and SMakeEnv constructions outside of lets and applications
+  def move_hoisted_lambdas(e: SExp) : SExp = e match {
+    // For lets, add another let in front for the environment
+    case SLet(idn, SHoistedLambda(f, SMakeEnv(idns)), e2) => {
+      val env_var = fresh("env_var")
+      SLet(env_var, SMakeEnv(idns), SLet(idn, SHoistedLambda(f, env_var), move_hoisted_lambdas(e2)))
+    }
+    // For applications, move environments and hoisted lambda computations in front for all arguments
+    // Function applications at this point are always the last expression in a function so it's not
+    // necessary to recurse further
+    case SAppl(proc, es) => {
+      var hoisted_es = List[Tuple2[SIdn, SExp]]()
+
+      val new_appl = SAppl(proc, es.map{e => (e match {
+        case SHoistedLambda(f, env) => {
+          val env_var = fresh("env_var")
+          val hl_var = fresh("hoisted_lambda_var")
+
+          // The order is important here
+          hoisted_es = hoisted_es ++ List((hl_var, SHoistedLambda(f, env_var)))
+          hoisted_es = hoisted_es ++ List((env_var, env))
+          
+
+          hl_var
+        }
+        case _ => e
+      })})
+
+      var new_e: SExp = new_appl
+      for (hoisted_e <- hoisted_es)
+        new_e = SLet(hoisted_e._1, hoisted_e._2, new_e)
+      new_e
+    }
+    case SLet(idn, e1, e2) => SLet(idn, e1, move_hoisted_lambdas(e2))
+    case SIf(e1, e2, e3) => SIf(e1, move_hoisted_lambdas(e2), move_hoisted_lambdas(e3))
+    case _ => e
   }
 }
