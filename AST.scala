@@ -47,7 +47,7 @@ object AST {
     })
   }
 
-  case class AModule()
+  case class AModule(fs: List[AFunction], ftables: Map[String, List[String]]) { override def toString = { fs.mkString("\n")+"\n\n"+ftables.map{case (ftable, fnames) => "var "+ftable+ " = [" + fnames.mkString(",") + "];"}.mkString("\n") }}
   case class AIdn(idn: Idn) { override def toString = { idn }}
   case class AFunction(name: String, params: List[AIdn], instructions: List[AExp]) { 
     override def toString = { 

@@ -4,10 +4,23 @@ import ljsp.AST._
 import ljsp.util._
 
 object asmjs_conversion {
-  //def convert_prog_to_asmjs(p: SProgram) : AModule = {
-  //  println(p.ds.map{convert_expression_to_asmjs})
-  //}
+  def convert_prog_to_asmjs(p: SProgram) : AModule = {
+    val ds_map = p.ds.groupBy(_.params.size)
+    val fnames_map = ds_map.map{ case (size, ds) => Tuple2("ftable"+size.toString, ds.map{_.name.idn})}
+    val fnames_map_pow_2 = fnames_map.map{ case (ftable, fnames) => Tuple2(ftable, fnames ++ List.fill(find_next_power_of_2(fnames.size)-fnames.size)(fnames(0)))}
+    //println(fnames_map_pow_2)
+    //println(ftable_name_and_index_for_fname(fnames_map_pow_2, "fib"))
+    AModule(p.ds.map{convert_define_to_asmjs(p, _)}, fnames_map_pow_2)
+  }
 
+  def ftable_name_and_index_for_fname(ftables: Map[String,List[ljsp.AST.Idn]], f: String): Tuple2[String, Int] = {
+    ftables.foreach{ case (ftable, fnames) => {
+      fnames.zipWithIndex.foreach{ case(fname, index) => {
+        if (fname == f) 
+          return Tuple2(ftable, index)}}}}
+    // TODO handle error
+    Tuple2("Error", -1)
+  }
 
 
   def convert_define_to_asmjs(p: SProgram, d: SDefine) : AFunction = {

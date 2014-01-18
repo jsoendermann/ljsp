@@ -25,4 +25,11 @@ object util {
       }
     }
   })()
+  
+  def find_next_power_of_2(i: Int) : Int = {
+    var r = 1
+    while (r < i)
+      r <<= 1
+    return r
+  }
 }

@@ -49,8 +49,8 @@ object Ljsp {
         println(progH.toString)
         println()
 
-        for(d <- progH.ds) 
-          println(convert_define_to_asmjs(progH, d))
+        val module = convert_prog_to_asmjs(progH)
+        println(module.toString)
       }
     }
   }
