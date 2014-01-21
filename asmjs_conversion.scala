@@ -10,7 +10,7 @@ object asmjs_conversion {
     val fnames_map_pow_2 = fnames_map.map{ case (ftable, fnames) => Tuple2(ftable, fnames ++ List.fill(find_next_power_of_2(fnames.size)-fnames.size)(fnames(0)))}
     //println(fnames_map_pow_2)
     //println(ftable_name_and_index_for_fname(fnames_map_pow_2, "fib"))
-    AModule(p.ds.map{convert_define_to_asmjs(p, _)}, fnames_map_pow_2)
+    AModule(p.ds.map{convert_define_to_asmjs(p, fnames_map_pow_2, _)}, fnames_map_pow_2)
   }
 
   def ftable_name_and_index_for_fname(ftables: Map[String,List[ljsp.AST.Idn]], f: String): Tuple2[String, Int] = {
@@ -23,12 +23,13 @@ object asmjs_conversion {
   }
 
 
-  def convert_define_to_asmjs(p: SProgram, d: SDefine) : AFunction = {
-    val instructions = convert_instruction_to_asmjs(p, d.e)
+  def convert_define_to_asmjs(p: SProgram, ftables: Map[String,List[ljsp.AST.Idn]], d: SDefine) : AFunction = {
+    val instructions = convert_instruction_to_asmjs(p, ftables, d.e)
     AFunction(d.name.idn, d.params.map{si => AIdn(si.idn)}, instructions)
   }
 
-  def convert_instruction_to_asmjs(p: SProgram, e: SExp) : List[AExp] = e match {
+  def convert_instruction_to_asmjs(p: SProgram, ftables: Map[String,List[ljsp.AST.Idn]], e: SExp) : List[AExp] = e match {
+    case SIdn(i) => List(AVarAccess(AIdn(i)))
     case SLet(i, SMakeEnv(idns), e2) => {
       val num_idns = idns.size
       val ai = AIdn(i.idn)
@@ -37,7 +38,7 @@ object asmjs_conversion {
 
       List(AVarAssignment(ai, AAlloc(num_idns))) ++
       setEnvValues ++
-      convert_instruction_to_asmjs(p, e2)
+      convert_instruction_to_asmjs(p, ftables, e2)
     }
 
     case SLet(i, SHoistedLambda(f, env), e2) => {
@@ -45,9 +46,9 @@ object asmjs_conversion {
 
 
       List(AVarAssignment(ai, AAlloc(2)),
-        AHeapAssignment(AVarAccess(ai), AStaticValue(-999)), // TODO: Look up index of function
+        AHeapAssignment(AVarAccess(ai), AStaticValue(ftable_name_and_index_for_fname(ftables, f.idn)._2)),
         AHeapAssignment(APrimitiveInstruction("+", AVarAccess(ai), AStaticValue(1)), AVarAccess(AIdn(env.asInstanceOf[SIdn].idn)))) ++
-      convert_instruction_to_asmjs(p, e2)
+      convert_instruction_to_asmjs(p, ftables, e2)
     
     }
 
@@ -55,7 +56,7 @@ object asmjs_conversion {
     //  AVarAssignment(
     case SLet(i, e1, e2) => {
       List(AVarAssignment(AIdn(i.idn), convert_value_to_asmjs(e1))) ++
-      convert_instruction_to_asmjs(p, e2)
+      convert_instruction_to_asmjs(p, ftables, e2)
     }
     case SAppl(proc, es) => {
       // This checks if this call is to a function defined in the defines of the program
@@ -63,8 +64,7 @@ object asmjs_conversion {
       if (proc.isInstanceOf[SIdn] && p.ds.foldLeft(false) {(v, d) => v || d.name == proc}) {
         List(AFunctionCallByName(AIdn(proc.asInstanceOf[SIdn].idn), es.map{e => convert_value_to_asmjs(e)}))
       } else {
-        // TODO
-        List(ATODO)
+        List(AFunctionCallByIndex(AIdn("ftable"+(es.size+1).toString), AIdn(proc.asInstanceOf[SIdn].idn), es.map{convert_value_to_asmjs(_)}))
       }
     }
 

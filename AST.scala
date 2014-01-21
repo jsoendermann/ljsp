@@ -67,7 +67,7 @@ object AST {
   abstract class AValue extends AExp
   case class AStaticValue(i: Int) extends AValue { override def toString = { i.toString() }}
   case class AFunctionCallByName(f: AIdn, params: List[AValue]) extends AValue { override def toString = { f + "(" + params.mkString(", ") + ")" }}
-  case class AFunctionCallByIndex(fi: AValue, params: List[AValue]) extends AValue
+  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, params: List[AValue]) extends AValue { override def toString = { ftable + "[" + AHeapAccess(AVarAccess(fpointer)).toString + "](" + APrimitiveInstruction("+", AVarAccess(fpointer), AStaticValue(1)).toString + ", " + params.mkString(", ") + ")" }}
   case class APrimitiveInstruction(op: String, operand1: AValue, operand2: AValue) extends AValue { override def toString = { operand1.toString() + op + operand2.toString() }}
   case class AVarAccess(idn: AIdn) extends AValue { override def toString = { idn.toString }}
   case class AHeapAccess(index: AValue) extends AValue { override def toString = { "H32[(" + index.toString + ")>>2]" }}
