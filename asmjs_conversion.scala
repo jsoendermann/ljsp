@@ -55,34 +55,43 @@ object asmjs_conversion {
 
     //  AVarAssignment(
     case SLet(i, e1, e2) => {
-      List(AVarAssignment(AIdn(i.idn), convert_value_to_asmjs(e1))) ++
+      List(AVarAssignment(AIdn(i.idn), convert_value_to_asmjs(p, e1))) ++
       convert_instruction_to_asmjs(p, ftables, e2)
     }
     case SAppl(proc, es) => {
-      // This checks if this call is to a function defined in the defines of the program
-      // FIXME: This does not work if a function is being returned as result of a more complex expression
-      if (proc.isInstanceOf[SIdn] && p.ds.foldLeft(false) {(v, d) => v || d.name == proc}) {
-        List(AFunctionCallByName(AIdn(proc.asInstanceOf[SIdn].idn), es.map{e => convert_value_to_asmjs(e)}))
-      } else {
-        List(AFunctionCallByIndex(AIdn("ftable"+(es.size+1).toString), AIdn(proc.asInstanceOf[SIdn].idn), es.map{convert_value_to_asmjs(_)}))
-      }
+      List(convert_value_to_asmjs(p, e))
+    }
+
+    case SIf(e1, e2, e3) => {
+      val if_var = AIdn(fresh("if_var").idn)
+      List(AVarAssignment(if_var, convert_value_to_asmjs(p, e1)),
+        AIf(AVarAccess(if_var), convert_instruction_to_asmjs(p, ftables, e2), convert_instruction_to_asmjs(p, ftables, e3)))
     }
 
     case _ => List(ATODO)
   }
 
-  def convert_value_to_asmjs(e: SExp) : AValue = e match {
+  def convert_value_to_asmjs(p: SProgram, e: SExp) : AValue = e match {
     case SInt(i) => AStaticValue(i)
-    case SNth(n, e) => AArrayAccess(AStaticValue(n), convert_value_to_asmjs(e))
+    case SNth(n, e) => AArrayAccess(AStaticValue(n), convert_value_to_asmjs(p, e))
     case SIdn(i) => AVarAccess(AIdn(i))
     // FIXME this only uses the first two operands. this should be fixed in the cps conv. function
     // a primitive application with more than two operands should be converted into several with two each
-    case SApplPrimitive(proc, es) => APrimitiveInstruction(proc.idn, convert_value_to_asmjs(es(0)), convert_value_to_asmjs(es(1)))
+    case SApplPrimitive(proc, es) => APrimitiveInstruction(proc.idn, convert_value_to_asmjs(p, es(0)), convert_value_to_asmjs(p, es(1)))
     /*case SHoistedLambda(f, SMakeEnv(idns)) => {
       val num_vars = idns.size
 
       AVarAssignment(AIdn("env_temp"), AAlloc(num_vars));
     }*/
+    case SAppl(proc, es) => {
+      // This checks if this call is to a function defined in the defines of the program
+      // FIXME: This does not work if a function is being returned as result of a more complex expression
+      if (proc.isInstanceOf[SIdn] && p.ds.foldLeft(false) {(v, d) => v || d.name == proc}) {
+        AFunctionCallByName(AIdn(proc.asInstanceOf[SIdn].idn), es.map{e => convert_value_to_asmjs(p, e)})
+      } else {
+        AFunctionCallByIndex(AIdn("ftable"+(es.size+1).toString), AIdn(proc.asInstanceOf[SIdn].idn), es.map{convert_value_to_asmjs(p, _)})
+      }
+    }
     case _ => ATODO //TODO this shouldn't happen
   }
 
