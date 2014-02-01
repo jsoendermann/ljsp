@@ -90,6 +90,7 @@ object AST {
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
   case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "H32[(" + index.toString + ")>>2] = " + value.toString() }}
   case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (" + cond.toString() + ") {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
+  case class AReturn(s: AStatement) extends AStatement { override def toString = { "return " + s.toString() }}
 
   abstract class AExp extends AStatement
   case class AStaticValue(i: Int) extends AExp { override def toString = { i.toString() }}

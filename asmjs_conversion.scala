@@ -96,8 +96,16 @@ object asmjs_conversion {
     case _ => ATODO //TODO this shouldn't happen
   }
 
-  def add_return(statements: List[AStatement]) : List[AStatement] = {
-    statements
+  def add_return(statements: List[AStatement]) : List[AStatement] = statements match {
+    case (s::Nil) => List(s match {
+      case AIf(cond, block1, block2) => AIf(cond, add_return(block1), add_return(block2))
+      case _ => AReturn(s)
+    })
+    case (s::sts) => List(s) ++ add_return(sts)
+    case Nil => {
+      // TODO find another way to suppress warning
+      throw new IllegalArgumentException()
+    }
   }
 
 }
