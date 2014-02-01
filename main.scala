@@ -27,6 +27,14 @@ object Ljsp {
         val progCC = cl_conv_prog(progCps)
         println(hoist_prog(progCC))
       }
+      case "--asmjs" => {
+        val progTree = JLispParsers.parseExpr(args(1))
+        val progCps = cps_trans_prog(progTree, (x: SExp) => x)
+        val progCC = cl_conv_prog(progCps)
+        val progH = hoist_prog(progCC)
+        val module = convert_prog_to_asmjs(progH)
+        println(module)
+      }
 
       case _ => {
         println("Parsed program:")
