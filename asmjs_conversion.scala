@@ -33,11 +33,11 @@ object asmjs_conversion {
     case SIdn(i) => List(AVarAccess(AIdn(i)))
     case SLet(i, SMakeEnv(idns), e2) => {
       val num_idns = idns.size
-      val ai = AIdn(i.idn)
+      val env_var = AIdn(i.idn)
 
-      val setEnvValues: List[AStatement] = idns.zipWithIndex.map{ case (idn, index) => AHeapAssignment(APrimitiveInstruction("+", AVarAccess(ai), AStaticValue(index)), AVarAccess(AIdn(idn.idn))) }
+      val setEnvValues: List[AStatement] = idns.zipWithIndex.map{ case (idn, index) => AHeapAssignment(APrimitiveInstruction("+", AVarAccess(env_var), AStaticValue(index * 4)), AVarAccess(AIdn(idn.idn))) }
 
-      List(AVarAssignment(ai, AAlloc(num_idns))) ++
+      List(AVarAssignment(env_var, AAlloc(num_idns))) ++
       setEnvValues ++
       convert_instruction_to_asmjs(p, ftables, e2)
     }
@@ -48,7 +48,7 @@ object asmjs_conversion {
 
       List(AVarAssignment(ai, AAlloc(2)),
         AHeapAssignment(AVarAccess(ai), AStaticValue(ftable_name_and_index_for_fname(ftables, f.idn)._2)),
-        AHeapAssignment(APrimitiveInstruction("+", AVarAccess(ai), AStaticValue(1)), AVarAccess(AIdn(env.asInstanceOf[SIdn].idn)))) ++
+        AHeapAssignment(APrimitiveInstruction("+", AVarAccess(ai), AStaticValue(4)), AVarAccess(AIdn(env.asInstanceOf[SIdn].idn)))) ++
       convert_instruction_to_asmjs(p, ftables, e2)
     
     }
@@ -74,7 +74,7 @@ object asmjs_conversion {
 
   def convert_value_to_asmjs(p: SProgram, ftables: Map[String,List[ljsp.AST.Idn]], e: SExp) : AExp = e match {
     case SInt(i) => AStaticValue(i)
-    case SNth(n, e) => AArrayAccess(AStaticValue(n), convert_value_to_asmjs(p, ftables, e))
+    case SNth(n, e) => AArrayAccess(AStaticValue(n*4), convert_value_to_asmjs(p, ftables, e))
     case SIdn(i) => AVarAccess(AIdn(i))
     // FIXME this only uses the first two operands. this should be fixed in the cps conv. function
     // a primitive application with more than two operands should be converted into several with two each

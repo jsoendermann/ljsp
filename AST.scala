@@ -64,8 +64,10 @@ object AST {
           size = size|0;
           
           var current_mem_top = 0;
+
           current_mem_top = mem_top;
-          mem_top = mem_top + size|0;
+          mem_top = (mem_top + ((size*4)|0))|0;
+
 
           return current_mem_top|0;
       }
