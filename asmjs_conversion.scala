@@ -10,7 +10,7 @@ object asmjs_conversion {
     val fnames_map_pow_2 = fnames_map.map{ case (ftable, fnames) => Tuple2(ftable, fnames ++ List.fill(find_next_power_of_2(fnames.size)-fnames.size)(fnames(0)))}
     //println(fnames_map_pow_2)
     //println(ftable_name_and_index_for_fname(fnames_map_pow_2, "fib"))
-    AModule(p.ds.map{convert_define_to_asmjs(p, fnames_map_pow_2, _)}, fnames_map_pow_2)
+    AModule(p.ds.map{d => convert_define_to_asmjs(p, fnames_map_pow_2, d)}, fnames_map_pow_2)
   }
 
   def ftable_name_and_index_for_fname(ftables: Map[String,List[ljsp.AST.Idn]], f: String): Tuple2[String, Int] = {
@@ -24,17 +24,18 @@ object asmjs_conversion {
 
 
   def convert_define_to_asmjs(p: SProgram, ftables: Map[String,List[ljsp.AST.Idn]], d: SDefine) : AFunction = {
-    val instructions = convert_instruction_to_asmjs(p, ftables, d.e)
-    AFunction(d.name.idn, d.params.map{si => AIdn(si.idn)}, instructions)
+    val statements = convert_instruction_to_asmjs(p, ftables, d.e)
+    val statements_with_return = add_return(statements)
+    AFunction(d.name.idn, d.params.map{si => AIdn(si.idn)}, statements_with_return)
   }
 
-  def convert_instruction_to_asmjs(p: SProgram, ftables: Map[String,List[ljsp.AST.Idn]], e: SExp) : List[AExp] = e match {
+  def convert_instruction_to_asmjs(p: SProgram, ftables: Map[String,List[ljsp.AST.Idn]], e: SExp) : List[AStatement] = e match {
     case SIdn(i) => List(AVarAccess(AIdn(i)))
     case SLet(i, SMakeEnv(idns), e2) => {
       val num_idns = idns.size
       val ai = AIdn(i.idn)
 
-      val setEnvValues: List[AExp] = idns.zipWithIndex.map{ case (idn, index) => AHeapAssignment(APrimitiveInstruction("+", AVarAccess(ai), AStaticValue(index)), AVarAccess(AIdn(idn.idn))) }
+      val setEnvValues: List[AStatement] = idns.zipWithIndex.map{ case (idn, index) => AHeapAssignment(APrimitiveInstruction("+", AVarAccess(ai), AStaticValue(index)), AVarAccess(AIdn(idn.idn))) }
 
       List(AVarAssignment(ai, AAlloc(num_idns))) ++
       setEnvValues ++
@@ -71,7 +72,7 @@ object asmjs_conversion {
     case _ => List(ATODO)
   }
 
-  def convert_value_to_asmjs(p: SProgram, e: SExp) : AValue = e match {
+  def convert_value_to_asmjs(p: SProgram, e: SExp) : AExp = e match {
     case SInt(i) => AStaticValue(i)
     case SNth(n, e) => AArrayAccess(AStaticValue(n), convert_value_to_asmjs(p, e))
     case SIdn(i) => AVarAccess(AIdn(i))
@@ -93,6 +94,10 @@ object asmjs_conversion {
       }
     }
     case _ => ATODO //TODO this shouldn't happen
+  }
+
+  def add_return(statements: List[AStatement]) : List[AStatement] = {
+    statements
   }
 
 }
