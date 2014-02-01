@@ -69,7 +69,7 @@ object asmjs_conversion {
         AIf(AVarAccess(if_var), convert_instruction_to_asmjs(p, ftables, e2), convert_instruction_to_asmjs(p, ftables, e3)))
     }
 
-    case _ => List(ATODO)
+    case _ => throw new IllegalArgumentException()
   }
 
   def convert_value_to_asmjs(p: SProgram, ftables: Map[String,List[ljsp.AST.Idn]], e: SExp) : AExp = e match {
@@ -94,7 +94,7 @@ object asmjs_conversion {
         AFunctionCallByIndex(AIdn(ftable_name), AIdn(proc.asInstanceOf[SIdn].idn), ftables(ftable_name).size-1, es.map{convert_value_to_asmjs(p, ftables, _)})
       }
     }
-    case _ => ATODO //TODO this shouldn't happen
+    case _ => throw new IllegalArgumentException()
   }
 
   def add_return(statements: List[AStatement]) : List[AStatement] = statements match {

@@ -112,6 +112,5 @@ object AST {
   case class AHeapAccess(index: AExp) extends AExp { override def toString = { "(H32[(" + index.toString + ")>>2]|0)" }}
   case class AArrayAccess(index: AExp, adr: AExp) extends AExp { override def toString = { "H32[(" + APrimitiveInstruction("+", adr, index).toString() + ")>>2]|0" }}
   case class AAlloc(size: Int) extends AExp { override def toString = { "(alloc("+size.toString()+")|0)" }}
-  case object ATODO extends AExp { override def toString = { "/*TODO*/" }}
 
 }
