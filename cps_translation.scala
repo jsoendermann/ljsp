@@ -6,7 +6,11 @@ import ljsp.util._
 object cps_translation {
   // this function only exists for typecasting, maybe there is a better way to do this
   def cps_trans_prog(p : SProgram, k : SExp => SExp) : SProgram = {
-    cps_trans(p, k).asInstanceOf[SProgram]
+    val func_copies = p.ds.map{d => {
+      val ident_param = fresh("ident_param")
+      SDefine(SIdn(d.name + "_copy"), d.params, SAppl(d.name, List(SLambda(List(ident_param), ident_param)) ++ d.params))}}
+    val cps_prog = cps_trans(p, k).asInstanceOf[SProgram]
+    SProgram(cps_prog.ds ++ func_copies, cps_prog.e)
   }
 
   def cps_trans(e: SExp, k: SExp => SExp) : SExp = e match {
