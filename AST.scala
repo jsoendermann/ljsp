@@ -77,7 +77,7 @@ object AST {
       ftables.map{case (ftable, fnames) => "var "+ftable+ " = [" + fnames.mkString(",") + "];"}.mkString("\n") +
       "\n\n" +
       "return {" +
-      fs.filter{f => !f.name.startsWith("func")}.map{f => f.name + ": " + f.name}.mkString(", ") +
+      fs.filter{f => !f.name.startsWith("func") && !f.name.endsWith("_copy")}.map{f => f.name + ": " + f.name + "_copy"}.mkString(", ") +
       "};\n" +
       "}"
     }
