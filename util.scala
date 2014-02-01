@@ -9,7 +9,7 @@ object util {
     // New prefixes get added to the map automatically, it's not necessary
     // to initialize this map with all prefixes that will be used
     // FIXME this function doesn't work if the prefix it's called with isn't part of this collection
-    var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1, "env" -> -1, "func" -> -1, "conv_lambda" -> -1, "env_var" -> -1, "hoisted_lambda_var" -> -1, "if_var" -> -1)
+    var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1, "env" -> -1, "func" -> -1, "conv_lambda" -> -1, "env_var" -> -1, "hoisted_lambda_var" -> -1, "if_var" -> -1, "ret_val" -> -1)
 
     // this is the function that fresh will be bound to
     (s: String) => {

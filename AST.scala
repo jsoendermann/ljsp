@@ -43,6 +43,7 @@ object AST {
     case Nil => Set()
     case (i::is) => local_vars(is) ++ (i match {
       case AVarAssignment(i, v) => Set(i.idn)
+      case AIf(cond, block1, block2) => local_vars(List(cond)) ++ local_vars(block1) ++ local_vars(block2)
       case _ => Set()
     })
   }
@@ -72,7 +73,11 @@ object AST {
       fs.mkString("\n") + 
       "\n\n" + 
       ftables.map{case (ftable, fnames) => "var "+ftable+ " = [" + fnames.mkString(",") + "];"}.mkString("\n") +
-      "\n}"
+      "\n\n" +
+      "return {" +
+      fs.filter{f => !f.name.startsWith("func")}.map{f => f.name + ": " + f.name}.mkString(", ") +
+      "};\n" +
+      "}"
     }
   }
   case class AIdn(idn: Idn) { override def toString = { idn }}
@@ -90,17 +95,21 @@ object AST {
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
   case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "H32[(" + index.toString + ")>>2] = " + value.toString() }}
   case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (" + cond.toString() + ") {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
-  case class AReturn(s: AStatement) extends AStatement { override def toString = { "return " + s.toString() }}
+  case class AReturn(s: AStatement) extends AStatement { override def toString = { "return " + s.toString() + "|0" }}
 
   abstract class AExp extends AStatement
   case class AStaticValue(i: Int) extends AExp { override def toString = { i.toString() }}
-  case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { f + "(" + params.mkString(", ") + ")" }}
-  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, params: List[AExp]) extends AExp { override def toString = { ftable + "[" + AHeapAccess(AVarAccess(fpointer)).toString + "](" + APrimitiveInstruction("+", AVarAccess(fpointer), AStaticValue(1)).toString + ", " + params.mkString(", ") + ")" }}
-  case class APrimitiveInstruction(op: String, operand1: AExp, operand2: AExp) extends AExp { override def toString = { operand1.toString() + op + operand2.toString() }}
+  case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(" + f + "(" + params.mkString(", ") + ")|0)" }}
+  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(" + ftable + "[" + AHeapAccess(AVarAccess(fpointer)).toString + "&"+mask.toString + "](" + APrimitiveInstruction("+", AVarAccess(fpointer), AStaticValue(1)).toString + ", " + params.mkString(", ") + ")|0)" }}
+  case class APrimitiveInstruction(op: String, operand1: AExp, operand2: AExp) extends AExp { override def toString = op match {
+    case "+" | "-" => "(("+operand1.toString() + op + operand2.toString()+")|0)"
+    case "<" | ">" => "((("+operand1.toString() + ")|0)" + op + "((" + operand2.toString() + ")|0))"
+    case _ => operand1.toString() + op + operand2.toString()
+  }}
   case class AVarAccess(idn: AIdn) extends AExp { override def toString = { idn.toString }}
-  case class AHeapAccess(index: AExp) extends AExp { override def toString = { "H32[(" + index.toString + ")>>2]" }}
-  case class AArrayAccess(index: AExp, adr: AExp) extends AExp { override def toString = { "H32[(" + APrimitiveInstruction("+", adr, index).toString() + ") >> 2]" }}
-  case class AAlloc(size: Int) extends AExp { override def toString = { "alloc("+size.toString()+")" }}
+  case class AHeapAccess(index: AExp) extends AExp { override def toString = { "(H32[(" + index.toString + ")>>2]|0)" }}
+  case class AArrayAccess(index: AExp, adr: AExp) extends AExp { override def toString = { "H32[(" + APrimitiveInstruction("+", adr, index).toString() + ")>>2]|0" }}
+  case class AAlloc(size: Int) extends AExp { override def toString = { "(alloc("+size.toString()+")|0)" }}
   case object ATODO extends AExp { override def toString = { "/*TODO*/" }}
 
 }
