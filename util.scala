@@ -8,20 +8,18 @@ object util {
     // This is a map that maps identifier prefixes to their counters
     // New prefixes get added to the map automatically, it's not necessary
     // to initialize this map with all prefixes that will be used
-    // FIXME this function doesn't work if the prefix it's called with isn't part of this collection
-    var counters = scala.collection.mutable.Map("var" -> -1, "cont" -> -1, "env" -> -1, "func" -> -1, "conv_lambda" -> -1, "env_var" -> -1, "hoisted_lambda_var" -> -1, "if_var" -> -1, "ret_val" -> -1, "ident_param" -> -1)
+    var counters = scala.collection.mutable.Map[String, Int]()
 
     // this is the function that fresh will be bound to
     (s: String) => {
       counters get s match {
         case Some(counter) => {
           counters(s) = counter + 1
-          // FIXME make this return Idn instead of SIdn
-          SIdn(s ++ "_" ++ counters(s).toString())
+          s ++ "_" ++ counters(s).toString()
         }
         case None => {
-          counters ++ scala.collection.mutable.Map(s -> 0)
-          SIdn(s ++ "_0")
+          counters = counters ++ scala.collection.mutable.Map(s -> 0)
+          s ++ "_0"
         }
       }
     }

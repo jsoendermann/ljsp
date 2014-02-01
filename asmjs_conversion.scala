@@ -64,7 +64,7 @@ object asmjs_conversion {
     }
 
     case SIf(e1, e2, e3) => {
-      val if_var = AIdn(fresh("if_var").idn)
+      val if_var = AIdn(fresh("if_var"))
       List(AVarAssignment(if_var, convert_value_to_asmjs(p, ftables, e1)),
         AIf(AVarAccess(if_var), convert_instruction_to_asmjs(p, ftables, e2), convert_instruction_to_asmjs(p, ftables, e3)))
     }
@@ -100,7 +100,7 @@ object asmjs_conversion {
   def add_return(statements: List[AStatement]) : List[AStatement] = statements match {
     case (s::Nil) => s match {
       case AIf(cond, block1, block2) => {
-        val ret_val = AIdn(fresh("ret_val").idn)
+        val ret_val = AIdn(fresh("ret_val"))
         List(AIf(cond, assign_last_expr_to_ret(ret_val, block1), assign_last_expr_to_ret(ret_val, block2)),
           AReturn(AVarAccess(ret_val)))}
       case _ => List(AReturn(s))

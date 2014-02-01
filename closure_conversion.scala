@@ -37,7 +37,7 @@ object closure_conversion {
       // free vars
       val fvs = free_vars(p, SLambda(params, e)).toList
 
-      val env = fresh("env")
+      val env = SIdn(fresh("env"))
       val fvs_with_index = fvs.zipWithIndex
       val e_with_fvs_bound = fvs_with_index.foldRight(cl_conv(p, e)) {
         case ((x, n), e) => SLet(SIdn(x), SNth(n, env), e)

@@ -54,7 +54,7 @@ object hoisting {
       HoistedExpression(SApplPrimitive(proc, hes.map{he => he.e}), hes.flatMap{hd => hd.new_defs})
     }
     case SMakeLambda(l, env) => {
-      val f = fresh("func")
+      val f = SIdn(fresh("func"))
       val hl = hoist(l)
       val casted_hl_e = hl.e.asInstanceOf[SLambda]
 
@@ -74,7 +74,7 @@ object hoisting {
   def move_hoisted_lambdas(e: SExp) : SExp = e match {
     // For lets, add another let in front for the environment
     case SLet(idn, SHoistedLambda(f, SMakeEnv(idns)), e2) => {
-      val env_var = fresh("env_var")
+      val env_var = SIdn(fresh("env_var"))
       SLet(env_var, SMakeEnv(idns), SLet(idn, SHoistedLambda(f, env_var), move_hoisted_lambdas(e2)))
     }
     // For applications, move environments and hoisted lambda computations in front for all arguments
@@ -85,8 +85,8 @@ object hoisting {
 
       val new_appl = SAppl(proc, es.map{e => (e match {
         case SHoistedLambda(f, env) => {
-          val env_var = fresh("env_var")
-          val hl_var = fresh("hoisted_lambda_var")
+          val env_var = SIdn(fresh("env_var"))
+          val hl_var = SIdn(fresh("hoisted_lambda_var"))
 
           // The order is important here
           hoisted_es = hoisted_es ++ List((hl_var, SHoistedLambda(f, env_var)))

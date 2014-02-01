@@ -7,7 +7,7 @@ object cps_translation {
   // this function only exists for typecasting, maybe there is a better way to do this
   def cps_trans_prog(p : SProgram, k : SExp => SExp) : SProgram = {
     val func_copies = p.ds.map{d => {
-      val ident_param = fresh("ident_param")
+      val ident_param = SIdn(fresh("ident_param"))
       SDefine(SIdn(d.name + "_copy"), d.params, SAppl(d.name, List(SLambda(List(ident_param), ident_param)) ++ d.params))}}
     val cps_prog = cps_trans(p, k).asInstanceOf[SProgram]
     SProgram(cps_prog.ds ++ func_copies, cps_prog.e)
@@ -17,7 +17,7 @@ object cps_translation {
     // CPS-translate all function definitions and the expression
     case SProgram(ds, e) => {
       SProgram(ds.map{d => 
-        val c = fresh("cont")
+        val c = SIdn(fresh("cont"))
         SDefine(d.name, c :: d.params, cps_tail_trans(d.e, c))
       }, cps_trans(e, k))
   }
@@ -31,8 +31,8 @@ object cps_translation {
 
   // For if, evaluate e1 first, then branch with two recursive calls
   case SIf(e1, e2, e3) => {
-    val c = fresh("var")
-    val p = fresh("var")
+    val c = SIdn(fresh("var"))
+    val p = SIdn(fresh("var"))
     cps_trans(e1, (ce1: SExp) =>
       SLet(c, SLambda(List(p), k(p)),
         SIf(ce1, cps_tail_trans(e2, c), cps_tail_trans(e3, c))))
@@ -41,11 +41,11 @@ object cps_translation {
     // for lambdas and defines, add an additional parameter that will hold the continuation
     // and call it with the result when the function is done
     case SLambda(params, e) => {
-      val c = fresh("cont")
+      val c = SIdn(fresh("cont"))
       k(SLambda(c :: params, cps_tail_trans(e, c)))
     }
     case SDefine(name, params, e) => {
-      val c = fresh("cont")
+      val c = SIdn(fresh("cont"))
       k(SDefine(name, c :: params, cps_tail_trans(e, c)))
     }
 
@@ -53,7 +53,7 @@ object cps_translation {
     case SAppl(proc, es) => {
       // the application will have (lambda (f) k(f)) added as additional parameter
       // which will be the continuation for the function that is being called
-      val f = fresh("var")
+      val f = SIdn(fresh("var"))
 
       // CPS-Translate the expression for the procedure first
       cps_trans(proc, (cproc: SExp) => {
@@ -72,7 +72,7 @@ object cps_translation {
     // and continue with let f=SAppl in k(f)
     // TODO translate expressions with more than 2 arguments
     case SApplPrimitive(proc, es) => {
-      val z = fresh("var")
+      val z = SIdn(fresh("var"))
 
       // this function calls CPS recursively for all expressions in es and accumulates the result in ces
       // the last call with an empty es creates calls the function with the additional lambda mentioned above
@@ -86,7 +86,7 @@ object cps_translation {
 
     case SLet(idn, e1, e2) => {
       // c is a simple continuation lambda
-      val f = fresh("var")
+      val f = SIdn(fresh("var"))
       val c = SLambda(List(f), k(f))
 
       val ce2 = cps_tail_trans(e2, c)
@@ -105,20 +105,20 @@ object cps_translation {
     case SInt(i) => SAppl(c, List(e))
 
     case SIf(e1, e2, e3) => {
-      val c_ = fresh("var")
-      val p = fresh("var")
+      val c_ = SIdn(fresh("var"))
+      val p = SIdn(fresh("var"))
       cps_trans(e1, (ce1: SExp) =>
         SLet(c_, SLambda(List(p), SAppl(c, List(p))),
           SIf(ce1, cps_tail_trans(e2, c_), cps_tail_trans(e3, c_))))
     }
 
     case SLambda(params, e) => {
-      val c_ = fresh("cont")
+      val c_ = SIdn(fresh("cont"))
       SAppl(c, List((SLambda(c_ :: params, cps_tail_trans(e, c_)))))
     }
 
     case SAppl(proc, es) => {
-      val f = fresh("var")
+      val f = SIdn(fresh("var"))
       cps_trans(proc, (cproc: SExp) => {
           def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
             case Nil => SAppl(cproc, SLambda(List(f), SAppl(c, List(f))) :: ces)
@@ -129,7 +129,7 @@ object cps_translation {
     }
 
     case SApplPrimitive(proc, es) => {
-      val z = fresh("var")
+      val z = SIdn(fresh("var"))
 
       def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
         case Nil => SLet(z, SApplPrimitive(proc, ces), SAppl(c, List(z)))
@@ -139,7 +139,7 @@ object cps_translation {
     }
 
     case SLet(idn, e1, e2) => {
-      val f = fresh("var")
+      val f = SIdn(fresh("var"))
       val c_ = SLambda(List(f), SAppl(c, List(f)))
 
       val ce2 = cps_tail_trans(e2, c_)
