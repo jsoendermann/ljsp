@@ -6,7 +6,6 @@ import ljsp.cps_translation._
 import ljsp.closure_conversion._
 import ljsp.hoisting._
 import ljsp.asmjs_conversion._
-// TODO remove this
 
 object Ljsp {
   def main(args: Array[String]) {
