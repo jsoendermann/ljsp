@@ -8,7 +8,7 @@ object AST {
 
   abstract class SExp
 
-  case class SProgram(ds: List[SDefine], e: SExp) extends SExp { override def toString = ds.mkString("\n") + "\n" + e.toString }
+  case class SProgram(ds: List[SDefine], e: SExp) extends SExp { override def toString = "; defines\n" + ds.mkString("\n") + "\n; expression\n" + e.toString }
 
   case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
 
