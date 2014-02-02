@@ -17,7 +17,6 @@ object AST {
   // TODO double
   case class SIf(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
   case class SLambda(params: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + params.mkString(" ") + ") " + e.toString() + ")" }
-  // TODO begin
   case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
   case class SApplPrimitive(proc: SIdn, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
   case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
@@ -32,22 +31,11 @@ object AST {
   case class SGetProc(e: SExp) extends SExp { override def toString = "(get-proc " + e.toString + ")" }
 
 
-  // Classes used in hoisting phase
+  // Class used in the hoisting phase
   case class SHoistedLambda(f: SIdn, env: SExp) extends SExp { override def toString = "(hoisted-lambda " + f.toString + " " + env.toString + ")" }
 
 
   // Asm.js AST
-
-  // TODO move this to a different file
-  def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {
-    case Nil => Set()
-    case (i::is) => local_vars(is) ++ (i match {
-      case AVarAssignment(i, v) => Set(i.idn)
-      case AIf(cond, block1, block2) => local_vars(List(cond)) ++ local_vars(block1) ++ local_vars(block2)
-      case _ => Set()
-    })
-  }
-
   case class AModule(fs: List[AFunction], ftables: Map[String, List[String]]) { 
     override def toString = { 
       """
@@ -113,4 +101,13 @@ object AST {
   case class AArrayAccess(index: AExp, adr: AExp) extends AExp { override def toString = { "H32[(" + APrimitiveInstruction("+", adr, index).toString() + ")>>2]|0" }}
   case class AAlloc(size: Int) extends AExp { override def toString = { "(alloc("+size.toString()+")|0)" }}
 
+  def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {
+    case Nil => Set()
+    case (i::is) => local_vars(is) ++ (i match {
+      case AVarAssignment(i, v) => Set(i.idn)
+      case AIf(cond, block1, block2) => local_vars(List(cond)) ++ local_vars(block1) ++ local_vars(block2)
+      case _ => Set()
+    })
+  }
 }
+
