@@ -46,6 +46,7 @@ object AST {
       var H32 = new stdlib.Int32Array(heap);
 
       var log = foreign.consoleDotLog;
+      var imul = stdlib.Math.imul;
 
 
       function alloc(size) {
@@ -90,9 +91,10 @@ object AST {
   abstract class AExp extends AStatement
   case class AStaticValue(i: Int) extends AExp { override def toString = { i.toString() }}
   case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(" + f + "(" + params.mkString(", ") + ")|0)" }}
-  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(" + ftable + "[" + AHeapAccess(AVarAccess(fpointer)).toString + "&"+mask.toString + "](" + APrimitiveInstruction("+", AVarAccess(fpointer), AStaticValue(1)).toString + ", " + params.mkString(", ") + ")|0)" }}
+  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(" + ftable + "[" + AHeapAccess(AVarAccess(fpointer)).toString + "&"+mask.toString + "](" + APrimitiveInstruction("+", AVarAccess(fpointer), AStaticValue(4)).toString + ", " + params.mkString(", ") + ")|0)" }}
   case class APrimitiveInstruction(op: String, operand1: AExp, operand2: AExp) extends AExp { override def toString = op match {
-    case "+" | "-" => "(("+operand1.toString() + op + operand2.toString()+")|0)"
+    case "+" | "-" => "(((("+operand1.toString() +")|0)" + op + "((" + operand2.toString()+")|0))|0)"
+    case "*" => "(imul(("+operand1.toString()+")|0,("+operand2.toString()+")|0)|0)"
     case "<" | ">" => "((("+operand1.toString() + ")|0)" + op + "((" + operand2.toString() + ")|0))"
     case _ => operand1.toString() + op + operand2.toString()
   }}
