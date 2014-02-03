@@ -55,18 +55,26 @@ object AST {
           var current_mem_top = 0;
 
           current_mem_top = mem_top;
-          mem_top = (mem_top + ((size*4)|0))|0;
+          mem_top = (mem_top + size)|0;
 
 
           return current_mem_top|0;
       }
 
-      function set_array_element(array, arr_index, value) {
-          array = array|0;
-          arr_index = arr_index |0;
+      function get_array_element(base, offset) {
+          base = base|0;
+          offset = offset|0;
+
+          return H32[((base + offset)|0) << 2 >> 2]|0;
+      }
+
+
+      function set_array_element(base, offset, value) {
+          base = base|0;
+          offset = offset |0;
           value = value|0;
 
-          H32[((array + ((arr_index * 4)|0))|0)>>2] = value;
+          H32[((base + offset)|0) << 2 >> 2] = value;
       }
 
       function make_hoisted_lambda(f_index, env_pointer) {
@@ -149,6 +157,7 @@ object AST {
     }
   }
   case class AIdn(idn: Idn) { override def toString = { idn }}
+  // TODO reset mem_top at the beginning of *_copy functions
   case class AFunction(name: String, params: List[AIdn], instructions: List[AStatement]) { 
     override def toString = { 
       val lv = local_vars(instructions)
@@ -161,7 +170,7 @@ object AST {
 
   abstract class AStatement
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
-  case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "H32[(" + index.toString + ")>>2] = " + value.toString() }}
+  case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(0, "+index+", "+value+")" }}
   //case class AArrayAssignment(base: AExp, arr_index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(" + base.toString() + ", " + arr_index.toString() + ", " + value.toString() + ")" }}
   case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (" + cond.toString() + ") {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
   case class AReturn(s: AStatement) extends AStatement { override def toString = { "return " + s.toString() + "|0" }}
@@ -169,7 +178,7 @@ object AST {
   abstract class AExp extends AStatement
   case class AStaticValue(i: Int) extends AExp { override def toString = { i.toString() }}
   case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(" + f + "(" + params.mkString(", ") + ")|0)" }}
-  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(" + ftable + "[" + AHeapAccess(AVarAccess(fpointer)).toString + "&"+mask.toString + "](" + APrimitiveInstruction("+", AVarAccess(fpointer), AStaticValue(4)).toString + ", " + params.mkString(", ") + ")|0)" }}
+  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(" + ftable + "[" + AHeapAccess(AVarAccess(fpointer)).toString + "&"+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1)) + ", " + params.mkString(", ") + ")|0)" }}
   case class APrimitiveInstruction(op: String, operand1: AExp, operand2: AExp) extends AExp { override def toString = op match {
     case "+" | "-" => "(((("+operand1.toString() +")|0)" + op + "((" + operand2.toString()+")|0))|0)"
     case "*" => "(imul(("+operand1.toString()+")|0,("+operand2.toString()+")|0)|0)"
@@ -178,10 +187,10 @@ object AST {
   }}
   // TODO remove this class, use AIdn directly
   case class AVarAccess(idn: AIdn) extends AExp { override def toString = { idn.toString }}
-  case class AHeapAccess(index: AExp) extends AExp { override def toString = { "(H32[(" + index.toString + ")>>2]|0)" }}
-  case class AArrayAccess(index: AExp, adr: AExp) extends AExp { override def toString = { "H32[(" + APrimitiveInstruction("+", adr, index).toString() + ")>>2]|0" }}
-  case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "make_env_"+values.size.toString() + "(" + values.mkString(", ") + ")|0"}}
-  case class AMakeHoistedLambda(f_index: AExp, env_pointer: AExp) extends AExp { override def toString = { "make_hoisted_lambda(" + f_index.toString() + ", " + env_pointer.toString() + ")|0"}}
+  case class AHeapAccess(index: AExp) extends AExp { override def toString = { AArrayAccess(AStaticValue(0), index).toString }}
+  case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp { override def toString = { "(get_array_element("+base_address+", "+offset+")|0)" }}
+  case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "(make_env_"+values.size.toString() + "(" + values.mkString(", ") + ")|0)"}}
+  case class AMakeHoistedLambda(f_index: AExp, env_pointer: AExp) extends AExp { override def toString = { "(make_hoisted_lambda(" + f_index.toString() + ", " + env_pointer.toString() + ")|0)"}}
   case class AAlloc(size: Int) extends AExp { override def toString = { "(alloc("+size.toString()+")|0)" }}
 
   def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {

@@ -83,7 +83,7 @@ object asmjs_conversion {
     }
 
     case SApplPrimitive(proc, es) => APrimitiveInstruction(proc.idn, convert_value_to_asmjs(p, ftables, es(0)), convert_value_to_asmjs(p, ftables, es(1)))
-    case SNth(n, e) => AArrayAccess(AStaticValue(n * 4), convert_value_to_asmjs(p, ftables, e))
+    case SNth(n, e) => AArrayAccess(convert_value_to_asmjs(p, ftables, e), AStaticValue(n))
   }
 
   // This function wraps the last statement in an AReturn if it's not an if (which means it's a function call?)
