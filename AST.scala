@@ -176,10 +176,12 @@ object AST {
   case class AReturn(s: AStatement) extends AStatement { override def toString = { "return " + s.toString() + "|0" }}
 
   abstract class AExp extends AStatement
+  // TODO remove this class
   case class AStaticValue(i: Int) extends AExp { override def toString = { i.toString() }}
   case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(" + f + "(" + params.mkString(", ") + ")|0)" }}
   case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(" + ftable + "[" + AHeapAccess(AVarAccess(fpointer)).toString + "&"+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1)) + ", " + params.mkString(", ") + ")|0)" }}
   case class APrimitiveInstruction(op: String, operand1: AExp, operand2: AExp) extends AExp { override def toString = op match {
+    // TODO implement other primitive operations
     case "+" | "-" => "(((("+operand1.toString() +")|0)" + op + "((" + operand2.toString()+")|0))|0)"
     case "*" => "(imul(("+operand1.toString()+")|0,("+operand2.toString()+")|0)|0)"
     case "<" | ">" => "((("+operand1.toString() + ")|0)" + op + "((" + operand2.toString() + ")|0))"
