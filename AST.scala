@@ -60,6 +60,83 @@ object AST {
 
           return current_mem_top|0;
       }
+
+      function set_array_element(array, arr_index, value) {
+          array = array|0;
+          arr_index = arr_index |0;
+          value = value|0;
+
+          H32[((array + ((arr_index * 4)|0))|0)>>2] = value;
+      }
+
+      function make_hoisted_lambda(f_index, env_pointer) {
+          f_index = f_index|0;
+          env_pointer = env_pointer|0;
+
+          var a = 0;
+
+          a = alloc(2)|0;
+          set_array_element(a, 0, f_index);
+          set_array_element(a, 1, env_pointer);
+          return a|0;
+      }
+
+      function make_env_0() {
+          return mem_top|0;
+      }
+
+      function make_env_1(v1) {
+          v1 = v1|0;
+
+          var a = 0;
+
+          a = alloc(1)|0;
+          set_array_element(a, 0, v1);
+          return a|0;
+      }
+
+      function make_env_2(v1, v2) {
+          v1 = v1|0;
+          v2 = v2|0;
+
+          var a = 0;
+
+          a = alloc(2)|0;
+          set_array_element(a, 0, v1);
+          set_array_element(a, 1, v2);
+          return a|0;
+      }
+
+      function make_env_3(v1, v2, v3) {
+          v1 = v1|0;
+          v2 = v2|0;
+          v3 = v3|0;
+
+          var a = 0;
+
+          a = alloc(3)|0;
+          set_array_element(a, 0, v1);
+          set_array_element(a, 1, v2);
+          set_array_element(a, 2, v3);
+          return a|0;
+      }
+      
+      function make_env_4(v1, v2, v3, v4) {
+          v1 = v1|0;
+          v2 = v2|0;
+          v3 = v3|0;
+          v4 = v4|0;
+
+          var a = 0;
+
+          a = alloc(4)|0;
+          set_array_element(a, 0, v1);
+          set_array_element(a, 1, v2);
+          set_array_element(a, 2, v3);
+          set_array_element(a, 3, v4);
+          return a|0;
+      }
+      
       """ +
       fs.mkString("\n") + 
       "\n\n" + 
@@ -85,6 +162,7 @@ object AST {
   abstract class AStatement
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
   case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "H32[(" + index.toString + ")>>2] = " + value.toString() }}
+  //case class AArrayAssignment(base: AExp, arr_index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(" + base.toString() + ", " + arr_index.toString() + ", " + value.toString() + ")" }}
   case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (" + cond.toString() + ") {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
   case class AReturn(s: AStatement) extends AStatement { override def toString = { "return " + s.toString() + "|0" }}
 
@@ -98,9 +176,12 @@ object AST {
     case "<" | ">" => "((("+operand1.toString() + ")|0)" + op + "((" + operand2.toString() + ")|0))"
     case _ => operand1.toString() + op + operand2.toString()
   }}
+  // TODO remove this class, use AIdn directly
   case class AVarAccess(idn: AIdn) extends AExp { override def toString = { idn.toString }}
   case class AHeapAccess(index: AExp) extends AExp { override def toString = { "(H32[(" + index.toString + ")>>2]|0)" }}
   case class AArrayAccess(index: AExp, adr: AExp) extends AExp { override def toString = { "H32[(" + APrimitiveInstruction("+", adr, index).toString() + ")>>2]|0" }}
+  case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "make_env_"+values.size.toString() + "(" + values.mkString(", ") + ")|0"}}
+  case class AMakeHoistedLambda(f_index: AExp, env_pointer: AExp) extends AExp { override def toString = { "make_hoisted_lambda(" + f_index.toString() + ", " + env_pointer.toString() + ")|0"}}
   case class AAlloc(size: Int) extends AExp { override def toString = { "(alloc("+size.toString()+")|0)" }}
 
   def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {

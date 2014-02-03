@@ -41,23 +41,18 @@ object asmjs_conversion {
       val num_idns = idns.size
       val env_var = AIdn(i.idn)
 
-      // This fills the environment array (which gets allocated on the next line)
-      val setEnvValues: List[AStatement] = idns.zipWithIndex.map{ case (idn, index) => AHeapAssignment(APrimitiveInstruction("+", AVarAccess(env_var), AStaticValue(index * 4)), AVarAccess(AIdn(idn.idn))) }
-
-      List(AVarAssignment(env_var, AAlloc(num_idns))) ++
-      setEnvValues ++
+      AVarAssignment(env_var, AMakeEnv(idns.map{sidn => AVarAccess(AIdn(sidn.idn))})) :: 
       convert_statement_to_asmjs(p, ftables, e2)
     }
 
     case SLet(i, SHoistedLambda(f, env), e2) => {
       val hl_var = AIdn(i.idn)
 
-      // Allocate an array with two elements to hold 
+      // Make array with
       // 1. The ftable index (the correct ftable will be determined once the hoisted lambda is being called by looking at the number of params it's being called with)
       // 2. A pointer (array index) to the environment array
-      List(AVarAssignment(hl_var, AAlloc(2)),
-        AHeapAssignment(AVarAccess(hl_var), AStaticValue(ftable_name_and_index_for_fname(ftables, f.idn)._2)),
-        AHeapAssignment(APrimitiveInstruction("+", AVarAccess(hl_var), AStaticValue(4)), AVarAccess(AIdn(env.asInstanceOf[SIdn].idn)))) ++
+      // TODO make this more readable
+      AVarAssignment(hl_var, AMakeHoistedLambda(AStaticValue(ftable_name_and_index_for_fname(ftables, f.idn)._2), AVarAccess(AIdn(env.asInstanceOf[SIdn].idn)))) ::
       convert_statement_to_asmjs(p, ftables, e2)}
 
     case SLet(i, e1, e2) => {
