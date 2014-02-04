@@ -37,6 +37,7 @@ object AST {
 
   // Asm.js AST
   case class AModule(fs: List[AFunction], ftables: Map[String, List[String]]) { 
+    // TODO inline all these functions for performance
     override def toString = { 
       """
       function AsmModule(stdlib, foreign, heap) {
