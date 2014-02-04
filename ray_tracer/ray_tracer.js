@@ -181,7 +181,7 @@
         }
 
 
-var c= 20;
+//var c= 20;
 
         function trace(r, recursion_depth) {
             var i, sphere, closestSphere, k, intersectionPoint, normal, dirToLight, intensity, reflectionVector, reflectedRay, reflectedColour;
@@ -209,12 +209,12 @@ var c= 20;
 
                 closestPointBetweenLight = closestIntersectionPoint(shadowRay);
 
-                if (c > 0 && closestSphere === spheres[0] && closestPointBetweenLight[0] !== Infinity) {
-                    console.log(closestPointBetweenLight);
-                    console.log(vector_distance(closestPointBetweenLight[1], closestPointBetweenLight[2].pos));//vector_length(difference_vector(closestPointBetweenLight[1], closestPointBetweenLight[2].pos)));
-                    console.log(vector_distance(closestPointBetweenLight[2].pos, follow_ray(shadowRay, -closestPointBetweenLight[0])));
-                    c -= 1;
-                }
+                //if (c > 0 && closestSphere === spheres[0] && closestPointBetweenLight[0] !== Infinity) {
+                //    console.log(closestPointBetweenLight);
+                //    console.log(vector_distance(closestPointBetweenLight[1], closestPointBetweenLight[2].pos));//vector_length(difference_vector(closestPointBetweenLight[1], closestPointBetweenLight[2].pos)));
+                //    console.log(vector_distance(closestPointBetweenLight[2].pos, follow_ray(shadowRay, -closestPointBetweenLight[0])));
+                //    c -= 1;
+                //}
 
 
                 if (closestPointBetweenLight[0] === Infinity)
@@ -229,28 +229,28 @@ var c= 20;
                 // ambient light
                 intensity = max(intensity, 0.2);
 
-                //if (recursion_depth > 0) {
-                //    r.dir.normalise();
+                if (recursion_depth > 0) {
+                    r.dir.normalise();
      
 
-                //    reflectionVector = difference_vector(r.dir, scala_vector_product(2 * dot_product(r.dir, normal), normal));
-                //    reflectionVector.normalise();
+                    reflectionVector = difference_vector(r.dir, scala_vector_product(2 * dot_product(r.dir, normal), normal));
+                    reflectionVector.normalise();
 
-                //    reflectedRay = new Ray(intersectionPoint, reflectionVector);
+                    reflectedRay = new Ray(intersectionPoint, reflectionVector);
 
-                //    reflectedColour = trace(reflectedRay, recursion_depth - 1);
+                    reflectedColour = trace(reflectedRay, recursion_depth - 1);
     
-                //    //console.log(reflectedColour);
-                //    //if (reflectedColour.r != 0 || reflectedColour.g != 0 || reflectedColour.b != 0)
-                //        return add_colours_with_weights(0.5, reflectedColour, 0.5, scaled_colour(intensity, closestSphere.clr));
-                //    //else
-                //    //    return new Colour(255, 200, 255);
+                    //console.log(reflectedColour);
+                    //if (reflectedColour.r != 0 || reflectedColour.g != 0 || reflectedColour.b != 0)
+                        return add_colours_with_weights(0.5, reflectedColour, 0.5, scaled_colour(intensity, closestSphere.clr));
+                    //else
+                    //    return new Colour(255, 200, 255);
 
 
 
-                //} else {
-                  return scaled_colour(intensity, closestSphere.clr);
-                //}
+                } else {
+                return scaled_colour(intensity, closestSphere.clr);
+                }
             }
             
         }
@@ -269,8 +269,8 @@ var c= 20;
         }
 
 
-        spheres = [new Sphere(new Vector3(0, 0, 100), 25, new Colour(255, 0, 0)),
-                new Sphere(new Vector3(35, -40, 180), 50, new Colour(0, 255, 0)),
+        spheres = [new Sphere(new Vector3(-50, -40, 150), 25, new Colour(255, 0, 0)),
+                new Sphere(new Vector3(35, -40, 150), 50, new Colour(0, 255, 0)),
                 new Sphere(new Vector3(-40, 30, 150), 25, new Colour(0, 0, 255))];
         light = new Light(new Vector3(0, 50, 0));
 
@@ -303,7 +303,7 @@ var c= 20;
                 r = new Ray(new Vector3(0, 0, 0), ray_dir);
 
 
-                setPixelToColour(imageData, x, y, trace(r, 2));
+                setPixelToColour(imageData, x, y, trace(r, 1));
             }
         }
 
