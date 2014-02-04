@@ -30,13 +30,21 @@
             this.pos = pos;
         }
 
+        function vector_length(v) {
+            return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+        }
+
+        function vector_distance(v1, v2) {
+            return vector_length(difference_vector(v1, v2));
+        }
+
         function Vector3(x, y, z) {
             this.x = x;
             this.y = y;
             this.z = z;
 
             this.normalise = function() {
-                var length = Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+                var length = vector_length(this);
                 this.x /= length;
                 this.y /= length;
                 this.z /= length;
@@ -85,6 +93,12 @@
             return new Vector3(v.x * s, v.y * s, v.z * s);
         }
 
+        function follow_ray(r, k) {
+            r.dir.normalise();
+            return new Vector3(r.org.x + k*r.dir.x, r.org.y + k*r.dir.y, r.org.z + k*r.dir.z);
+        }
+
+
         function add_vectors(v1, v2) {
             return new Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
         }
@@ -121,18 +135,23 @@
             }
 
             t0 = (-B - Math.sqrt(discriminant)) / (2.0 * A);
-            t1 = (B - Math.sqrt(discriminant)) / (2.0 * A);
+            t1 = (-B + Math.sqrt(discriminant)) / (2.0 * A);
 
 
-            if (t0 < 0 && t1 < 0) {
-                return Infinity;
-            } else if (t0 < 0 || t1 < 0) {
-                t0 = max(t0, t1);
-            } else { //(t0 >= 0 && t1 >= 0)
-                t0 = min(t0, t1);
+            if (t0 > t1) {
+                var temp = t0;
+                t0 = t1;
+                t1 = temp;
             }
 
+            if (t1 < 0)
+                return Infinity;
+
+            if (t0 < 0)
+                return t1;
+
             return t0;
+
         }
 
         
@@ -143,16 +162,26 @@
             for (i = 0; i < spheres.length; i++) {
                 sphere = spheres[i];
                 k = intersectionPoint(r, sphere);
+                // this happens when the ray starts on a ray, ignore that intersection
+                if (k < 0.1) {
+                    continue;
+                }
                 if (k < smallestK) {
                     smallestK = k;
                     closestSphere = sphere;
                 }
             }
+            if (smallestK < 0) console.log(smallestK);
 
-            return [smallestK, add_vectors(r.org, scala_vector_product(smallestK, r.dir)), closestSphere];
+            if (smallestK === Infinity)
+                return [Infinity, null, null];
+            else
+                // TODO use follow_ray
+                return [smallestK, add_vectors(r.org, scala_vector_product(smallestK, r.dir)), closestSphere];
         }
 
 
+var c= 20;
 
         function trace(r, recursion_depth) {
             var i, sphere, closestSphere, k, intersectionPoint, normal, dirToLight, intensity, reflectionVector, reflectedRay, reflectedColour;
@@ -162,11 +191,11 @@
             intersectionPoint = closest[1];
             closestSphere = closest[2];
 
-            //console.log(closest);
 
             if (k === Infinity) {
                 return new Colour(0, 0, 0); //Colour(60, 60, 60);
             } else {
+                if (k < 0) console.log(k);
                 intersectionPoint = new Vector3(r.org.x + k * r.dir.x, r.org.y + k * r.dir.y, r.org.z + k * r.dir.z);
                 normal = difference_vector(intersectionPoint, closestSphere.pos);
                 normal.normalise();
@@ -174,9 +203,36 @@
                 dirToLight = difference_vector(light.pos, intersectionPoint);
                 dirToLight.normalise();
 
-                intensity = dot_product(normal, dirToLight);
+                var shadowRay = new Ray(intersectionPoint, dirToLight);
+
+                
+
+                closestPointBetweenLight = closestIntersectionPoint(shadowRay);
+
+                if (c > 0 && closestSphere === spheres[0] && closestPointBetweenLight[0] !== Infinity) {
+                    console.log(closestPointBetweenLight);
+                    console.log(vector_distance(closestPointBetweenLight[1], closestPointBetweenLight[2].pos));//vector_length(difference_vector(closestPointBetweenLight[1], closestPointBetweenLight[2].pos)));
+                    console.log(vector_distance(closestPointBetweenLight[2].pos, follow_ray(shadowRay, -closestPointBetweenLight[0])));
+                    c -= 1;
+                }
+
+
+                if (closestPointBetweenLight[0] === Infinity)
+                    intensity = dot_product(normal, dirToLight);
+                else {
+                if (vector_length(difference_vector(intersectionPoint, light.pos)) > vector_length(difference_vector(intersectionPoint, closestPointBetweenLight[1])))
+                    intensity = 0;
+                else
+                    intensity = dot_product(normal, dirToLight);
+                }
+
+                // ambient light
+                intensity = max(intensity, 0.2);
 
                 //if (recursion_depth > 0) {
+                //    r.dir.normalise();
+     
+
                 //    reflectionVector = difference_vector(r.dir, scala_vector_product(2 * dot_product(r.dir, normal), normal));
                 //    reflectionVector.normalise();
 
@@ -185,15 +241,15 @@
                 //    reflectedColour = trace(reflectedRay, recursion_depth - 1);
     
                 //    //console.log(reflectedColour);
-                //    if (reflectedColour.r != 0 || reflectedColour.g != 0 || reflectedColour.b != 0)
-                //        return add_colours_with_weights(0.5, reflectedColour, 0.5, new Colour(255, 200, 255));
-                //    else
-                //        return new Colour(255, 200, 255);
+                //    //if (reflectedColour.r != 0 || reflectedColour.g != 0 || reflectedColour.b != 0)
+                //        return add_colours_with_weights(0.5, reflectedColour, 0.5, scaled_colour(intensity, closestSphere.clr));
+                //    //else
+                //    //    return new Colour(255, 200, 255);
 
 
 
                 //} else {
-                    return scaled_colour(intensity, closestSphere.clr);
+                  return scaled_colour(intensity, closestSphere.clr);
                 //}
             }
             
@@ -213,10 +269,10 @@
         }
 
 
-        spheres = [new Sphere(new Vector3(0, 0, 300), 20, new Colour(255, 200, 255)),
-                new Sphere(new Vector3(100, -40, 300), 30, new Colour(200, 255, 255)),
-                new Sphere(new Vector3(-100, 30, 300), 25, new Colour(255, 255, 200))];
-        light = new Light(new Vector3(0, 400, 0));
+        spheres = [new Sphere(new Vector3(0, 0, 100), 25, new Colour(255, 0, 0)),
+                new Sphere(new Vector3(35, -40, 180), 50, new Colour(0, 255, 0)),
+                new Sphere(new Vector3(-40, 30, 150), 25, new Colour(0, 0, 255))];
+        light = new Light(new Vector3(0, 50, 0));
 
         window.onload = function () { 
         result = document.getElementById("result");
@@ -247,7 +303,7 @@
                 r = new Ray(new Vector3(0, 0, 0), ray_dir);
 
 
-                setPixelToColour(imageData, x, y, trace(r, 1));
+                setPixelToColour(imageData, x, y, trace(r, 2));
             }
         }
 
