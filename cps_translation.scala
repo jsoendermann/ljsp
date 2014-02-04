@@ -26,8 +26,7 @@ object cps_translation {
   // of SLambda, the two are grouped together
 
   // For atomic values, no CPS-Translation is necessary. Simply apply k to e
-  case SIdn(idn) => k(e)
-  case SInt(i) => k(e)
+  case SIdn(_) | SDouble(_) => k(e)
 
   // For if, evaluate e1 first, then branch with two recursive calls
   case SIf(e1, e2, e3) => {
@@ -101,8 +100,7 @@ object cps_translation {
   // identifier which will point to a continuation function that has to be called with the result of e.
   // For explanations, please see the comments to CPS
   def cps_tail_trans(e: SExp, c: SExp) : SExp = e match {
-    case SIdn(idn) => SAppl(c, List(e))
-    case SInt(i) => SAppl(c, List(e))
+    case SIdn(_) | SDouble(_) => SAppl(c, List(e))
 
     case SIf(e1, e2, e3) => {
       val c_ = SIdn(fresh("var"))

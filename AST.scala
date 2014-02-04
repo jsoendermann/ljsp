@@ -2,7 +2,7 @@ package ljsp
 
 object AST {
 
-  type Num = Int
+  //type Num = Int
   type Idn = String
 
 
@@ -13,8 +13,8 @@ object AST {
   case class SDefine(name: SIdn, params: List[SIdn], e: SExp) extends SExp { override def toString = "(define (" + name.toString() + " " +  params.mkString(" ") + ") " + e.toString() + ")" }
 
   case class SIdn(idn: Idn) extends SExp { override def toString = idn }
-  case class SInt(i: Num) extends SExp { override def toString = i.toString() }
-  // TODO double
+  //case class SInt(i: Num) extends SExp { override def toString = i.toString() }
+  case class SDouble(d: Double) extends SExp { override def toString = d.toString() }
   case class SIf(e1: SExp, e2: SExp, e3: SExp) extends SExp { override def toString = "(if " + e1.toString() + " " + e2.toString() + " " + e3.toString() + ")" }
   case class SLambda(params: List[SIdn], e: SExp) extends SExp { override def toString = "(lambda (" + params.mkString(" ") + ") " + e.toString() + ")" }
   case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
@@ -43,107 +43,121 @@ object AST {
       function AsmModule(stdlib, foreign, heap) {
       "use asm";
 
-      var mem_top = 0;
+      var mem_top = 0.0;
       var H32 = new stdlib.Int32Array(heap);
+      var D32 = new stdlib.Float32Array(heap);
 
       var log = foreign.consoleDotLog;
       var imul = stdlib.Math.imul;
+      var floor = stdlib.Math.floor;
 
 
       function alloc(size) {
-          size = size|0;
+          size = +size;
           
-          var current_mem_top = 0;
+          var current_mem_top = 0.0;
 
           current_mem_top = mem_top;
-          mem_top = (mem_top + size)|0;
+          mem_top = +(mem_top + size);
 
 
-          return current_mem_top|0;
+          return +current_mem_top;
+      }
+
+      function double_to_int(d) {
+          d = +d;
+
+          return ~~+floor(d)|0;
       }
 
       function get_array_element(base, offset) {
-          base = base|0;
-          offset = offset|0;
+          base = +base;
+          offset = +offset;
 
-          return H32[((base + offset)|0) << 2 >> 2]|0;
+          var addr = 0.0;
+
+          addr = +(base + offset);
+          return +D32[(double_to_int(addr)|0) << 2 >> 2];
       }
 
 
       function set_array_element(base, offset, value) {
-          base = base|0;
-          offset = offset |0;
-          value = value|0;
+          base = +base;
+          offset = +offset;
+          value = +value;
+          
+          var addr = 0.0;
 
-          H32[((base + offset)|0) << 2 >> 2] = value;
+          addr = +(base + offset);
+          D32[(double_to_int(addr)|0) << 2 >> 2] = value;
       }
 
       function make_hoisted_lambda(f_index, env_pointer) {
-          f_index = f_index|0;
-          env_pointer = env_pointer|0;
+          f_index = +f_index;
+          env_pointer = +env_pointer;
 
-          var a = 0;
+          var a = 0.0;
 
-          a = alloc(2)|0;
-          set_array_element(a, 0, f_index);
-          set_array_element(a, 1, env_pointer);
-          return a|0;
+          a = +alloc(2.0);
+          set_array_element(a, 0.0, f_index);
+          set_array_element(a, 1.0, env_pointer);
+          return +a;
       }
 
       function make_env_0() {
-          return mem_top|0;
+          return +mem_top;
       }
 
       function make_env_1(v1) {
-          v1 = v1|0;
+          v1 = +v1;
 
-          var a = 0;
+          var a = 0.0;
 
-          a = alloc(1)|0;
-          set_array_element(a, 0, v1);
-          return a|0;
+          a = +alloc(1.0);
+          set_array_element(a, 0.0, v1);
+          return +a;
       }
 
       function make_env_2(v1, v2) {
-          v1 = v1|0;
-          v2 = v2|0;
+          v1 = +v1;
+          v2 = +v2;
 
-          var a = 0;
+          var a = 0.0;
 
-          a = alloc(2)|0;
-          set_array_element(a, 0, v1);
-          set_array_element(a, 1, v2);
-          return a|0;
+          a = +alloc(2.0);
+          set_array_element(a, 0.0, v1);
+          set_array_element(a, 1.0, v2);
+          return +a;
       }
 
       function make_env_3(v1, v2, v3) {
-          v1 = v1|0;
-          v2 = v2|0;
-          v3 = v3|0;
+          v1 = +v1;
+          v2 = +v2;
+          v3 = +v3;
 
-          var a = 0;
+          var a = 0.0;
 
-          a = alloc(3)|0;
-          set_array_element(a, 0, v1);
-          set_array_element(a, 1, v2);
-          set_array_element(a, 2, v3);
-          return a|0;
+          a = +alloc(3.0);
+          set_array_element(a, 0.0, v1);
+          set_array_element(a, 1.0, v2);
+          set_array_element(a, 2.0, v3);
+          return +a;
       }
       
       function make_env_4(v1, v2, v3, v4) {
-          v1 = v1|0;
-          v2 = v2|0;
-          v3 = v3|0;
-          v4 = v4|0;
+          v1 = +v1;
+          v2 = +v2;
+          v3 = +v3;
+          v4 = +v4;
 
-          var a = 0;
+          var a = 0.0;
 
-          a = alloc(4)|0;
-          set_array_element(a, 0, v1);
-          set_array_element(a, 1, v2);
-          set_array_element(a, 2, v3);
-          set_array_element(a, 3, v4);
-          return a|0;
+          a = +alloc(4.0);
+          set_array_element(a, 0.0, v1);
+          set_array_element(a, 1.0, v2);
+          set_array_element(a, 2.0, v3);
+          set_array_element(a, 3.0, v4);
+          return +a;
       }
       
       """ +
@@ -163,38 +177,38 @@ object AST {
     override def toString = { 
       val lv = local_vars(instructions)
       "function " + name + "(" + params.mkString(", ") + ")" + 
-      "{\n" + params.map{p => p.toString() + " = " + p.toString() + "|0;\n"}.mkString("") + "\n" +
-      (if (lv.size > 0) "var " + lv.mkString(" = 0, ") + " = 0;\n\n"; else "") +
+      "{\n" + params.map{p => p.toString() + " = +" + p.toString() + ";\n"}.mkString("") + "\n" +
+      (if (lv.size > 0) "var " + lv.mkString(" = 0.0, ") + " = 0.0;\n\n"; else "") +
       instructions.map{i => i.toString() + ";\n"}.mkString("") + "\n}" 
     }
   }
 
   abstract class AStatement
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
-  case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(0, "+index+", "+value+")" }}
+  case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(0.0, "+index+", "+value+")" }}
   //case class AArrayAssignment(base: AExp, arr_index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(" + base.toString() + ", " + arr_index.toString() + ", " + value.toString() + ")" }}
-  case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (" + cond.toString() + ") {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
-  case class AReturn(s: AStatement) extends AStatement { override def toString = { "return " + s.toString() + "|0" }}
+  case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (double_to_int(" + cond.toString() + ")|0) {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
+  case class AReturn(s: AStatement) extends AStatement { override def toString = { "return +" + s.toString() }}
 
   abstract class AExp extends AStatement
   // TODO remove this class
-  case class AStaticValue(i: Int) extends AExp { override def toString = { i.toString() }}
-  case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(" + f + "(" + params.mkString(", ") + ")|0)" }}
-  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(" + ftable + "[" + AHeapAccess(AVarAccess(fpointer)).toString + "&"+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1)) + ", " + params.mkString(", ") + ")|0)" }}
+  case class AStaticValue(d: Double) extends AExp { override def toString = { d.toString() }}
+  case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(+" + f + "(" + params.mkString(", ") + "))" }}
+  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(+" + ftable + "[(double_to_int(" + AHeapAccess(AVarAccess(fpointer)).toString + ")|0) & "+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1.0)) + ", " + params.mkString(", ") + "))" }}
   case class APrimitiveInstruction(op: String, operand1: AExp, operand2: AExp) extends AExp { override def toString = op match {
     // TODO implement other primitive operations
-    case "+" | "-" => "(((("+operand1.toString() +")|0)" + op + "((" + operand2.toString()+")|0))|0)"
-    case "*" => "(imul(("+operand1.toString()+")|0,("+operand2.toString()+")|0)|0)"
-    case "<" | ">" => "((("+operand1.toString() + ")|0)" + op + "((" + operand2.toString() + ")|0))"
+    case "+" | "-" => "(+((+("+operand1.toString() +"))" + op + "(+(" + operand2.toString()+"))))"
+    case "*" => "(+imul(+("+operand1.toString()+"),+("+operand2.toString()+")))"
+    case "<" | ">" => "+(((+(" + operand1.toString() + "))" + op + "(+(" + operand2.toString() + ")))|0)"
     case _ => operand1.toString() + op + operand2.toString()
   }}
   // TODO remove this class, use AIdn directly
   case class AVarAccess(idn: AIdn) extends AExp { override def toString = { idn.toString }}
-  case class AHeapAccess(index: AExp) extends AExp { override def toString = { AArrayAccess(AStaticValue(0), index).toString }}
-  case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp { override def toString = { "(get_array_element("+base_address+", "+offset+")|0)" }}
-  case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "(make_env_"+values.size.toString() + "(" + values.mkString(", ") + ")|0)"}}
-  case class AMakeHoistedLambda(f_index: AExp, env_pointer: AExp) extends AExp { override def toString = { "(make_hoisted_lambda(" + f_index.toString() + ", " + env_pointer.toString() + ")|0)"}}
-  case class AAlloc(size: Int) extends AExp { override def toString = { "(alloc("+size.toString()+")|0)" }}
+  case class AHeapAccess(index: AExp) extends AExp { override def toString = { AArrayAccess(AStaticValue(0.0), index).toString }}
+  case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp { override def toString = { "(+get_array_element("+base_address+", "+offset+"))" }}
+  case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "(+make_env_"+values.size.toString() + "(" + values.mkString(", ") + "))"}}
+  case class AMakeHoistedLambda(f_index: AExp, env_pointer: AExp) extends AExp { override def toString = { "(+make_hoisted_lambda(" + f_index.toString() + ", " + env_pointer.toString() + "))"}}
+  case class AAlloc(size: Int) extends AExp { override def toString = { "(+alloc("+size.toString()+"))" }}
 
   def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {
     case Nil => Set()

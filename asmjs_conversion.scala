@@ -69,7 +69,7 @@ object asmjs_conversion {
 
   def convert_value_to_asmjs(p: SProgram, ftables: Map[String, List[Idn]], e: SExp) : AExp = e match {
     case SIdn(i) => AVarAccess(AIdn(i))
-    case SInt(i) => AStaticValue(i)
+    case SDouble(d) => AStaticValue(d)
 
     case SAppl(proc, es) => {
       // Two cases for function calls by name or by index

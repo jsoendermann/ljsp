@@ -7,7 +7,7 @@ object closure_conversion {
   def free_vars(p: SProgram, e: SExp) : Set[Idn] = e match {
     case SDefine(name, params, e) => free_vars(p, e) -- Set(name.idn) -- params.map(sIdn => sIdn.idn)
     case SIdn(idn) => Set(idn)
-    case SInt(_) => Set()
+    case SDouble(_) => Set()
     case SIf(e1, e2, e3) => free_vars(p, e1) ++ free_vars(p, e2) ++ free_vars(p, e3)
     // idn.idn is necessary becase idn is of type SIdn but Idn is required
     case SLet(idn, e1, e2) => free_vars(p, e1) ++ (free_vars(p, e2) - idn.idn)
@@ -28,8 +28,7 @@ object closure_conversion {
     // Trivial cases
     case SProgram(ds, e) => SProgram(ds.map{d => SDefine(d.name, d.params, cl_conv(p, d.e))}, cl_conv(p, e))
     case SDefine(name, params, e) => SDefine(name, params, cl_conv(p, e))
-    case SIdn(idn) => e
-    case SInt(i) => e
+    case SIdn(_) | SDouble(_) => e
     case SIf(e1, e2, e3) => SIf(cl_conv(p, e1), cl_conv(p, e2), cl_conv(p, e3))
     case SLet(idn, e1, e2) => SLet(idn, cl_conv(p, e1), cl_conv(p, e2))
 

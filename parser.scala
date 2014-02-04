@@ -6,7 +6,7 @@ import ljsp.AST._
 object parser {
 
   object JLispParsers extends JavaTokenParsers {
-    def expression: Parser[SExp] = identifier | integer | _if | lambda | primitive_application | application | let
+    def expression: Parser[SExp] = identifier | double | _if | lambda | primitive_application | application | let
 
     // TODO make e optional
     def prog: Parser[SProgram] = rep(define)~opt(expression)~rep(define) ^^ {
@@ -26,7 +26,8 @@ object parser {
     def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-]*""".r ^^ (SIdn(_))
     // TODO: Add all primitive operations
     def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "and" | "or" | "equal?" | "car" | "cdr") ^^ (SIdn(_))
-    def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
+    def double: Parser[SDouble] = floatingPointNumber ^^ {d => SDouble(d.toDouble)}
+    //def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
 
     def _if: Parser[SIf] = "("~>"if"~>expression~expression~expression<~')' ^^ {
       case e1~e2~e3 => SIf(e1, e2, e3)
