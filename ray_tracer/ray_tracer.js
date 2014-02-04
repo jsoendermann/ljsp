@@ -109,10 +109,10 @@
             for (i = 0; i < spheres.length; i++) {
                 sphere = spheres[i];
                 k = closestIntersectionPoint(r, spheres[i]);
-                smallestK = min(smallestK, k)
+                smallestK = min(smallestK, k);
             }
             if (smallestK === Infinity) {
-                return [70,70,70];
+                return [60, 60, 60];
             } else {
                 intersectionPoint = new Vector3(r.org.x + smallestK * r.dir.x, r.org.y + smallestK * r.dir.y, r.org.z + smallestK * r.dir.z);
                 normal = difference_vector(intersectionPoint, sphere.pos);
@@ -123,7 +123,7 @@
 
                 intensity = dot_product(normal, dirToLight);
                 
-                return [max(0, 255*intensity), max(0, 255*intensity), max(0, 255*intensity)];
+                return [max(0, 255*intensity), max(0, 200*intensity), max(0, 255*intensity)];
             }
             
         }
