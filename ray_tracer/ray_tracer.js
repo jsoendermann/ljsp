@@ -6,6 +6,7 @@
         // ######## Global variables #########
         
         var spheres, planes, light;
+        var bgColour;
     
 
         // ######## Classes ##########
@@ -255,8 +256,8 @@
 
         // ########### Tracing function ############
 
-        function trace(r, recursion_depth) {
-            var closest, k, intersectionPoint, closestObject, normal, dirToLight, shadowRay, closestPointBetweenLight, intensity, reflectionVector, reflectedRay, reflectedColour;
+        function trace(r, depth) {
+            var closest, k, intersectionPoint, closestObject, normal, dirToLight, shadowRay, closestPointInDirOfLight, intensity, reflectionVector, reflectedRay, reflectedColour;
 
             closest = closestIntersectionPoint(r);
             k = closest[0];
@@ -265,44 +266,35 @@
 
 
             if (k === Infinity) {
-                return new Colour(0, 0, 0); //Colour(60, 60, 60);
+                return bgColour;
             } else {
-                intersectionPoint = new Vector3(r.org.x + k * r.dir.x, r.org.y + k * r.dir.y, r.org.z + k * r.dir.z);
+                //intersectionPoint = new Vector3(r.org.x + k * r.dir.x, r.org.y + k * r.dir.y, r.org.z + k * r.dir.z);
                 normal = computeNormal(intersectionPoint, closestObject);
-                normal.normalise();
 
                 dirToLight = vectorsDifference(light.pos, intersectionPoint);
                 dirToLight.normalise();
 
                 shadowRay = new Ray(intersectionPoint, dirToLight);
 
-                closestPointBetweenLight = closestIntersectionPoint(shadowRay);
+                closestPointInDirOfLight = closestIntersectionPoint(shadowRay);
 
-                if (closestPointBetweenLight[0] !== Infinity && vectorsDistance(intersectionPoint, light.pos) > vectorsDistance(intersectionPoint, closestPointBetweenLight[1])) {
-                    intensity = 0;
+                // If shadow ray intersects nothing or the closest intersection is behind the light
+                if (closestPointInDirOfLight[0] === Infinity || vectorsDistance(intersectionPoint, light.pos) < vectorsDistance(intersectionPoint, closestPointInDirOfLight[1])) {
+                    intensity = vectorsDotProduct(normal, dirToLight);
                 } else {
-
-                    intensity = vectorsDotProduct(normal, dirToLight);// * (1/vectorsDistance(intersectionPoint, light.pos));
+                    intensity = 0;
                 }
 
-                // ambient light
+                // Ambient light
                 intensity = max(intensity, 0.2);
 
-                if (recursion_depth > 0 && closestObject.refl) {
-                    r.dir.normalise();
-     
-
+                if (depth > 0 && closestObject.refl) {
                     reflectionVector = vectorsDifference(r.dir, scalarVectorProduct(2 * vectorsDotProduct(r.dir, normal), normal));
-                    reflectionVector.normalise();
-
                     reflectedRay = new Ray(intersectionPoint, reflectionVector);
 
-                    reflectedColour = trace(reflectedRay, recursion_depth - 1);
+                    reflectedColour = trace(reflectedRay, depth - 1);
     
                     return coloursMix(0.3, reflectedColour, 0.7, colourScaled(intensity, closestObject.clr));
-
-
-
                 } else {
                     return colourScaled(intensity, closestObject.clr);
                 }
@@ -328,6 +320,8 @@
                     new Plane(new Vector3(0, 1, 0), 110, new Colour(200, 200, 200), false),
                     new Plane(new Vector3(0, 0, 1), 5, new Colour(200, 200, 200), false)];
             light = new Light(new Vector3(0, 0, 180));
+
+            bgColour = new Colour(0, 0, 0);
 
             var canvas_result = document.getElementById("result");
             var canvas_twice = document.getElementById("result_twice");
@@ -359,7 +353,6 @@
 
                     r = new Ray(new Vector3(0, 0, 0), ray_dir);
 
-
                     setPixelToColour(imageData, x, y, trace(r, 1));
                 }
             }
@@ -367,7 +360,6 @@
             context_twice.putImageData(imageData, 0, 0);
             context_res.scale(0.5,0.5);
             context_res.drawImage(canvas_twice, 0, 0);
-
         })();
     };
 }());
