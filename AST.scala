@@ -199,12 +199,14 @@ object AST {
   case class AStaticValue(d: Double) extends AExp { override def toString = { d.toString() }}
   case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(+" + f + "(" + params.mkString(", ") + "))" }}
   case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(+" + ftable + "[(double_to_int(" + AHeapAccess(AVarAccess(fpointer)).toString + ")|0) & "+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1.0)) + ", " + params.mkString(", ") + "))" }}
-  case class APrimitiveInstruction(op: String, operand1: AExp, operand2: AExp) extends AExp { override def toString = op match {
+  // as.size is either 1 or 2
+  case class APrimitiveInstruction(op: String, as: List[AExp]) extends AExp { override def toString = op match {
     // TODO implement other primitive operations
-    case "+" | "-" | "/" => "(+((+("+operand1.toString() +"))" + op + "(+(" + operand2.toString()+"))))"
-    case "*" => "(+imul(+("+operand1.toString()+"),+("+operand2.toString()+")))"
-    case "<" | ">" => "+(((+(" + operand1.toString() + "))" + op + "(+(" + operand2.toString() + ")))|0)"
-    case _ => operand1.toString() + op + operand2.toString()
+    case "+" | "-" | "/" => "(+((+("+as(0).toString() +"))" + op + "(+(" + as(1).toString()+"))))"
+    case "*" => "(+imul(+("+as(0).toString()+"),+("+as(1).toString()+")))"
+    case "<" | ">" => "+(((+(" + as(0).toString() + "))" + op + "(+(" + as(1).toString() + ")))|0)"
+    case "neg" => "(+(-("+as(0)+")))"
+    case _ => as(0).toString() + op + as(1).toString()
   }}
   // TODO remove this class, use AIdn directly
   case class AVarAccess(idn: AIdn) extends AExp { override def toString = { idn.toString }}
