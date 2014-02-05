@@ -29,3 +29,5 @@
 ; additional arguments the lambda is called with
 (define (hoisted-lambda f e) (lambda args 
                                (apply f (cons e args))))
+
+(define (neg x) (- x))
