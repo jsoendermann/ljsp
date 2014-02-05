@@ -206,6 +206,8 @@ object AST {
     case "*" => "(+imul(+("+as(0).toString()+"),+("+as(1).toString()+")))"
     case "<" | ">" => "+(((+(" + as(0).toString() + "))" + op + "(+(" + as(1).toString() + ")))|0)"
     case "neg" => "(+(-("+as(0)+")))"
+    case "min" | "max" => "(+"+op+"+(("+as(0).toString()+"), +("+as(1).toString()+")))"
+    case "sqrt" => "(+"+op+"(+("+as(0)+")))"
     case _ => as(0).toString() + op + as(1).toString()
   }}
   // TODO remove this class, use AIdn directly

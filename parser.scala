@@ -23,11 +23,10 @@ object parser {
       case name~params~")"~e => SDefine(name, params, e)
     }
 
-    def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-]*""".r ^^ (SIdn(_))
-    // TODO: Add all primitive operations
-    def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "and" | "or" | "equal?" | "car" | "cdr" | "neg") ^^ (SIdn(_))
+    def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-_]*""".r ^^ (SIdn(_))
+    // TODO: Add min, max, sqrt
+    def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "and" | "or" | "equal?" | "car" | "cdr" | "neg" | "min" | "max" | "sqrt") ^^ (SIdn(_))
     def double: Parser[SDouble] = floatingPointNumber ^^ {d => SDouble(d.toDouble)}
-    //def integer: Parser[SInt] = wholeNumber ^^ (i => SInt(i.toInt))
 
     def _if: Parser[SIf] = "("~>"if"~>expression~expression~expression<~')' ^^ {
       case e1~e2~e3 => SIf(e1, e2, e3)
