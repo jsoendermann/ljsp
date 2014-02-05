@@ -16,14 +16,24 @@
             height,
             imageData,
             spheres,
+            planes,
             light;
 
 
 
-        function Sphere(pos, r, clr) {
+        function Sphere(pos, r, clr, refl) {
             this.pos = pos;
             this.r = r;
             this.clr = clr;
+            this.refl = refl;
+        }
+
+        function Plane(n, d, clr, refl) {
+            n.normalise();
+            this.n = n;
+            this.d = d;
+            this.clr = clr;
+            this.refl = refl;
         }
 
         function Light(pos) {
@@ -115,7 +125,24 @@
             return (x<y?x:y);
         }
         
-        function intersectionPoint(r_org, s) {
+        function rayPlaneIntersectionPoint(r, p) {
+            var t, n, d;
+
+            d = dot_product(r.dir, p.n);
+
+            if (Math.abs(d) < 0.1)
+                return Infinity;
+            
+            n = -p.d - dot_product(r.org, p.n);
+
+            t = n/d;
+
+            return t;
+            
+
+
+        }
+        function raySphereIntersectionPoint(r_org, s) {
             var r, A, B, C, discriminant, t0, t1;
 
             // r_org in object space of s
@@ -155,41 +182,72 @@
         }
 
         
-        // returns [k, point, sphere]
+        // returns [k, point, object]
         function closestIntersectionPoint(r) {
-            var smallestK = Infinity, closestSphere = null;
+            var smallestK = Infinity, closestObject = null, sphere, plane;
             
+            // spheres
             for (i = 0; i < spheres.length; i++) {
                 sphere = spheres[i];
-                k = intersectionPoint(r, sphere);
+                k = raySphereIntersectionPoint(r, sphere);
                 // this happens when the ray starts on a ray, ignore that intersection
                 if (k < 0.1) {
                     continue;
                 }
                 if (k < smallestK) {
                     smallestK = k;
-                    closestSphere = sphere;
+                    closestObject = sphere;
                 }
             }
-            if (smallestK < 0) console.log(smallestK);
+
+            // planes
+            for (i = 0; i < planes.length; i++) {
+                plane = planes[i];
+                k = rayPlaneIntersectionPoint(r, plane);
+
+                if (k < 0.1) {
+                    continue;
+                }
+
+                if (k < smallestK) {
+                    smallestK = k;
+                    closestObject = plane;
+                }
+            }
+
 
             if (smallestK === Infinity)
                 return [Infinity, null, null];
             else
                 // TODO use follow_ray
-                return [smallestK, add_vectors(r.org, scala_vector_product(smallestK, r.dir)), closestSphere];
+                return [smallestK, follow_ray(r, smallestK), closestObject];
         }
 
 
 //var c= 20;
 
+        function compute_normal(p, obj) {
+            var normal;
+            if (obj.constructor.name == "Plane") {
+                normal = obj.n;
+            } else if (obj.constructor.name == "Sphere") {
+                normal = difference_vector(p, obj.pos);
+            } else {
+                console.log("cannot compute normal for obj of type "+obj.constructor.name);
+            }
+            normal.normalise();
+
+            return normal;
+
+        }
+
         function trace(r, recursion_depth) {
-            var i, sphere, closestSphere, k, intersectionPoint, normal, dirToLight, intensity, reflectionVector, reflectedRay, reflectedColour;
+            var i, sphere, closestObject, k, intersectionPoint, normal, dirToLight, intensity, reflectionVector, reflectedRay, reflectedColour;
 
             closest = closestIntersectionPoint(r);
             k = closest[0];
             intersectionPoint = closest[1];
-            closestSphere = closest[2];
+            closestObject = closest[2];
 
 
             if (k === Infinity) {
@@ -197,7 +255,7 @@
             } else {
                 if (k < 0) console.log(k);
                 intersectionPoint = new Vector3(r.org.x + k * r.dir.x, r.org.y + k * r.dir.y, r.org.z + k * r.dir.z);
-                normal = difference_vector(intersectionPoint, closestSphere.pos);
+                normal = compute_normal(intersectionPoint, closestObject);
                 normal.normalise();
 
                 dirToLight = difference_vector(light.pos, intersectionPoint);
@@ -217,19 +275,19 @@
                 //}
 
 
-                if (closestPointBetweenLight[0] === Infinity)
-                    intensity = dot_product(normal, dirToLight);
-                else {
-                if (vector_length(difference_vector(intersectionPoint, light.pos)) > vector_length(difference_vector(intersectionPoint, closestPointBetweenLight[1])))
+                if (closestPointBetweenLight[0] !== Infinity && vector_distance(intersectionPoint, light.pos) > vector_distance(intersectionPoint, closestPointBetweenLight[1]))
                     intensity = 0;
-                else
-                    intensity = dot_product(normal, dirToLight);
+                else {
+
+                    intensity = dot_product(normal, dirToLight);// * (1/vector_distance(intersectionPoint, light.pos));
                 }
 
                 // ambient light
                 intensity = max(intensity, 0.2);
 
-                if (recursion_depth > 0) {
+                //intensity *= 2;
+
+                if (recursion_depth > 0 && closestObject.refl) {
                     r.dir.normalise();
      
 
@@ -242,14 +300,14 @@
     
                     //console.log(reflectedColour);
                     //if (reflectedColour.r != 0 || reflectedColour.g != 0 || reflectedColour.b != 0)
-                        return add_colours_with_weights(0.5, reflectedColour, 0.5, scaled_colour(intensity, closestSphere.clr));
+                        return add_colours_with_weights(0.5, reflectedColour, 0.5, scaled_colour(intensity, closestObject.clr));
                     //else
                     //    return new Colour(255, 200, 255);
 
 
 
                 } else {
-                return scaled_colour(intensity, closestSphere.clr);
+                return scaled_colour(intensity, closestObject.clr);
                 }
             }
             
@@ -269,10 +327,16 @@
         }
 
 
-        spheres = [new Sphere(new Vector3(-50, -40, 150), 25, new Colour(255, 0, 0)),
-                new Sphere(new Vector3(35, -40, 150), 50, new Colour(0, 255, 0)),
-                new Sphere(new Vector3(-40, 30, 150), 25, new Colour(0, 0, 255))];
-        light = new Light(new Vector3(0, 50, 0));
+        spheres = [new Sphere(new Vector3(-50, -40, 300), 25, new Colour(255, 0, 0), true),
+                new Sphere(new Vector3(35, -40, 300), 50, new Colour(0, 255, 0), true),
+                new Sphere(new Vector3(-40, 30, 300), 25, new Colour(0, 0, 255), true)];
+        planes = [new Plane(new Vector3(0, -1, 0), 60, new Colour(255, 255, 255), false),
+                new Plane(new Vector3(0, 0, -1), 400, new Colour(255, 255, 255), false),
+                new Plane(new Vector3(1, 0, 0), 110, new Colour(255, 255, 255), false),
+                new Plane(new Vector3(-1, 0, 0), 120, new Colour(255, 255, 255), false),
+                new Plane(new Vector3(0, 1, 0), 110, new Colour(255, 255, 255), false),
+                new Plane(new Vector3(0, 0, 1), 5, new Colour(255, 255, 255), false)];
+        light = new Light(new Vector3(0, 0, 180));
 
         window.onload = function () { 
         result = document.getElementById("result");
