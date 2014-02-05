@@ -98,7 +98,7 @@ function renderSlow () {
     // ########### Colour functions ############
 
     function colourScaled(s, c) {
-        return new Colour(min(max(c.r*s, 0), 255), min(max(c.g*s, 0), 255), min(max(c.b*s, 0), 255));
+        return new Colour(Math.min(Math.max(c.r*s, 0), 255), Math.min(Math.max(c.g*s, 0), 255), Math.min(Math.max(c.b*s, 0), 255));
     }
 
     function coloursMix(w1, c1, w2, c2) {
@@ -132,14 +132,6 @@ function renderSlow () {
 
 
     // ########### Helper functions #############
-
-    function max(x, y) {
-        return (x>y?x:y);
-    }
-
-    function min(x, y) {
-        return (x<y?x:y);
-    }
 
     function setPixelToRGB(_imageData, x, y, r, g, b) {
         var i = (x + y * _imageData.width) * 4;
@@ -193,15 +185,15 @@ function renderSlow () {
         t0 = (-B - Math.sqrt(discriminant)) / (2.0 * A);
         t1 = (-B + Math.sqrt(discriminant)) / (2.0 * A);
 
-        if (max(t0, t1) < 0) {
+        if (Math.max(t0, t1) < 0) {
             return Infinity;
         }
 
-        if (min(t0, t1) < 0) {
-            return max(t0, t1);
+        if (Math.min(t0, t1) < 0) {
+            return Math.max(t0, t1);
         }
 
-        return min(t0, t1);
+        return Math.min(t0, t1);
 
     }
 
@@ -277,7 +269,7 @@ function renderSlow () {
             }
 
             // Ambient light
-            intensity = max(intensity, 0.2);
+            intensity = Math.max(intensity, 0.2);
 
             if (depth > 0 && closestObject.refl) {
                 reflectionVector = vectorsDifference(r.dir, scalarVectorProduct(2 * vectorsDotProduct(r.dir, normal), normal));
