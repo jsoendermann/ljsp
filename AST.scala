@@ -66,12 +66,6 @@ object AST {
           return +current_mem_top;
       }
 
-      function double_to_int(d) {
-          d = +d;
-
-          return ~~+floor(d)|0;
-      }
-
       function get_array_element(base, offset) {
           base = +base;
           offset = +offset;
@@ -79,7 +73,7 @@ object AST {
           var addr = 0.0;
 
           addr = +(base + offset);
-          return +D32[(double_to_int(addr)|0) << 2 >> 2];
+          return +D32[(~~+floor(addr)|0) << 2 >> 2];
       }
 
 
@@ -91,7 +85,7 @@ object AST {
           var addr = 0.0;
 
           addr = +(base + offset);
-          D32[(double_to_int(addr)|0) << 2 >> 2] = value;
+          D32[(~~+floor(addr)|0) << 2 >> 2] = value;
       }
 
       function make_hoisted_lambda(f_index, env_pointer) {
@@ -148,14 +142,15 @@ object AST {
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
   case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(0.0, "+index+", "+value+")" }}
   case class AArrayAssignment(base: AExp, offsete: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(" + base.toString() + ", " + offsete.toString() + ", " + value.toString() + ")" }}
-  case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (double_to_int(" + cond.toString() + ")|0) {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
+  case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (" + ADoubleToInt(cond).toString() + ") {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
   case class AReturn(s: AStatement) extends AStatement { override def toString = { "return +" + s.toString() }}
 
   abstract class AExp extends AStatement
   // TODO remove this class
   case class AStaticValue(d: Double) extends AExp { override def toString = { "(+"+d.toString()+")" }}
+  case class ADoubleToInt(d: AExp) extends AExp { override def toString = { "(~~+floor("+d.toString()+")|0)" }}
   case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(+" + f + "(" + params.mkString(", ") + "))" }}
-  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(+" + ftable + "[(double_to_int(" + AHeapAccess(AVarAccess(fpointer)).toString + ")|0) & "+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1.0)) + ", " + params.mkString(", ") + "))" }}
+  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(+" + ftable + "[(" + ADoubleToInt(AHeapAccess(AVarAccess(fpointer))).toString + ") & "+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1.0)) + ", " + params.mkString(", ") + "))" }}
   // as.size is either 1 or 2
   case class APrimitiveInstruction(op: String, as: List[AExp]) extends AExp { override def toString = op match {
     // TODO implement other primitive operations
@@ -171,7 +166,8 @@ object AST {
   case class AVarAccess(idn: AIdn) extends AExp { override def toString = { idn.toString }}
   case class AHeapAccess(index: AExp) extends AExp { override def toString = { AArrayAccess(AStaticValue(0.0), index).toString }}
   case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp { override def toString = { "(+get_array_element("+base_address+", "+offset+"))" }}
-  case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "(+make_env_"+values.size.toString() + "(" + values.mkString(", ") + "))"}}
+  // TODO turn this into a statement
+  //case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "(+make_env_"+values.size.toString() + "(" + values.mkString(", ") + "))"}}
   case class AMakeHoistedLambda(f_index: AExp, env_pointer: AExp) extends AExp { override def toString = { "(+make_hoisted_lambda(" + f_index.toString() + ", " + env_pointer.toString() + "))"}}
   // TODO size should be of type AStaticValue
   case class AAlloc(size: Int) extends AExp { override def toString = { "(+alloc(+"+size.toString()+"))" }}
