@@ -48,8 +48,16 @@ object asmjs_conversion {
       val num_idns = idns.size
       val env_var = AIdn(i.idn)
 
-      AVarAssignment(env_var, AMakeEnv(idns.map{sidn => AVarAccess(AIdn(sidn.idn))})) :: 
+      val setEnvValues: List[AStatement] = idns.zipWithIndex.map{ case (idn, index) => AArrayAssignment(AVarAccess(env_var), AStaticValue(index), AVarAccess(AIdn(idn.idn)))}
+      
+      //AHeapAssignment(APrimitiveInstruction("+", AVarAccess(env_var), AStaticValue(index * 4)), AVarAccess(AIdn(idn.idn))) }
+
+      List(AVarAssignment(env_var, AAlloc(num_idns))) ++
+      setEnvValues ++
       convert_statement_to_asmjs(p, ftables, e2)
+
+      //AVarAssignment(env_var, AMakeEnv(idns.map{sidn => AVarAccess(AIdn(sidn.idn))})) :: 
+      //convert_statement_to_asmjs(p, ftables, e2)
     }
 
     case SLet(i, SHoistedLambda(f, env), e2) => {

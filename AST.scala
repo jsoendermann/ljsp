@@ -51,8 +51,6 @@ object AST {
 
       var imul = stdlib.Math.imul;
       var sqrt = stdlib.Math.sqrt;
-      var min = stdlib.Math.min;
-      var max = stdlib.Math.max;
       var floor = stdlib.Math.floor;
 
 
@@ -108,61 +106,20 @@ object AST {
           return +a;
       }
 
-      function make_env_0() {
-          return +mem_top;
+      function min(a, b) {
+        a = +a;
+        b = +b;
+
+        return +(a<b?a:b);
       }
 
-      function make_env_1(v1) {
-          v1 = +v1;
+      function max(a, b) {
+        a = +a;
+        b = +b;
 
-          var a = 0.0;
-
-          a = +alloc(1.0);
-          set_array_element(a, 0.0, v1);
-          return +a;
+        return +(a>b?a:b);
       }
 
-      function make_env_2(v1, v2) {
-          v1 = +v1;
-          v2 = +v2;
-
-          var a = 0.0;
-
-          a = +alloc(2.0);
-          set_array_element(a, 0.0, v1);
-          set_array_element(a, 1.0, v2);
-          return +a;
-      }
-
-      function make_env_3(v1, v2, v3) {
-          v1 = +v1;
-          v2 = +v2;
-          v3 = +v3;
-
-          var a = 0.0;
-
-          a = +alloc(3.0);
-          set_array_element(a, 0.0, v1);
-          set_array_element(a, 1.0, v2);
-          set_array_element(a, 2.0, v3);
-          return +a;
-      }
-      
-      function make_env_4(v1, v2, v3, v4) {
-          v1 = +v1;
-          v2 = +v2;
-          v3 = +v3;
-          v4 = +v4;
-
-          var a = 0.0;
-
-          a = +alloc(4.0);
-          set_array_element(a, 0.0, v1);
-          set_array_element(a, 1.0, v2);
-          set_array_element(a, 2.0, v3);
-          set_array_element(a, 3.0, v4);
-          return +a;
-      }
       
       """ +
       fs.mkString("\n") + 
@@ -190,20 +147,20 @@ object AST {
   abstract class AStatement
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
   case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(0.0, "+index+", "+value+")" }}
-  //case class AArrayAssignment(base: AExp, arr_index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(" + base.toString() + ", " + arr_index.toString() + ", " + value.toString() + ")" }}
+  case class AArrayAssignment(base: AExp, offsete: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(" + base.toString() + ", " + offsete.toString() + ", " + value.toString() + ")" }}
   case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (double_to_int(" + cond.toString() + ")|0) {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
   case class AReturn(s: AStatement) extends AStatement { override def toString = { "return +" + s.toString() }}
 
   abstract class AExp extends AStatement
   // TODO remove this class
-  case class AStaticValue(d: Double) extends AExp { override def toString = { d.toString() }}
+  case class AStaticValue(d: Double) extends AExp { override def toString = { "(+"+d.toString()+")" }}
   case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(+" + f + "(" + params.mkString(", ") + "))" }}
   case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(+" + ftable + "[(double_to_int(" + AHeapAccess(AVarAccess(fpointer)).toString + ")|0) & "+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1.0)) + ", " + params.mkString(", ") + "))" }}
   // as.size is either 1 or 2
   case class APrimitiveInstruction(op: String, as: List[AExp]) extends AExp { override def toString = op match {
     // TODO implement other primitive operations
-    case "+" | "-" | "/" => "(+((+("+as(0).toString() +"))" + op + "(+(" + as(1).toString()+"))))"
-    case "*" => "(+imul(+("+as(0).toString()+"),+("+as(1).toString()+")))"
+    case "+" | "-" | "*" | "/" => "(+((+("+as(0).toString() +"))" + op + "(+(" + as(1).toString()+"))))"
+    //case "*" => "(+imul(+("+as(0).toString()+"),+("+as(1).toString()+")))"
     case "<" | ">" => "+(((+(" + as(0).toString() + "))" + op + "(+(" + as(1).toString() + ")))|0)"
     case "neg" => "(+(-("+as(0)+")))"
     case "min" | "max" => "(+"+op+"+(("+as(0).toString()+"), +("+as(1).toString()+")))"
@@ -216,7 +173,8 @@ object AST {
   case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp { override def toString = { "(+get_array_element("+base_address+", "+offset+"))" }}
   case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "(+make_env_"+values.size.toString() + "(" + values.mkString(", ") + "))"}}
   case class AMakeHoistedLambda(f_index: AExp, env_pointer: AExp) extends AExp { override def toString = { "(+make_hoisted_lambda(" + f_index.toString() + ", " + env_pointer.toString() + "))"}}
-  case class AAlloc(size: Int) extends AExp { override def toString = { "(+alloc("+size.toString()+"))" }}
+  // TODO size should be of type AStaticValue
+  case class AAlloc(size: Int) extends AExp { override def toString = { "(+alloc(+"+size.toString()+"))" }}
 
   def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {
     case Nil => Set()
