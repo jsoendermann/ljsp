@@ -657,7 +657,7 @@ v2_x = +v2_x;
 v2_y = +v2_y;
 v2_z = +v2_z;
 
-var hoisted_lambda_var_3 = 0.0, env_var_6 = 0.0, mem_top = 0.0;
+var hoisted_lambda_var_3 = 0.0, env_var_6 = 0.0;
 
 mem_top = (+0.0);
 env_var_6 = (+alloc(+0));
@@ -677,7 +677,7 @@ s_y = +s_y;
 s_z = +s_z;
 s_r = +s_r;
 
-var hoisted_lambda_var_4 = 0.0, env_var_7 = 0.0, mem_top = 0.0;
+var hoisted_lambda_var_4 = 0.0, env_var_7 = 0.0;
 
 mem_top = (+0.0);
 env_var_7 = (+alloc(+0));
@@ -695,7 +695,7 @@ var ftable11 = [raySphereIntersectionPoint];
 return {vectorsDotProduct: vectorsDotProduct_copy, raySphereIntersectionPoint: raySphereIntersectionPoint_copy};
 }
 
- 
+
 
 var module = AsmModule({ Math: Math, Int32Array: Int32Array, Float32Array: Float32Array}, {consoleDotLog: console.log}, new ArrayBuffer(10*4096));
 

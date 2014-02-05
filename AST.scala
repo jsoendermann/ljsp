@@ -175,7 +175,7 @@ object AST {
   def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {
     case Nil => Set()
     case (i::is) => local_vars(is) ++ (i match {
-      case AVarAssignment(i, v) => Set(i.idn)
+      case AVarAssignment(i, v) => if (i.idn == "mem_top") Set() else Set(i.idn)
       case AIf(cond, block1, block2) => local_vars(List(cond)) ++ local_vars(block1) ++ local_vars(block2)
       case _ => Set()
     })
