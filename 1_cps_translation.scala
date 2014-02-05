@@ -9,9 +9,9 @@ object cps_translation {
     val func_copies = p.ds.map{d => {
       val ident_param = SIdn(fresh("ident_param"))
       SDefine(SIdn(d.name + "_copy"), d.params, SAppl(d.name, List(SLambda(List(ident_param), ident_param)) ++ d.params))}}
-    val cps_prog = cps_trans(p, k).asInstanceOf[SProgram]
-    SProgram(cps_prog.ds ++ func_copies, cps_prog.e)
-  }
+      val cps_prog = cps_trans(p, k).asInstanceOf[SProgram]
+      SProgram(cps_prog.ds ++ func_copies, cps_prog.e)
+    }
 
   def cps_trans(e: SExp, k: SExp => SExp) : SExp = e match {
     // CPS-translate all function definitions and the expression
@@ -20,21 +20,21 @@ object cps_translation {
         val c = SIdn(fresh("cont"))
         SDefine(d.name, c :: d.params, cps_tail_trans(d.e, c))
       }, cps_trans(e, k))
-  }
+    }
 
-  // For SDefine case see further down, as its CPS translation is very similar to that
-  // of SLambda, the two are grouped together
+    // For SDefine case see further down, as its CPS translation is very similar to that
+    // of SLambda, the two are grouped together
 
-  // For atomic values, no CPS-Translation is necessary. Simply apply k to e
-  case SIdn(_) | SDouble(_) => k(e)
+    // For atomic values, no CPS-Translation is necessary. Simply apply k to e
+    case SIdn(_) | SDouble(_) => k(e)
 
-  // For if, evaluate e1 first, then branch with two recursive calls
-  case SIf(e1, e2, e3) => {
-    val c = SIdn(fresh("var"))
-    val p = SIdn(fresh("var"))
-    cps_trans(e1, (ce1: SExp) =>
-      SLet(c, SLambda(List(p), k(p)),
-        SIf(ce1, cps_tail_trans(e2, c), cps_tail_trans(e3, c))))
+    // For if, evaluate e1 first, then branch with two recursive calls
+    case SIf(e1, e2, e3) => {
+      val c = SIdn(fresh("var"))
+      val p = SIdn(fresh("var"))
+      cps_trans(e1, (ce1: SExp) =>
+        SLet(c, SLambda(List(p), k(p)),
+          SIf(ce1, cps_tail_trans(e2, c), cps_tail_trans(e3, c))))
     }
 
     // for lambdas and defines, add an additional parameter that will hold the continuation
@@ -73,13 +73,18 @@ object cps_translation {
     case SApplPrimitive(proc, es) => {
       val z = SIdn(fresh("var"))
 
-      // this function calls CPS recursively for all expressions in es and accumulates the result in ces
-      // the last call with an empty es creates calls the function with the additional lambda mentioned above
-      def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
-        case Nil => SLet(z, SApplPrimitive(proc, ces), k(z))
-        case (e::es) => cps_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+      // if es contains more than 2 elements, transform (+ a b c) into (+ (+ a b) c) first
+      if (es.size > 2) {
+        cps_trans(es.drop(2).foldLeft(SApplPrimitive(proc, List(es(0), es(1))))((x,y) => SApplPrimitive(proc, List(x, y))), k)
+      } else {
+        // this function calls CPS recursively for all expressions in es and accumulates the result in ces
+        // the last call with an empty es creates calls the function with the additional lambda mentioned above
+        def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
+          case Nil => SLet(z, SApplPrimitive(proc, ces), k(z))
+          case (e::es) => cps_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+        }
+        aux(es, Nil)
       }
-      aux(es, Nil)
     }
 
 
@@ -129,11 +134,15 @@ object cps_translation {
     case SApplPrimitive(proc, es) => {
       val z = SIdn(fresh("var"))
 
-      def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
-        case Nil => SLet(z, SApplPrimitive(proc, ces), SAppl(c, List(z)))
-        case (e::es) => cps_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+      if (es.size > 2) {
+        cps_tail_trans(es.drop(2).foldLeft(SApplPrimitive(proc, List(es(0), es(1))))((x,y) => SApplPrimitive(proc, List(x, y))), c)
+      } else {
+        def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
+          case Nil => SLet(z, SApplPrimitive(proc, ces), SAppl(c, List(z)))
+          case (e::es) => cps_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
+        }
+        aux(es, Nil)
       }
-      aux(es, Nil)
     }
 
     case SLet(idn, e1, e2) => {
