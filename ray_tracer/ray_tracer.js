@@ -206,7 +206,8 @@ function renderSlow () {
         // Spheres
         for (i = 0; i < spheres.length; i++) {
             sphere = spheres[i];
-            k = raySphereIntersectionPoint(r, sphere);
+            //k = raySphereIntersectionPoint(r, sphere);
+            k = module.raySphereIntersectionPoint(r.org.x, r.org.y, r.org.z, r.dir.x, r.dir.y, r.dir.z, sphere.pos.x, sphere.pos.y, sphere.pos.z, sphere.r);
 
             // This happens when the ray starts on the sphere, ignore that intersection
             if (k < 0.1) {
