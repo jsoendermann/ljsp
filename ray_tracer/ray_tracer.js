@@ -13,7 +13,9 @@
         var result,
             canvas,
             width,
+            width_org,
             height,
+            height_org,
             imageData,
             spheres,
             planes,
@@ -339,12 +341,19 @@
         light = new Light(new Vector3(0, 0, 180));
 
         window.onload = function () { 
-        result = document.getElementById("result");
-        canvas = result.getContext("2d");
-        width = result.width;
-        height = result.height;
-        imageData = canvas.createImageData(width, height);
+        var canvas_result = document.getElementById("result");
+        var canvas_twice = document.getElementById("result_twice");
+        context_res = canvas_result.getContext("2d");
+        var context_twice = canvas_twice.getContext("2d");
+        width_org = canvas_result.width;
+        height_org = canvas_result.height;
+        width = canvas_twice.width;
+        height = canvas_twice.height;
+        
+        imageData = context_twice.createImageData(width, height);
 
+
+        
         var x, y, r;
         var cameraDirection, cameraUp, cameraRight;
         var normalised_x, normalised_y;
@@ -371,7 +380,13 @@
             }
         }
 
-        canvas.putImageData(imageData, 0, 0);
+        context_twice.putImageData(imageData, 0, 0);
+
+        context_res.scale(0.5,0.5);
+        context_res.drawImage(canvas_twice, 0, 0);
+
+        //context.scale(0.5, 0.5);
+        //context.putImageData(imageData, 0, 0);
         }
 //    };
 //}());
