@@ -48,7 +48,11 @@ object AST {
       var D32 = new stdlib.Float32Array(heap);
 
       var log = foreign.consoleDotLog;
+
       var imul = stdlib.Math.imul;
+      var sqrt = stdlib.Math.sqrt;
+      var min = stdlib.Math.min;
+      var max = stdlib.Math.max;
       var floor = stdlib.Math.floor;
 
 
@@ -197,7 +201,7 @@ object AST {
   case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(+" + ftable + "[(double_to_int(" + AHeapAccess(AVarAccess(fpointer)).toString + ")|0) & "+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1.0)) + ", " + params.mkString(", ") + "))" }}
   case class APrimitiveInstruction(op: String, operand1: AExp, operand2: AExp) extends AExp { override def toString = op match {
     // TODO implement other primitive operations
-    case "+" | "-" => "(+((+("+operand1.toString() +"))" + op + "(+(" + operand2.toString()+"))))"
+    case "+" | "-" | "/" => "(+((+("+operand1.toString() +"))" + op + "(+(" + operand2.toString()+"))))"
     case "*" => "(+imul(+("+operand1.toString()+"),+("+operand2.toString()+")))"
     case "<" | ">" => "+(((+(" + operand1.toString() + "))" + op + "(+(" + operand2.toString() + ")))|0)"
     case _ => operand1.toString() + op + operand2.toString()
