@@ -194,7 +194,6 @@ function renderSlow () {
         }
 
         return Math.min(t0, t1);
-
     }
 
     // TODO return an object instead of an array
