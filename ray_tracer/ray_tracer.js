@@ -6,6 +6,8 @@ function renderSlow () {
     var spheres, planes, light;
     var bgColour;
 
+    var hugeValue = 1000000.0, tinyValue = 0.1;
+
 
     // ######## Classes ##########
 
@@ -156,8 +158,8 @@ function renderSlow () {
 
         d = vectorsDotProduct(r.dir, p.n);
 
-        if (Math.abs(d) < 0.1) {
-            return Infinity;
+        if (Math.abs(d) < tinyValue) {
+            return hugeValue;
         }
 
         return (-p.d - vectorsDotProduct(r.org, p.n))/d;
@@ -179,14 +181,14 @@ function renderSlow () {
         discriminant = B*B - 4 * A * C;
 
         if (discriminant < 0.0) {
-            return Infinity;
+            return hugeValue;
         }
 
         t0 = (-B - Math.sqrt(discriminant)) / (2.0 * A);
         t1 = (-B + Math.sqrt(discriminant)) / (2.0 * A);
 
         if (Math.max(t0, t1) < 0) {
-            return Infinity;
+            return hugeValue;
         }
 
         if (Math.min(t0, t1) < 0) {
@@ -199,7 +201,7 @@ function renderSlow () {
     // TODO return an object instead of an array
     // returns [k, point, object]
     function closestIntersectionPoint(r) {
-        var i, sphere, k, smallestK = Infinity, closestObject = null, plane;
+        var i, sphere, k, smallestK = hugeValue, closestObject = null, plane;
         
         // Spheres
         for (i = 0; i < spheres.length; i++) {
@@ -247,7 +249,7 @@ function renderSlow () {
         closestObject = closest[2];
 
 
-        if (k === Infinity) {
+        if (Math.abs(k - hugeValue) < tinyValue) {
             return bgColour;
         } else {
             //intersectionPoint = new Vector3(r.org.x + k * r.dir.x, r.org.y + k * r.dir.y, r.org.z + k * r.dir.z);
@@ -261,7 +263,7 @@ function renderSlow () {
             closestPointInDirOfLight = closestIntersectionPoint(shadowRay);
 
             // If shadow ray intersects nothing or the closest intersection is behind the light
-            if (closestPointInDirOfLight[0] === Infinity || vectorsDistance(intersectionPoint, light.pos) < vectorsDistance(intersectionPoint, closestPointInDirOfLight[1])) {
+            if (Math.abs(closestPointInDirOfLight[0] - hugeValue) < tinyValue || vectorsDistance(intersectionPoint, light.pos) < vectorsDistance(intersectionPoint, closestPointInDirOfLight[1])) {
                 intensity = vectorsDotProduct(normal, dirToLight);
             } else {
                 intensity = 0;
