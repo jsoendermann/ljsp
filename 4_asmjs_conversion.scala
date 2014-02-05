@@ -33,6 +33,13 @@ object asmjs_conversion {
   }
 
   def convert_statement_to_asmjs(p: SProgram, ftables: Map[String, List[Idn]], e: SExp) : List[AStatement] = e match {
+    // TODO move this somewhere else
+    case SAppl(SHoistedLambda(f, SMakeEnv(idns)), es) => {
+      val hl = SIdn(fresh("hoisted_lambda_var"))
+      val env = SIdn(fresh("env"))
+
+      convert_statement_to_asmjs(p, ftables, SLet(env, SMakeEnv(idns), SLet(hl, SHoistedLambda(f, env), SAppl(hl, es))))
+    }
     case SIdn(_) | SAppl(_, _) => List(convert_value_to_asmjs(p, ftables, e))
 
     // Two different kind of lets are necessary because hoisted lambdas require more work before
@@ -105,7 +112,12 @@ object asmjs_conversion {
 
   def assign_last_expr_to_ret(ret_val: AIdn, statements: List[AStatement]) : List[AStatement] = statements match {
     // TODO if s is AIf, this doesn't work. can the last statement be a nested if at this point?
-    case (s::Nil) => List(AVarAssignment(ret_val, s.asInstanceOf[AExp]))
+    case (s::Nil) => {
+      (s match {
+          case AIf(cond, block1, block2) => List(AIf(cond, assign_last_expr_to_ret(ret_val, block1), assign_last_expr_to_ret(ret_val, block2)))
+          case _ => List(AVarAssignment(ret_val, s.asInstanceOf[AExp]))
+        })
+    }
     case (s::sts) => List(s) ++ assign_last_expr_to_ret(ret_val, sts)
     // This is necessary to suppress warnings
     case Nil => throw new IllegalArgumentException()
