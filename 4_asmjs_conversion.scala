@@ -29,7 +29,9 @@ object asmjs_conversion {
   def convert_define_to_asmjs(p: SProgram, ftables: Map[String, List[Idn]], d: SDefine) : AFunction = {
     val statements = convert_statement_to_asmjs(p, ftables, d.e)
     val statements_with_return = add_return(statements)
-    AFunction(d.name.idn, d.params.map{sidn => AIdn(sidn.idn)}, statements_with_return)
+    val statements_with_stack_reset = if (d.name.idn.endsWith("_copy")) AVarAssignment(AIdn("mem_top"), AStaticValue(0)) :: statements_with_return else statements_with_return
+    
+    AFunction(d.name.idn, d.params.map{sidn => AIdn(sidn.idn)}, statements_with_stack_reset)
   }
 
   def convert_statement_to_asmjs(p: SProgram, ftables: Map[String, List[Idn]], e: SExp) : List[AStatement] = e match {
@@ -50,14 +52,9 @@ object asmjs_conversion {
 
       val setEnvValues: List[AStatement] = idns.zipWithIndex.map{ case (idn, index) => AArrayAssignment(AVarAccess(env_var), AStaticValue(index), AVarAccess(AIdn(idn.idn)))}
       
-      //AHeapAssignment(APrimitiveInstruction("+", AVarAccess(env_var), AStaticValue(index * 4)), AVarAccess(AIdn(idn.idn))) }
-
       List(AVarAssignment(env_var, AAlloc(num_idns))) ++
       setEnvValues ++
       convert_statement_to_asmjs(p, ftables, e2)
-
-      //AVarAssignment(env_var, AMakeEnv(idns.map{sidn => AVarAccess(AIdn(sidn.idn))})) :: 
-      //convert_statement_to_asmjs(p, ftables, e2)
     }
 
     case SLet(i, SHoistedLambda(f, env), e2) => {
