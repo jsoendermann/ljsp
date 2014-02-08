@@ -10,13 +10,14 @@ object parser {
 
     protected override val whiteSpace = """(\s|;.*)+""".r //"""(\s|//.*|(?m)/\*(\*(?!/)|[^*])*\*/)+""".r
 
-    // TODO make e optional
     def prog: Parser[SProgram] = rep(define)~opt(expression)~rep(define) ^^ {
       case ds1~e~ds2 => {
         e match {
           case Some(e) => SProgram(ds1 ::: ds2, e)
-          // TODO this doesn't work yet because the rest of the code can't handle null
-          case None => SProgram(ds1 ::: ds2, null)
+          // TODO This is a hack, e should be set to None or null.
+          //      It works because the expression gets thrown away
+          //      before compiling to asm.js code.
+          case None => SProgram(ds1 ::: ds2, SDouble(-42))
         }
       }
     }
