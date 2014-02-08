@@ -48,6 +48,21 @@ object Ljsp {
         println(module)
       }
 
+      case "-f" => {
+        val sourceFile = scala.io.Source.fromFile(args(1))
+        val source = sourceFile.mkString
+        sourceFile.close()
+
+        val progTree = JLispParsers.parseExpr(source)
+        val progExpand = expand_let_ns_prog(progTree)
+        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
+        val progCC = cl_conv_prog(progCps)
+        val progH = hoist_prog(progCC)
+        val module = convert_prog_to_asmjs(progH)
+        println(module)
+      }
+
+
       case _ => {
         println("Parsed program:")
         val progTree = JLispParsers.parseExpr(args(0))
