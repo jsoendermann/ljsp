@@ -1,4 +1,3 @@
-
       function AsmModule(stdlib, foreign, heap) {
       "use asm";
 
@@ -694,8 +693,6 @@ var ftable11 = [raySphereIntersectionPoint];
 
 return {vectorsDotProduct: vectorsDotProduct_copy, raySphereIntersectionPoint: raySphereIntersectionPoint_copy};
 }
-
-
 
 var module = AsmModule({ Math: Math, Int32Array: Int32Array, Float32Array: Float32Array}, {consoleDotLog: console.log}, new ArrayBuffer(10*4096));
 

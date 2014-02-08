@@ -1,4 +1,4 @@
-function renderSlow () { 
+function render(enableAsmJs) { 
     "use strict";
 
     // ######## Global variables #########
@@ -206,8 +206,11 @@ function renderSlow () {
         // Spheres
         for (i = 0; i < spheres.length; i++) {
             sphere = spheres[i];
-            //k = raySphereIntersectionPoint(r, sphere);
-            k = module.raySphereIntersectionPoint(r.org.x, r.org.y, r.org.z, r.dir.x, r.dir.y, r.dir.z, sphere.pos.x, sphere.pos.y, sphere.pos.z, sphere.r);
+            if (enableAsmJs) {
+                k = module.raySphereIntersectionPoint(r.org.x, r.org.y, r.org.z, r.dir.x, r.dir.y, r.dir.z, sphere.pos.x, sphere.pos.y, sphere.pos.z, sphere.r);
+            } else {
+                k = raySphereIntersectionPoint(r, sphere);
+            }
 
             // This happens when the ray starts on the sphere, ignore that intersection
             if (k < 0.1) {
@@ -290,64 +293,67 @@ function renderSlow () {
 
     // ######## Main function ##########
 
-    (function () {
+    var start = new Date().getTime();
 
-        var start = new Date().getTime();
+    spheres = [new Sphere(new Vector3(-50, -40, 250), 25, new Colour(255, 0, 0), true),
+            new Sphere(new Vector3(35, -40, 300), 50, new Colour(0, 255, 0), true),
+            new Sphere(new Vector3(-40, 30, 300), 25, new Colour(0, 0, 255), true),
+            new Sphere(new Vector3(50, 30, 200), 30, new Colour(255, 0, 255), true)];
 
-        spheres = [new Sphere(new Vector3(-50, -40, 250), 25, new Colour(255, 0, 0), true),
-                new Sphere(new Vector3(35, -40, 300), 50, new Colour(0, 255, 0), true),
-                new Sphere(new Vector3(-40, 30, 300), 25, new Colour(0, 0, 255), true),
-                new Sphere(new Vector3(50, 30, 200), 30, new Colour(255, 0, 255), true)];
+    planes = [new Plane(new Vector3(0, -1, 0), 60, new Colour(200, 200, 200), false),
+            new Plane(new Vector3(0, 0, -1), 400, new Colour(200, 200, 200), false),
+            new Plane(new Vector3(1, 0, 0), 110, new Colour(200, 200, 200), false),
+            new Plane(new Vector3(-1, 0, 0), 120, new Colour(200, 200, 200), false),
+            new Plane(new Vector3(0, 1, 0), 110, new Colour(200, 200, 200), false),
+            new Plane(new Vector3(0, 0, 1), 5, new Colour(200, 200, 200), false)];
+    light = new Light(new Vector3(0, 0, 180));
 
-        planes = [new Plane(new Vector3(0, -1, 0), 60, new Colour(200, 200, 200), false),
-                new Plane(new Vector3(0, 0, -1), 400, new Colour(200, 200, 200), false),
-                new Plane(new Vector3(1, 0, 0), 110, new Colour(200, 200, 200), false),
-                new Plane(new Vector3(-1, 0, 0), 120, new Colour(200, 200, 200), false),
-                new Plane(new Vector3(0, 1, 0), 110, new Colour(200, 200, 200), false),
-                new Plane(new Vector3(0, 0, 1), 5, new Colour(200, 200, 200), false)];
-        light = new Light(new Vector3(0, 0, 180));
+    bgColour = new Colour(0, 0, 0);
 
-        bgColour = new Colour(0, 0, 0);
+    var canvas_result = document.getElementById("result");
+    var canvas_twice = document.getElementById("result_twice");
+    var context_res = canvas_result.getContext("2d");
+    var context_twice = canvas_twice.getContext("2d");
+    var width = canvas_twice.width;
+    var height = canvas_twice.height;
 
-        var canvas_result = document.getElementById("result");
-        var canvas_twice = document.getElementById("result_twice");
-        var context_res = canvas_result.getContext("2d");
-        var context_twice = canvas_twice.getContext("2d");
-        var width = canvas_twice.width;
-        var height = canvas_twice.height;
-        
-        var imageData = context_twice.createImageData(width, height);
+    var imageData = context_twice.createImageData(width, height);
 
-        var x, y, r;
-        var cameraDirection, cameraUp, cameraRight;
-        var normalised_x, normalised_y;
-        var t1, t2, t3, ray_dir;
+    var x, y, r;
+    var cameraDirection, cameraUp, cameraRight;
+    var normalised_x, normalised_y;
+    var t1, t2, t3, ray_dir;
 
-        cameraDirection = new Vector3(0, 0, 1);
-        cameraUp = new Vector3(0, 1, 0);
-        cameraRight = vectorsCrossProduct(cameraDirection, cameraUp);
+    cameraDirection = new Vector3(0, 0, 1);
+    cameraUp = new Vector3(0, 1, 0);
+    cameraRight = vectorsCrossProduct(cameraDirection, cameraUp);
 
-        for (y = 0; y < height; y++) {
-            for (x = 0; x < width; x++) {
-                normalised_x = (x/width)-0.5;
-                normalised_y = (y/height)-0.5;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            normalised_x = (x/width)-0.5;
+            normalised_y = (y/height)-0.5;
 
-                t1 = scalarVectorProduct(normalised_x, cameraRight);
-                t2 = scalarVectorProduct(normalised_y, cameraUp);
-                t3 = vectorsSum(t1, t2);
-                ray_dir = vectorsSum(t3, cameraDirection);
+            t1 = scalarVectorProduct(normalised_x, cameraRight);
+            t2 = scalarVectorProduct(normalised_y, cameraUp);
+            t3 = vectorsSum(t1, t2);
+            ray_dir = vectorsSum(t3, cameraDirection);
 
-                r = new Ray(new Vector3(0, 0, 0), ray_dir);
+            r = new Ray(new Vector3(0, 0, 0), ray_dir);
 
-                setPixelToColour(imageData, x, y, trace(r, 1));
-            }
+            setPixelToColour(imageData, x, y, trace(r, 1));
         }
+    }
 
-        context_twice.putImageData(imageData, 0, 0);
-        context_res.scale(0.5,0.5);
-        context_res.drawImage(canvas_twice, 0, 0);
+    context_twice.putImageData(imageData, 0, 0);
+    context_res.scale(0.5,0.5);
+    context_res.drawImage(canvas_twice, 0, 0);
+    context_res.scale(2, 2);
 
-        var elapsed = new Date().getTime() - start;
-        document.getElementById("time").innerHTML = "Rendered in " + (elapsed/1000.0) + " seconds.";
-    })();
+    var elapsed = new Date().getTime() - start;
+    if (enableAsmJs) {
+        document.getElementById("timeAsmJs").innerHTML = "Rendered using asm.js in " + (elapsed/1000.0) + " seconds.";
+    } else {
+        document.getElementById("timeStandard").innerHTML = "Rendered using standard JavaScript in " + (elapsed/1000.0) + " seconds.";
+    }
+    
 }

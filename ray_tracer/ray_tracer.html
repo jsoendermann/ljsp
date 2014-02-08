@@ -9,8 +9,11 @@
             <canvas id="result" width="500" height="500" style="border-style: solid; border-width: 1px;"></canvas>
             <canvas id="result_twice" width="1000" height="1000" style="border-style: solid; border-width: 1px; display:none;"></canvas>
             <br />
-            <button id="render_slow" onclick="renderSlow()" >Render</button>
-            <p id="time"></p>
+            <br />
+            <button onclick="render(false)" >Render using standard JS</button>
+            <button onclick="render(true)" >Render using asm.js</button>
+            <p id="timeStandard"></p>
+            <p id="timeAsmJs"></p>
         </div>
     </body>
 </html>
