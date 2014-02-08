@@ -2,6 +2,7 @@ package ljsp
 
 import ljsp.AST._
 import ljsp.parser._
+import ljsp.expand_let_ns._
 import ljsp.cps_translation._
 import ljsp.closure_conversion._
 import ljsp.hoisting._
@@ -11,24 +12,36 @@ object Ljsp {
   def main(args: Array[String]) {
 
     args(0) match {
+      case "--expLetN" => {
+        val progTree = JLispParsers.parseExpr(args(1))
+        val progExpand = expand_let_ns_prog(progTree)
+        println(progExpand)
+      }
       case "--cps" => {
         val progTree = JLispParsers.parseExpr(args(1))
-        println(cps_trans_prog(progTree, (r: SExp) => r))
+        val progExpand = expand_let_ns_prog(progTree)
+        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
+        println(progCps)
       }
       case "--cc" => {
         val progTree = JLispParsers.parseExpr(args(1))
-        val progCps = cps_trans_prog(progTree, (x: SExp) => x)
-        println(cl_conv_prog(progCps))
+        val progExpand = expand_let_ns_prog(progTree)
+        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
+        val progCC = cl_conv_prog(progCps)
+        println(progCC)
       }
       case "--h" => {
         val progTree = JLispParsers.parseExpr(args(1))
-        val progCps = cps_trans_prog(progTree, (x: SExp) => x)
+        val progExpand = expand_let_ns_prog(progTree)
+        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
         val progCC = cl_conv_prog(progCps)
-        println(hoist_prog(progCC))
+        val progH = hoist_prog(progCC)
+        println(progH)
       }
       case "--asmjs" => {
         val progTree = JLispParsers.parseExpr(args(1))
-        val progCps = cps_trans_prog(progTree, (x: SExp) => x)
+        val progExpand = expand_let_ns_prog(progTree)
+        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
         val progCC = cl_conv_prog(progCps)
         val progH = hoist_prog(progCC)
         val module = convert_prog_to_asmjs(progH)
@@ -41,8 +54,13 @@ object Ljsp {
         println(progTree.toString)
         println()
 
+        println("LetN expanded program:")
+        val progExpand = expand_let_ns_prog(progTree)
+        println(progExpand)
+        println()
+
         println("CPS translated program:")
-        val progCps = cps_trans_prog(progTree, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
+        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
         println(progCps.toString)
         println()
 

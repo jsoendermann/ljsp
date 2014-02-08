@@ -20,8 +20,8 @@ object AST {
   case class SAppl(proc: SExp, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
   case class SApplPrimitive(proc: SIdn, es: List[SExp]) extends SExp { override def toString = "(" + proc.toString() + " " + es.mkString(" ") + ")"}
   case class SLet(idn: SIdn, e1: SExp, e2: SExp) extends SExp { override def toString = "(let ((" + idn.toString() + " " + e1.toString() + ")) " + e2.toString() + ")" }
-  // TODO more than one variable let
-
+  case class SLetN(idnsAndE1s: List[LetDefineBlock], e2: SExp) extends SExp { override def toString = "(let (" + idnsAndE1s.mkString(" ") + ") " + e2.toString() + ")" } 
+  case class LetDefineBlock(idn: SIdn, e: SExp) { override def toString = "(" + idn.toString() + " " + e.toString() + ")" }
 
   // Clases used in closure conversion
   case class SMakeEnv(idns: List[SIdn]) extends SExp { override def toString = { "(make-env" + (if (idns.size == 0) ")" else " " + idns.mkString(" ") + ")") }}
