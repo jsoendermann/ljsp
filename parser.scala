@@ -8,6 +8,8 @@ object parser {
   object JLispParsers extends JavaTokenParsers {
     def expression: Parser[SExp] = identifier | double | _if | lambda | primitive_application | application | let
 
+    protected override val whiteSpace = """(\s|;.*)+""".r //"""(\s|//.*|(?m)/\*(\*(?!/)|[^*])*\*/)+""".r
+
     // TODO make e optional
     def prog: Parser[SProgram] = rep(define)~opt(expression)~rep(define) ^^ {
       case ds1~e~ds2 => {
