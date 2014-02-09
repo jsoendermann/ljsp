@@ -115,7 +115,6 @@ object AST {
 
   abstract class AStatement
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
-  case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "D32[(~~+floor(" + index.toString() + ")|0) << 2 >> 2] = +(" + value.toString() + ")" }}
   case class AArrayAssignment(base: AExp, offset: AExp, value: AExp) extends AStatement { override def toString = { "D32[(~~+floor(+(" + base.toString() + " + " + offset.toString() + "))|0) << 2 >> 2] = +(" + value.toString() + ")"}}
   case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (" + ADoubleToInt(cond).toString() + ") {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
   case class AReturn(s: AStatement) extends AStatement { override def toString = { "return +" + s.toString() }}
