@@ -63,8 +63,9 @@ object asmjs_conversion {
       // Make array with
       // 1. The ftable index (the correct ftable will be determined once the hoisted lambda is being called by looking at the number of params it's being called with)
       // 2. A pointer (array index) to the environment array
-      // TODO make this more readable
-      AVarAssignment(hl_var, AMakeHoistedLambda(AStaticValue(ftable_name_and_index_for_fname(ftables, f.idn)._2), AVarAccess(AIdn(env.asInstanceOf[SIdn].idn)))) ::
+      AVarAssignment(hl_var, AAlloc(2)) ::
+      AArrayAssignment(AVarAccess(hl_var), AStaticValue(0), AStaticValue(ftable_name_and_index_for_fname(ftables, f.idn)._2)) ::
+      AArrayAssignment(AVarAccess(hl_var), AStaticValue(1), AVarAccess(AIdn(env.asInstanceOf[SIdn].idn))) ::
       convert_statement_to_asmjs(p, ftables, e2)}
 
     case SLet(i, e1, e2) => {

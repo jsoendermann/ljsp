@@ -66,40 +66,6 @@ object AST {
           return +current_mem_top;
       }
 
-      function get_array_element(base, offset) {
-          base = +base;
-          offset = +offset;
-
-          var addr = 0.0;
-
-          addr = +(base + offset);
-          return +D32[(~~+floor(addr)|0) << 2 >> 2];
-      }
-
-
-      function set_array_element(base, offset, value) {
-          base = +base;
-          offset = +offset;
-          value = +value;
-          
-          var addr = 0.0;
-
-          addr = +(base + offset);
-          D32[(~~+floor(addr)|0) << 2 >> 2] = value;
-      }
-
-      function make_hoisted_lambda(f_index, env_pointer) {
-          f_index = +f_index;
-          env_pointer = +env_pointer;
-
-          var a = 0.0;
-
-          a = +alloc(2.0);
-          set_array_element(a, 0.0, f_index);
-          set_array_element(a, 1.0, env_pointer);
-          return +a;
-      }
-
       function min(a, b) {
         a = +a;
         b = +b;
@@ -140,8 +106,8 @@ object AST {
 
   abstract class AStatement
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
-  case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(0.0, "+index+", "+value+")" }}
-  case class AArrayAssignment(base: AExp, offsete: AExp, value: AExp) extends AStatement { override def toString = { "set_array_element(" + base.toString() + ", " + offsete.toString() + ", " + value.toString() + ")" }}
+  case class AHeapAssignment(index: AExp, value: AExp) extends AStatement { override def toString = { "D32[(~~+floor(" + index.toString() + ")|0) << 2 >> 2] = +(" + value.toString() + ")" }}
+  case class AArrayAssignment(base: AExp, offset: AExp, value: AExp) extends AStatement { override def toString = { "D32[(~~+floor(+(" + base.toString() + " + " + offset.toString() + "))|0) << 2 >> 2] = +(" + value.toString() + ")"}}
   case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement { override def toString = { "if (" + ADoubleToInt(cond).toString() + ") {\n" + block1.map{i => i.toString() + ";\n"}.mkString("") + "} else {\n" + block2.map{i => i.toString() + ";\n"}.mkString("") + "}" }}
   case class AReturn(s: AStatement) extends AStatement { override def toString = { "return +" + s.toString() }}
 
@@ -165,7 +131,7 @@ object AST {
   // TODO remove this class, use AIdn directly
   case class AVarAccess(idn: AIdn) extends AExp { override def toString = { idn.toString }}
   case class AHeapAccess(index: AExp) extends AExp { override def toString = { AArrayAccess(AStaticValue(0.0), index).toString }}
-  case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp { override def toString = { "(+get_array_element("+base_address+", "+offset+"))" }}
+  case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp { override def toString = { "(+D32[(~~+floor(+(" + base_address.toString() + " + " + offset.toString() + "))|0) << 2 >> 2])" }}
   // TODO turn this into a statement
   //case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "(+make_env_"+values.size.toString() + "(" + values.mkString(", ") + "))"}}
   case class AMakeHoistedLambda(f_index: AExp, env_pointer: AExp) extends AExp { override def toString = { "(+make_hoisted_lambda(" + f_index.toString() + ", " + env_pointer.toString() + "))"}}
