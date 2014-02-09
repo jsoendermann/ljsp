@@ -93,7 +93,6 @@ object AST {
     }
   }
   case class AIdn(idn: Idn) { override def toString = { idn }}
-  // TODO reset mem_top at the beginning of *_copy functions
   case class AFunction(name: String, params: List[AIdn], instructions: List[AStatement]) { 
     override def toString = { 
       val lv = local_vars(instructions)
@@ -103,6 +102,16 @@ object AST {
       instructions.map{i => i.toString() + ";\n"}.mkString("") + "\n}" 
     }
   }
+
+  def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {
+    case Nil => Set()
+    case (i::is) => local_vars(is) ++ (i match {
+      case AVarAssignment(i, v) => if (i.idn == "mem_top") Set() else Set(i.idn)
+      case AIf(cond, block1, block2) => local_vars(List(cond)) ++ local_vars(block1) ++ local_vars(block2)
+      case _ => Set()
+    })
+  }
+
 
   abstract class AStatement
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
@@ -138,13 +147,5 @@ object AST {
   // TODO size should be of type AStaticValue
   case class AAlloc(size: Int) extends AExp { override def toString = { "(+alloc(+"+size.toString()+"))" }}
 
-  def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {
-    case Nil => Set()
-    case (i::is) => local_vars(is) ++ (i match {
-      case AVarAssignment(i, v) => if (i.idn == "mem_top") Set() else Set(i.idn)
-      case AIf(cond, block1, block2) => local_vars(List(cond)) ++ local_vars(block1) ++ local_vars(block2)
-      case _ => Set()
-    })
-  }
 }
 
