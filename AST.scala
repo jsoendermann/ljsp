@@ -137,9 +137,6 @@ object AST {
   }}
   case class AHeapAccess(index: AExp) extends AExp { override def toString = { AArrayAccess(AStaticValue(0.0), index).toString }}
   case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp { override def toString = { "(+D32[(~~+floor(+(" + base_address.toString() + " + " + offset.toString() + "))|0) << 2 >> 2])" }}
-  // TODO turn this into a statement
-  //case class AMakeEnv(values: List[AExp]) extends AExp { override def toString = { "(+make_env_"+values.size.toString() + "(" + values.mkString(", ") + "))"}}
-  case class AMakeHoistedLambda(f_index: AExp, env_pointer: AExp) extends AExp { override def toString = { "(+make_hoisted_lambda(" + f_index.toString() + ", " + env_pointer.toString() + "))"}}
   // TODO size should be of type AStaticValue
   case class AAlloc(size: Int) extends AExp { override def toString = { "(+alloc(+"+size.toString()+"))" }}
 
