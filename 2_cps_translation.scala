@@ -69,7 +69,6 @@ object cps_translation {
 
     // For primitive applications, translate all the arguments
     // and continue with let f=SAppl in k(f)
-    // TODO translate expressions with more than 2 arguments
     case SApplPrimitive(proc, es) => {
       val z = SIdn(fresh("var"))
 

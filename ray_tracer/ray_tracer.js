@@ -2,7 +2,7 @@ function render(enableAsmJs) {
     "use strict";
 
     // ######## Global variables #########
-    
+
     var spheres, planes, light;
     var bgColour;
 
@@ -53,7 +53,7 @@ function render(enableAsmJs) {
         };
     }
 
-    
+
     function Colour(r, g, b) {
         this.r = r;
         this.g = g;
@@ -89,7 +89,11 @@ function render(enableAsmJs) {
     }
 
     function vectorsDotProduct(v1, v2) {
-        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+        if (enableAsmJs) {
+            return module.vectorsDotProduct(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+        } else {
+            return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+        }
     }
 
     function vectorsCrossProduct(u, v) {
@@ -152,7 +156,7 @@ function render(enableAsmJs) {
 
 
     // ############ Intersection functions ##############
-    
+
     function rayPlaneIntersectionPoint(r, p) {
         var d;
 
@@ -166,51 +170,52 @@ function render(enableAsmJs) {
     }
 
     function raySphereIntersectionPoint(r_original, s) {
-        var r, A, B, C, discriminant, t0, t1;
-
-        // r: r_org in object space of s
-        r = r_original.copy();
-        r.org.x -= s.pos.x;
-        r.org.y -= s.pos.y;
-        r.org.z -= s.pos.z;
-
-        A = vectorsDotProduct(r.dir, r.dir);
-        B = 2 * vectorsDotProduct(r.dir, r.org);
-        C = vectorsDotProduct(r.org, r.org) - s.r*s.r;
-
-        discriminant = B*B - 4 * A * C;
-
-        if (discriminant < 0.0) {
-            return hugeValue;
+        if (enableAsmJs) {
+            return module.raySphereIntersectionPoint(r_original.org.x, r_original.org.y, r_original.org.z, r_original.dir.x, r_original.dir.y, r_original.dir.z, s.pos.x, s.pos.y, s.pos.z, s.r);
         }
+        else {
+            var r, A, B, C, discriminant, t0, t1;
 
-        t0 = (-B - Math.sqrt(discriminant)) / (2.0 * A);
-        t1 = (-B + Math.sqrt(discriminant)) / (2.0 * A);
+            // r: r_org in object space of s
+            r = r_original.copy();
+            r.org.x -= s.pos.x;
+            r.org.y -= s.pos.y;
+            r.org.z -= s.pos.z;
 
-        if (Math.max(t0, t1) < 0) {
-            return hugeValue;
+            A = vectorsDotProduct(r.dir, r.dir);
+            B = 2 * vectorsDotProduct(r.dir, r.org);
+            C = vectorsDotProduct(r.org, r.org) - s.r*s.r;
+
+            discriminant = B*B - 4 * A * C;
+
+            if (discriminant < 0.0) {
+                return hugeValue;
+            }
+
+            t0 = (-B - Math.sqrt(discriminant)) / (2.0 * A);
+            t1 = (-B + Math.sqrt(discriminant)) / (2.0 * A);
+
+            if (Math.max(t0, t1) < 0) {
+                return hugeValue;
+            }
+
+            if (Math.min(t0, t1) < 0) {
+                return Math.max(t0, t1);
+            }
+
+            return Math.min(t0, t1);
         }
-
-        if (Math.min(t0, t1) < 0) {
-            return Math.max(t0, t1);
-        }
-
-        return Math.min(t0, t1);
     }
 
     // TODO return an object instead of an array
     // returns [k, point, object]
     function closestIntersectionPoint(r) {
         var i, sphere, k, smallestK = hugeValue, closestObject = null, plane;
-        
+
         // Spheres
         for (i = 0; i < spheres.length; i++) {
             sphere = spheres[i];
-            if (enableAsmJs) {
-                k = module.raySphereIntersectionPoint(r.org.x, r.org.y, r.org.z, r.dir.x, r.dir.y, r.dir.z, sphere.pos.x, sphere.pos.y, sphere.pos.z, sphere.r);
-            } else {
-                k = raySphereIntersectionPoint(r, sphere);
-            }
+            k = raySphereIntersectionPoint(r, sphere);
 
             // This happens when the ray starts on the sphere, ignore that intersection
             if (k < 0.1) {
@@ -287,7 +292,7 @@ function render(enableAsmJs) {
                 return colourScaled(intensity, closestObject.clr);
             }
         }
-        
+
     }
 
 
@@ -301,11 +306,11 @@ function render(enableAsmJs) {
             new Sphere(new Vector3(50, 30, 200), 30, new Colour(255, 0, 255), true)];
 
     planes = [new Plane(new Vector3(0, -1, 0), 60, new Colour(200, 200, 200), false),
-            new Plane(new Vector3(0, 0, -1), 400, new Colour(200, 200, 200), false),
-            new Plane(new Vector3(1, 0, 0), 110, new Colour(200, 200, 200), false),
-            new Plane(new Vector3(-1, 0, 0), 120, new Colour(200, 200, 200), false),
-            new Plane(new Vector3(0, 1, 0), 110, new Colour(200, 200, 200), false),
-            new Plane(new Vector3(0, 0, 1), 5, new Colour(200, 200, 200), false)];
+           new Plane(new Vector3(0, 0, -1), 400, new Colour(200, 200, 200), false),
+           new Plane(new Vector3(1, 0, 0), 110, new Colour(200, 200, 200), false),
+           new Plane(new Vector3(-1, 0, 0), 120, new Colour(200, 200, 200), false),
+           new Plane(new Vector3(0, 1, 0), 110, new Colour(200, 200, 200), false),
+           new Plane(new Vector3(0, 0, 1), 5, new Colour(200, 200, 200), false)];
     light = new Light(new Vector3(0, 0, 180));
 
     bgColour = new Colour(0, 0, 0);
@@ -355,5 +360,5 @@ function render(enableAsmJs) {
     } else {
         document.getElementById("timeStandard").innerHTML = "Rendered using standard JavaScript in " + (elapsed/1000.0) + " seconds.";
     }
-    
+
 }
