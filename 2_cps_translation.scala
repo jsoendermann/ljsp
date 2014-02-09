@@ -145,10 +145,7 @@ object cps_translation {
     }
 
     case SLet(idn, e1, e2) => {
-      val f = SIdn(fresh("var"))
-      val c_ = SLambda(List(f), SAppl(c, List(f)))
-
-      val ce2 = cps_tail_trans(e2, c_)
+      val ce2 = cps_tail_trans(e2, c)
 
       cps_tail_trans(e1, SLambda(List(idn), ce2))
     }
