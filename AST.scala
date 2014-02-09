@@ -92,7 +92,7 @@ object AST {
       "}"
     }
   }
-  case class AIdn(idn: Idn) { override def toString = { idn }}
+  
   case class AFunction(name: String, params: List[AIdn], instructions: List[AStatement]) { 
     override def toString = { 
       val lv = local_vars(instructions)
@@ -120,24 +120,21 @@ object AST {
   case class AReturn(s: AStatement) extends AStatement { override def toString = { "return +" + s.toString() }}
 
   abstract class AExp extends AStatement
+  case class AIdn(idn: Idn) extends AExp { override def toString = { idn }}
   // TODO remove this class
   case class AStaticValue(d: Double) extends AExp { override def toString = { "(+"+d.toString()+")" }}
   case class ADoubleToInt(d: AExp) extends AExp { override def toString = { "(~~+floor("+d.toString()+")|0)" }}
   case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp { override def toString = { "(+" + f + "(" + params.mkString(", ") + "))" }}
-  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(+" + ftable + "[(" + ADoubleToInt(AHeapAccess(AVarAccess(fpointer))).toString + ") & "+mask.toString + "](" + AArrayAccess(AVarAccess(fpointer), AStaticValue(1.0)) + ", " + params.mkString(", ") + "))" }}
+  case class AFunctionCallByIndex(ftable: AIdn, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp { override def toString = { "(+" + ftable + "[(" + ADoubleToInt(AHeapAccess(fpointer)).toString + ") & "+mask.toString + "](" + AArrayAccess(fpointer, AStaticValue(1.0)) + ", " + params.mkString(", ") + "))" }}
   // as.size is either 1 or 2
   case class APrimitiveInstruction(op: String, as: List[AExp]) extends AExp { override def toString = op match {
-    // TODO implement other primitive operations
     case "+" | "-" | "*" | "/" => "(+((+("+as(0).toString() +"))" + op + "(+(" + as(1).toString()+"))))"
-    //case "*" => "(+imul(+("+as(0).toString()+"),+("+as(1).toString()+")))"
     case "<" | ">" => "+(((+(" + as(0).toString() + "))" + op + "(+(" + as(1).toString() + ")))|0)"
     case "neg" => "(+(-("+as(0)+")))"
     case "min" | "max" => "(+"+op+"(+("+as(0).toString()+"), +("+as(1).toString()+")))"
     case "sqrt" => "(+"+op+"(+("+as(0)+")))"
     case _ => as(0).toString() + op + as(1).toString()
   }}
-  // TODO remove this class, use AIdn directly
-  case class AVarAccess(idn: AIdn) extends AExp { override def toString = { idn.toString }}
   case class AHeapAccess(index: AExp) extends AExp { override def toString = { AArrayAccess(AStaticValue(0.0), index).toString }}
   case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp { override def toString = { "(+D32[(~~+floor(+(" + base_address.toString() + " + " + offset.toString() + "))|0) << 2 >> 2])" }}
   // TODO turn this into a statement

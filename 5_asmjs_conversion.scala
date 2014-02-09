@@ -50,7 +50,7 @@ object asmjs_conversion {
       val num_idns = idns.size
       val env_var = AIdn(i.idn)
 
-      val setEnvValues: List[AStatement] = idns.zipWithIndex.map{ case (idn, index) => AArrayAssignment(AVarAccess(env_var), AStaticValue(index), AVarAccess(AIdn(idn.idn)))}
+      val setEnvValues: List[AStatement] = idns.zipWithIndex.map{ case (idn, index) => AArrayAssignment(env_var, AStaticValue(index), AIdn(idn.idn))}
       
       List(AVarAssignment(env_var, AAlloc(num_idns))) ++
       setEnvValues ++
@@ -64,8 +64,8 @@ object asmjs_conversion {
       // 1. The ftable index (the correct ftable will be determined once the hoisted lambda is being called by looking at the number of params it's being called with)
       // 2. A pointer (array index) to the environment array
       AVarAssignment(hl_var, AAlloc(2)) ::
-      AArrayAssignment(AVarAccess(hl_var), AStaticValue(0), AStaticValue(ftable_name_and_index_for_fname(ftables, f.idn)._2)) ::
-      AArrayAssignment(AVarAccess(hl_var), AStaticValue(1), AVarAccess(AIdn(env.asInstanceOf[SIdn].idn))) ::
+      AArrayAssignment(hl_var, AStaticValue(0), AStaticValue(ftable_name_and_index_for_fname(ftables, f.idn)._2)) ::
+      AArrayAssignment(hl_var, AStaticValue(1), AIdn(env.asInstanceOf[SIdn].idn)) ::
       convert_statement_to_asmjs(p, ftables, e2)}
 
     case SLet(i, e1, e2) => {
@@ -77,11 +77,11 @@ object asmjs_conversion {
       // TODO this might be unnecessary
       val if_var = AIdn(fresh("if_var"))
       List(AVarAssignment(if_var, convert_value_to_asmjs(p, ftables, e1)),
-        AIf(AVarAccess(if_var), convert_statement_to_asmjs(p, ftables, e2), convert_statement_to_asmjs(p, ftables, e3)))}
+        AIf(if_var, convert_statement_to_asmjs(p, ftables, e2), convert_statement_to_asmjs(p, ftables, e3)))}
   }
 
   def convert_value_to_asmjs(p: SProgram, ftables: Map[String, List[Idn]], e: SExp) : AExp = e match {
-    case SIdn(i) => AVarAccess(AIdn(i))
+    case SIdn(i) => AIdn(i)
     case SDouble(d) => AStaticValue(d)
 
     case SAppl(proc, es) => {
@@ -107,7 +107,7 @@ object asmjs_conversion {
       case AIf(cond, block1, block2) => {
         val ret_val = AIdn(fresh("ret_val"))
         List(AIf(cond, assign_last_expr_to_ret(ret_val, block1), assign_last_expr_to_ret(ret_val, block2)),
-          AReturn(AVarAccess(ret_val)))}
+          AReturn(ret_val))}
       case _ => List(AReturn(s))
     }
     case (s::sts) => List(s) ++ add_return(sts)
@@ -117,7 +117,6 @@ object asmjs_conversion {
 
 
   def assign_last_expr_to_ret(ret_val: AIdn, statements: List[AStatement]) : List[AStatement] = statements match {
-    // TODO if s is AIf, this doesn't work. can the last statement be a nested if at this point?
     case (s::Nil) => {
       (s match {
           case AIf(cond, block1, block2) => List(AIf(cond, assign_last_expr_to_ret(ret_val, block1), assign_last_expr_to_ret(ret_val, block2)))
