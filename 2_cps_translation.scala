@@ -90,13 +90,14 @@ object cps_translation {
     case SLet(idn, e1, e2) => {
       // c is a simple continuation lambda
       val f = SIdn(fresh("var"))
-      val c = SLambda(List(f), k(f))
+      //val c = SLambda(List(f), k(f))
 
-      val ce2 = cps_tail_trans(e2, c)
+      val ce2 = cps_trans(e2, (ce2: SExp) => SLet(f, ce2, k(f)))
 
+      cps_trans(e1, (ce1: SExp) => SLet(idn, ce1, ce2))
       // This creates a lambda with a parameter of the same name as the identifier in the let
       // e1 is CPS translated and applied to this new lambda
-      cps_tail_trans(e1, SLambda(List(idn), ce2))
+      //cps_tail_trans(e1, SLambda(List(idn), ce2))
     }
   }
 
@@ -147,7 +148,7 @@ object cps_translation {
     case SLet(idn, e1, e2) => {
       val ce2 = cps_tail_trans(e2, c)
 
-      cps_tail_trans(e1, SLambda(List(idn), ce2))
+      cps_trans(e1, (ce1: SExp) => SLet(idn, ce1, ce2))//cps_tail_trans(e1, SLambda(List(idn), ce2))
     }
   }
 }
