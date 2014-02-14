@@ -113,6 +113,7 @@ object AST {
   }
 
 
+  // TODO tidy this up
   abstract class AStatement
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement { override def toString = { idn.toString + " = " + value.toString() }}
   case class AArrayAssignment(base: AExp, offset: AExp, value: AExp) extends AStatement { override def toString = { "D32[(~~+floor(+(" + base.toString() + " + " + offset.toString() + "))|0) << 2 >> 2] = +(" + value.toString() + ")"}}
