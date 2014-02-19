@@ -18,24 +18,29 @@
 
 \chapter{Introduction}
 Motivation
-% scope
-% "transpiler"
 
 \chapter{Background}
-% javascript engines/interpreters, new generation, history
-% emscripten, LLVM
+\section{javascript engines/interpreters, new generation, history}
+\section{emscripten, LLVM}
 \section{asm.js}
 \section{LISP}
 
 \chapter{Requirements \& Specification}
-% aims & objectives
+\section{aims \& objectives}
 \section{LJSP abstract syntax}
 \section{Small/big-step semantics LJSP}
 \section{Output module}
 
 \chapter{Design}
-\section{Overall approach (architecture design)}
-\section{Detailed design (class diagrams, dependencies, state machines)}
+\section{Overall approach}
+% diagram of stages
+\section{Detailed design of compilation stages}
+\subsection{Parsing}
+\subsection{CPS-Translation}
+\subsection{Closure Conversion}
+\subsection{Hoisting}
+\subsection{Conversion to asm.js}
+\subsection{Code emission}
 
 \chapter{Implementation}
 \section{Problems encountered \& resolved}
@@ -49,12 +54,9 @@ Motivation
 \chapter{Conclusions \& Future Work}
 
 \chapter{Userguide}
+\section{CLI switches}
 
 \chapter{Programs Listings}
-
-
-%%%%%% somewhere
-% cli switches
 
 
 \end{document}
