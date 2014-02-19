@@ -1,5 +1,7 @@
 ljsp/*
 
+ray_tracer/gen_code.js
+
 report/report.aux
 report/report.log
 report/report.pdf
