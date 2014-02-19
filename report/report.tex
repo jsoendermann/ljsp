@@ -1,0 +1,100 @@
+\documentclass[11pt]{report}
+
+\usepackage[toc,page]{appendix}
+
+\title{LJSP - A LISP to asm.js compiler}
+\author{Jan S\"ondermann}
+\date{1st January 1900}
+
+
+\begin{document}
+
+\maketitle
+
+% originality
+% abstract
+% what it is?
+% acknowledgements
+
+\tableofcontents
+
+\chapter{Introduction}
+\section{Motivation for LJSP}
+\section{Scope}
+
+\chapter{Background}
+\section{Technologies involved}
+\subsection{javascript engines/interpreters, new generation, history}
+\subsection{emscripten, LLVM}
+\subsection{asm.js}
+\subsection{LISP}
+\section{Similar Languages}
+
+\chapter{Requirements}
+\section{User Requirements}
+\section{System Requirement}
+
+\chapter{Specification}
+\section{LJSP abstract syntax}
+% subset of scheme
+\section{Small/big-step semantics of LJSP}
+\section{Output Module}
+
+\chapter{Design}
+\section{Overall architecture}
+% diagram of stages
+% scheme is used for all internal code
+\section{Detailed design of compilation stages}
+\subsection{Parsing}
+\subsection{CPS-Translation}
+\subsection{Closure Conversion}
+\subsection{Hoisting}
+\subsection{Conversion to asm.js}
+\subsection{Code emission}
+
+\chapter{Implementation}
+\section{Scala}
+\section{Problems encountered \& resolved}
+% variables that contain functions, ftables generated at compile time
+\section{Experimentation \& Optimisation}
+% array index vars of type int, others of type double
+% (array index vars are all generated, user doesn't see them)
+
+\chapter{Testing}
+\section{Testing of internal stages}
+% testing framework, testing library
+\section{Testing of compiled code}
+% because asm.js evaluates to the same result regardless of
+% whether or not it's compiled according to asm.js specification,
+% it's possible to add invalid statements and still test the module
+
+% ray tracer to test performance
+
+\chapter{Evaluation}
+% code emission is a mess
+
+% ast transformations would be nicer if the compiler generated the subtrees
+% from short code snippets instead of creating the objects manually
+\section{Evaluation against requirements}
+\section{Strengths \& Weaknesses}
+
+\chapter{Professional Issues}
+% http://www.bcs.org/category/6030
+
+\chapter{Conclusions}
+\section{Future Work}
+\subsection{Optimisations}
+\subsection{Types}
+
+\begin{appendices}
+
+\chapter{Userguide}
+\section{CLI switches}
+
+\chapter{Class diagrams}
+
+\chapter{Programs Listings}
+
+\end{appendices}
+
+\end{document}
