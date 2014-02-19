@@ -1,6 +1,7 @@
 package ljsp
 
 import ljsp.AST._
+import ljsp.ljsp_code_generation._
 import ljsp.parser._
 import ljsp.expand_let_ns._
 import ljsp.cps_translation._
@@ -15,20 +16,20 @@ object Ljsp {
       case "--expLetN" => {
         val progTree = JLispParsers.parseExpr(args(1))
         val progExpand = expand_let_ns_prog(progTree)
-        println(progExpand)
+        println(ljsp_prog_to_string(progExpand))
       }
       case "--cps" => {
         val progTree = JLispParsers.parseExpr(args(1))
         val progExpand = expand_let_ns_prog(progTree)
         val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
-        println(progCps)
+        println(ljsp_prog_to_string(progCps))
       }
       case "--cc" => {
         val progTree = JLispParsers.parseExpr(args(1))
         val progExpand = expand_let_ns_prog(progTree)
         val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
         val progCC = cl_conv_prog(progCps)
-        println(progCC)
+        println(ljsp_prog_to_string(progCC))
       }
       case "--h" => {
         val progTree = JLispParsers.parseExpr(args(1))
@@ -36,7 +37,7 @@ object Ljsp {
         val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
         val progCC = cl_conv_prog(progCps)
         val progH = hoist_prog(progCC)
-        println(progH)
+        println(ljsp_prog_to_string(progH))
       }
       case "--asmjs" => {
         val progTree = JLispParsers.parseExpr(args(1))
@@ -66,27 +67,27 @@ object Ljsp {
       case _ => {
         println("Parsed program:")
         val progTree = JLispParsers.parseExpr(args(0))
-        println(progTree.toString)
+        println(ljsp_prog_to_string(progTree))
         println()
 
         println("LetN expanded program:")
         val progExpand = expand_let_ns_prog(progTree)
-        println(progExpand)
+        println(ljsp_prog_to_string(progExpand))
         println()
 
         println("CPS translated program:")
-        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)//SAppl(SIdn("display"), List(x)))
-        println(progCps.toString)
+        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
+        println(ljsp_prog_to_string(progCps))
         println()
 
         println("Closure converted program:")
         val progCC = cl_conv_prog(progCps)
-        println(progCC.toString)
+        println(ljsp_prog_to_string(progCC))
         println()
 
         println("Hoisted program:")
         val progH = hoist_prog(progCC)
-        println(progH.toString)
+        println(ljsp_prog_to_string(progH))
         println()
 
         val module = convert_prog_to_asmjs(progH)
