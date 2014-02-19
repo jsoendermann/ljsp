@@ -14,7 +14,7 @@ object asmjs_conversion {
     // of the table won't be used by the program and are just there to produce valid asm.js
     val fnames_map_pow_2 = fnames_map.map{ case (ftable, fnames) => (ftable, fnames ++ List.fill(find_next_power_of_2(fnames.size)-fnames.size)(fnames(0)))}
 
-    AModule(p.ds.map{d => convert_define_to_asmjs(p, fnames_map_pow_2, d)}, fnames_map_pow_2)
+    AModule("AsmModule", p.ds.map{d => convert_define_to_asmjs(p, fnames_map_pow_2, d)}, fnames_map_pow_2)
   }
 
   def ftable_name_and_index_for_fname(ftables: Map[String, List[Idn]], f: String): Tuple2[String, Int] = {
@@ -81,7 +81,7 @@ object asmjs_conversion {
   }
 
   def convert_value_to_asmjs(p: SProgram, ftables: Map[String, List[Idn]], e: SExp) : AExp = e match {
-    case SIdn(i) => AIdn(i)
+    case SIdn(i) => AVarAccess(AIdn(i))
     case SDouble(d) => AStaticValue(d)
 
     case SAppl(proc, es) => {
@@ -91,7 +91,7 @@ object asmjs_conversion {
       else {
         // determine correct ftable by looking at #params
         val ftable_name = "ftable"+(es.size+1).toString
-        AFunctionCallByIndex(AIdn(ftable_name), AIdn(proc.asInstanceOf[SIdn].idn), ftables(ftable_name).size-1, es.map{convert_value_to_asmjs(p, ftables, _)})
+        AFunctionCallByIndex(ftable_name, AIdn(proc.asInstanceOf[SIdn].idn), ftables(ftable_name).size-1, es.map{convert_value_to_asmjs(p, ftables, _)})
       }
     }
 
@@ -106,8 +106,8 @@ object asmjs_conversion {
     case (s::Nil) => s match {
       case AIf(cond, block1, block2) => {
         val ret_val = AIdn(fresh("ret_val"))
-        List(AIf(cond, assign_last_expr_to_ret(ret_val, block1), assign_last_expr_to_ret(ret_val, block2)),
-          AReturn(ret_val))}
+        List(AIf(cond, assign_last_expr_to_ret_val(ret_val, block1), assign_last_expr_to_ret_val(ret_val, block2)),
+          AReturn(AVarAccess(ret_val)))}
       case _ => List(AReturn(s))
     }
     case (s::sts) => List(s) ++ add_return(sts)
@@ -116,14 +116,14 @@ object asmjs_conversion {
   }
 
 
-  def assign_last_expr_to_ret(ret_val: AIdn, statements: List[AStatement]) : List[AStatement] = statements match {
+  def assign_last_expr_to_ret_val(ret_val: AIdn, statements: List[AStatement]) : List[AStatement] = statements match {
     case (s::Nil) => {
       (s match {
-          case AIf(cond, block1, block2) => List(AIf(cond, assign_last_expr_to_ret(ret_val, block1), assign_last_expr_to_ret(ret_val, block2)))
+          case AIf(cond, block1, block2) => List(AIf(cond, assign_last_expr_to_ret_val(ret_val, block1), assign_last_expr_to_ret_val(ret_val, block2)))
           case _ => List(AVarAssignment(ret_val, s.asInstanceOf[AExp]))
         })
     }
-    case (s::sts) => List(s) ++ assign_last_expr_to_ret(ret_val, sts)
+    case (s::sts) => List(s) ++ assign_last_expr_to_ret_val(ret_val, sts)
     // This is necessary to suppress warnings
     case Nil => throw new IllegalArgumentException()
   }
