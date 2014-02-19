@@ -8,7 +8,7 @@ object cps_translation {
   def cps_trans_prog(p : SProgram, k : SExp => SExp) : SProgram = {
     val func_copies = p.ds.map{d => {
       val ident_param = SIdn(fresh("ident_param"))
-      SDefine(SIdn(d.name + "_copy"), d.params, SAppl(d.name, List(SLambda(List(ident_param), ident_param)) ++ d.params))}}
+      SDefine(SIdn(d.name.idn + "_copy"), d.params, SAppl(d.name, List(SLambda(List(ident_param), ident_param)) ++ d.params))}}
       val cps_prog = cps_trans(p, k).asInstanceOf[SProgram]
       SProgram(cps_prog.ds ++ func_copies, cps_prog.e)
     }
