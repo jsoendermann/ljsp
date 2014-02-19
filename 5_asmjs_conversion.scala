@@ -99,6 +99,7 @@ object asmjs_conversion {
     case SNth(n, e) => AArrayAccess(convert_value_to_asmjs(p, ftables, e), AStaticValue(n))
   }
 
+  // TODO move these functions to a separate file
   // This function wraps the last statement in an AReturn if it's not an if (which means it's a function call?)
   // otherwise it creates a variable that holds the return value, calls assign_last_expr_to_ret and returns the
   // value after the if
