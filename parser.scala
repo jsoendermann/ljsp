@@ -36,6 +36,7 @@ object parser {
 
     def double: Parser[SDouble] = floatingPointNumber ^^ {d => SDouble(d.toDouble)}
 
+    // TODO add #t and #f to parser
     def _if: Parser[SIf] = "("~>"if"~>expression~expression~expression<~')' ^^ {
       case e1~e2~e3 => SIf(e1, e2, e3)
     }
