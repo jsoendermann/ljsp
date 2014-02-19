@@ -3,6 +3,7 @@ package ljsp
 import ljsp.AST._
 
 object util {
+  // TODO turn this into an object
   // fresh returns a new unique identifier that begins with s
   val fresh = (() =>  {
     // This is a map that maps identifier prefixes to their counters
