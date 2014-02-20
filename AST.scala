@@ -2,7 +2,6 @@ package ljsp
 
 object AST {
 
-  //type Num = Int
   type Idn = String
 
 
@@ -29,9 +28,9 @@ object AST {
   case class SGetEnv(e: SExp) extends SExp
   case class SGetProc(e: SExp) extends SExp
 
-
   // Class used in the hoisting phase
   case class SHoistedLambda(f: SIdn, env: SExp) extends SExp
+
 
 
   // Asm.js AST
@@ -57,7 +56,6 @@ object AST {
   case class AHeapAccess(index: AExp) extends AExp
   // TODO rename base_address to base
   case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp
-  // TODO size should be of type AStaticValue
   case class AAlloc(size: Int) extends AExp
 
 }
