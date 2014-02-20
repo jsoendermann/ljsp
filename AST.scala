@@ -36,6 +36,7 @@ object AST {
   // Asm.js AST
   case class AModule(name: String, funtions: List[AFunction], ftables: Map[String, List[String]])  
   
+  // TODO rename instructions to statements
   case class AFunction(name: String, params: List[AIdn], instructions: List[AStatement]) 
 
   abstract class AStatement
