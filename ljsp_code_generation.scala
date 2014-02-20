@@ -26,7 +26,7 @@ object ljsp_code_generation {
       ljsp_exp_to_string(e3) + ")"
     }
     case SLambda(params, e) => {
-      "(lambda (" + params.mkString(" ") + ") " + 
+      "(lambda (" + params.map{ljsp_exp_to_string}.mkString(" ") + ") " + 
       ljsp_exp_to_string(e) + ")"
     }
     case SAppl(proc, es) => {
