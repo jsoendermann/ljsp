@@ -36,8 +36,7 @@ object AST {
   // Asm.js AST
   case class AModule(name: String, funtions: List[AFunction], ftables: Map[String, List[String]])  
   
-  // TODO rename instructions to statements
-  case class AFunction(name: String, params: List[AIdn], instructions: List[AStatement]) 
+  case class AFunction(name: String, params: List[AIdn], statements: List[AStatement]) 
 
   abstract class AStatement
   case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement
@@ -55,8 +54,7 @@ object AST {
   // as.size is either 1 or 2
   case class APrimitiveInstruction(op: String, as: List[AExp]) extends AExp
   case class AHeapAccess(index: AExp) extends AExp
-  // TODO rename base_address to base
-  case class AArrayAccess(base_address: AExp, offset: AExp) extends AExp
+  case class AArrayAccess(base: AExp, offset: AExp) extends AExp
   case class AAlloc(size: Int) extends AExp
 
 }

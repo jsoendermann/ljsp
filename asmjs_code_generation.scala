@@ -44,8 +44,7 @@ object asmjs_code_generation {
   }
 
   def asmjs_function_to_string(f: AFunction) : String = {
-    // TODO rename instructions to statements
-    def local_vars(instructions: List[AStatement]) : Set[Idn] = instructions match {
+    def local_vars(statements: List[AStatement]) : Set[Idn] = statements match {
       case Nil => Set()
       case (i::is) => local_vars(is) ++ (i match {
         case AVarAssignment(i, v) => if (i.idn == "mem_top") Set() else Set(i.idn)
@@ -54,7 +53,7 @@ object asmjs_code_generation {
       })
     }
 
-    val lv = local_vars(f.instructions)
+    val lv = local_vars(f.statements)
 
     "function " + f.name + "(" + f.params.map{asmjs_exp_to_string}.mkString(", ") + ")" + 
     "{\n" + 
@@ -64,7 +63,7 @@ object asmjs_code_generation {
       "var " + lv.mkString(" = 0.0, ") + " = 0.0;\n\n"; 
     else 
       "") +
-    f.instructions.map{i => asmjs_statement_to_string(i) + ";\n"}.mkString("") + 
+    f.statements.map{i => asmjs_statement_to_string(i) + ";\n"}.mkString("") + 
     "\n}"
   }
 
@@ -124,9 +123,9 @@ object asmjs_code_generation {
       case _ => throw new IllegalArgumentException("Operation " + op + " not implemented.")
     }
     case AHeapAccess(index) => asmjs_exp_to_string(AArrayAccess(AStaticValue(0.0), index))
-    case AArrayAccess(base_address, offset) => {
+    case AArrayAccess(base, offset) => {
       "(+D32[" + 
-      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(base_address, offset)))) + 
+      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(base, offset)))) + 
       " << 2 >> 2])"
     }
     case AAlloc(size) => "(+alloc(+"+size.toString()+"))"
