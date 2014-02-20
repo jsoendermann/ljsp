@@ -92,6 +92,7 @@ object asmjs_code_generation {
 
   def asmjs_exp_to_string(e: AExp) : String = e match {
     case AIdn(idn) => idn
+    // TODO remove this case
     case AVarAccess(v) => "(+" + asmjs_exp_to_string(v) + ")"
     case AStaticValue(d) => "(+" + d.toString + ")"
     case ADoubleToInt(e) => "(~~+floor(" + asmjs_exp_to_string(e) + ")|0)"
