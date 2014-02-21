@@ -13,6 +13,15 @@ import ljsp.asmjs_conversion._
 object Ljsp {
   def main(args: Array[String]) {
 
+    /* TODO rewrite this function to accept these switches:
+      -i input file
+      -o output file
+      --cps
+      --cc
+      --hoist
+      --asmjs
+      --llvmir
+      */
     args(0) match {
       case "--expLetN" => {
         val progTree = JLispParsers.parseExpr(args(1))
