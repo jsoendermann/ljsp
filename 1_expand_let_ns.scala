@@ -10,7 +10,6 @@ object expand_let_ns {
   def expand_let_ns(e: SExp) : SExp = e match {
     case SProgram(ds, e) => SProgram(ds.map{d => expand_let_ns(d).asInstanceOf[SDefine]}, expand_let_ns(e))
 
-    // Leaf nodes
     case SIdn(_) | SDouble(_) => e
 
     case SIf(e1, e2, e3) => SIf(expand_let_ns(e1), expand_let_ns(e2), expand_let_ns(e3))
