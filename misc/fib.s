@@ -3,82 +3,128 @@ declare i8* @malloc(i64)
 declare i32 @printf(i8*, ...)
 
 define i8* @func_0(i8** %env_0, i8* %var_1) {
+    ; params
+    ; env_0
     %1 = alloca i8**
+    ; var_1
     %2 = alloca i8*
+
+    ; local vars
     %cont_0 = alloca i8*
     %func_pointer_0 = alloca i8* (i8**, i8*)*
+
+    ; store params in allocated memory
     store i8** %env_0, i8*** %1
     store i8* %var_1, i8** %2
+
+    ; void *cont_0 = env_0[0];
     %3 = load i8*** %1
     %4 = getelementptr inbounds i8** %3, i64 0
     %5 = load i8** %4
     store i8* %5, i8** %cont_0
+
+    ; void *(*func_pointer_0)(void**,void*) = (void* (*)(void**,void*)) ((void**)cont_0)[0];
     %6 = load i8** %cont_0
     %7 = bitcast i8* %6 to i8**
     %8 = getelementptr inbounds i8** %7, i64 0
     %9 = load i8** %8
     %10 = bitcast i8* %9 to i8* (i8**, i8*)*
     store i8* (i8**, i8*)* %10, i8* (i8**, i8*)** %func_pointer_0
+
+    ; ((void**)cont_0)[1]
     %11 = load i8* (i8**, i8*)** %func_pointer_0
     %12 = load i8** %cont_0
     %13 = bitcast i8* %12 to i8**
     %14 = getelementptr inbounds i8** %13, i64 1
     %15 = load i8** %14
     %16 = bitcast i8* %15 to i8**
+
+    ; return func_pointer_0(%16, var_1);
     %17 = load i8** %2
     %18 = call i8* %11(i8** %16, i8* %17)
     ret i8* %18
 }
 
 define i8* @func_1(i8** %env_1, i8* %var_4) {
+    ; params
+    ; env_1
     %1 = alloca i8**
+    ; var_4
     %2 = alloca i8*
+
+    ; local vars
     %n = alloca i8*
     %var_0 = alloca i8*
     %var_7 = alloca i8*
     %env_var_0 = alloca i8**
     %hoisted_lambda_var_0 = alloca i8**
+
+    ; store params in allocated memory
     store i8** %env_1, i8*** %1
     store i8* %var_4, i8** %2
+
+    ; void *n = env_1[0];
     %3 = load i8*** %1
     %4 = getelementptr inbounds i8** %3, i64 0
     %5 = load i8** %4
     store i8* %5, i8** %n
+
+    ; void *var_0 = env_1[1];
     %6 = load i8*** %1
     %7 = getelementptr inbounds i8** %6, i64 1
     %8 = load i8** %7
     store i8* %8, i8** %var_0
+
+    ; void *var_7 = (void*)malloc(sizeof(double));
     %9 = call i8* @malloc(i64 8)
     store i8* %9, i8** %var_7
+
+    ; *(double*)n - 2.0
     %10 = load i8** %n
     %11 = bitcast i8* %10 to double*
     %12 = load double* %11
     %13 = fsub double %12, 2.000000e+00
+    
+    ; *(double*)var_7 = %13;
     %14 = load i8** %var_7
     %15 = bitcast i8* %14 to double*
     store double %13, double* %15
+
+    ; void **env_var_0 = (void**)malloc(sizeof(void*)*2);
     %16 = call i8* @malloc(i64 16)
     %17 = bitcast i8* %16 to i8**
     store i8** %17, i8*** %env_var_0
+
+    ; env_var_0[0] = var_4;
     %18 = load i8** %2
     %19 = load i8*** %env_var_0
     %20 = getelementptr inbounds i8** %19, i64 0
     store i8* %18, i8** %20
+
+    ; env_var_0[1] = var_0;
     %21 = load i8** %var_0
     %22 = load i8*** %env_var_0
     %23 = getelementptr inbounds i8** %22, i64 1
     store i8* %21, i8** %23
+
+    ; void **hoisted_lambda_var_0 = (void**)malloc(sizeof(void*)*2);
     %24 = call i8* @malloc(i64 16)
     %25 = bitcast i8* %24 to i8**
     store i8** %25, i8*** %hoisted_lambda_var_0
+
+    ; hoisted_lambda_var_0[0] = &func_2;
     %26 = load i8*** %hoisted_lambda_var_0
     %27 = getelementptr inbounds i8** %26, i64 0
     store i8* bitcast (i8* (i8**, i8*)* @func_2 to i8*), i8** %27
+
+    ; hoisted_lambda_var_0[1] = env_var_0;
     %28 = load i8*** %env_var_0
     %29 = bitcast i8** %28 to i8*
     %30 = load i8*** %hoisted_lambda_var_0
     %31 = getelementptr inbounds i8** %30, i64 1
     store i8* %29, i8** %31
+
+    ; return fib(hoisted_lambda_var_0, var_7);
     %32 = load i8*** %hoisted_lambda_var_0
     %33 = bitcast i8** %32 to i8*
     %34 = load i8** %var_7
@@ -132,6 +178,41 @@ define i8* @func_2(i8** %env_2, i8* %var_6) {
     ret i8* %31
 }
 
+define i8* @func_3(i8** %env_3, i8* %ident_param_0) {
+    %1 = alloca i8**
+    %2 = alloca i8*
+    store i8** %env_3, i8*** %1
+    store i8* %ident_param_0, i8** %2
+    %3 = load i8** %2
+    ret i8* %3
+}
+
+define i8* @fib_copy(i8* %n) {
+    %1 = alloca i8*
+    %env_var_3 = alloca i8**
+    %hoisted_lambda_var_2 = alloca i8**
+    store i8* %n, i8** %1
+    %2 = call i8* @malloc(i64 0)
+    %3 = bitcast i8* %2 to i8**
+    store i8** %3, i8*** %env_var_3
+    %4 = call i8* @malloc(i64 16)
+    %5 = bitcast i8* %4 to i8**
+    store i8** %5, i8*** %hoisted_lambda_var_2
+    %6 = load i8*** %hoisted_lambda_var_2
+    %7 = getelementptr inbounds i8** %6, i64 0
+    store i8* bitcast (i8* (i8**, i8*)* @func_3 to i8*), i8** %7
+    %8 = load i8*** %env_var_3
+    %9 = bitcast i8** %8 to i8*
+    %10 = load i8*** %hoisted_lambda_var_2
+    %11 = getelementptr inbounds i8** %10, i64 1
+    store i8* %9, i8** %11
+    %12 = load i8*** %hoisted_lambda_var_2
+    %13 = bitcast i8** %12 to i8*
+    %14 = load i8** %1
+    %15 = call i8* @fib(i8* %13, i8* %14)
+    ret i8* %15
+}
+
 define i8* @fib(i8* %cont_0, i8* %n) {
     %1 = alloca i8*
     %2 = alloca i8*
@@ -146,9 +227,13 @@ define i8* @fib(i8* %cont_0, i8* %n) {
     %hoisted_lambda_var_1 = alloca i8**
     store i8* %cont_0, i8** %2
     store i8* %n, i8** %3
+
+    ; int *var_2 = (int*)malloc(sizeof(int));
     %4 = call i8* @malloc(i64 4)
     %5 = bitcast i8* %4 to i32*
     store i32* %5, i32** %var_2
+
+    ; *var_2 = *(double*)n < 2.0;
     %6 = load i8** %3
     %7 = bitcast i8* %6 to double*
     %8 = load double* %7
@@ -156,6 +241,7 @@ define i8* @fib(i8* %cont_0, i8* %n) {
     %10 = zext i1 %9 to i32
     %11 = load i32** %var_2
     store i32 %10, i32* %11
+
     %12 = call i8* @malloc(i64 8)
     %13 = bitcast i8* %12 to i8**
     store i8** %13, i8*** %env_var_1
@@ -174,12 +260,16 @@ define i8* @fib(i8* %cont_0, i8* %n) {
     %23 = load i8*** %var_0
     %24 = getelementptr inbounds i8** %23, i64 1
     store i8* %22, i8** %24
+
+    ; if (*var_2)
     %25 = load i32** %var_2
     %26 = load i32* %25
     %27 = icmp ne i32 %26, 0
-    br i1 %27, label %28, label %43
+    br i1 %27, label %IfEqual, label %IfUnequal
 
-    ; <label>:28                                      ; preds = %0
+    IfEqual:
+    ; Necessary to fill gap left by anonymous label
+    %28 = load i8*** %var_0
     %29 = load i8*** %var_0
     %30 = getelementptr inbounds i8** %29, i64 0
     %31 = load i8** %30
@@ -198,9 +288,11 @@ define i8* @fib(i8* %cont_0, i8* %n) {
     %41 = load i8** %const_0
     %42 = call i8* %36(i8** %40, i8* %41)
     store i8* %42, i8** %1
-    br label %72
+    br label %IfEnd
 
-    ; <label>:43                                      ; preds = %0
+    IfUnequal:
+    ; Necessary to fill gap left by anonymous label
+    %43 = call i8* @malloc(i64 8)
     %44 = call i8* @malloc(i64 8)
     store i8* %44, i8** %var_5
     %45 = load i8** %3
@@ -238,46 +330,13 @@ define i8* @fib(i8* %cont_0, i8* %n) {
     %70 = load i8** %var_5
     %71 = call i8* @fib(i8* %69, i8* %70)
     store i8* %71, i8** %1
-    br label %72
+    br label %IfEnd
 
-    ; <label>:72                                      ; preds = %43, %28
+    IfEnd:
+    ; Necessary to fill gap left by anonymous label
+    %72 = load i8** %1
     %73 = load i8** %1
     ret i8* %73
-}
-
-define i8* @func_3(i8** %env_3, i8* %ident_param_0) {
-    %1 = alloca i8**
-    %2 = alloca i8*
-    store i8** %env_3, i8*** %1
-    store i8* %ident_param_0, i8** %2
-    %3 = load i8** %2
-    ret i8* %3
-}
-
-define i8* @fib_copy(i8* %n) {
-    %1 = alloca i8*
-    %env_var_3 = alloca i8**
-    %hoisted_lambda_var_2 = alloca i8**
-    store i8* %n, i8** %1
-    %2 = call i8* @malloc(i64 0)
-    %3 = bitcast i8* %2 to i8**
-    store i8** %3, i8*** %env_var_3
-    %4 = call i8* @malloc(i64 16)
-    %5 = bitcast i8* %4 to i8**
-    store i8** %5, i8*** %hoisted_lambda_var_2
-    %6 = load i8*** %hoisted_lambda_var_2
-    %7 = getelementptr inbounds i8** %6, i64 0
-    store i8* bitcast (i8* (i8**, i8*)* @func_3 to i8*), i8** %7
-    %8 = load i8*** %env_var_3
-    %9 = bitcast i8** %8 to i8*
-    %10 = load i8*** %hoisted_lambda_var_2
-    %11 = getelementptr inbounds i8** %10, i64 1
-    store i8* %9, i8** %11
-    %12 = load i8*** %hoisted_lambda_var_2
-    %13 = bitcast i8** %12 to i8*
-    %14 = load i8** %1
-    %15 = call i8* @fib(i8* %13, i8* %14)
-    ret i8* %15
 }
 
 define i32 @main(i32 %argc, i8** %argv) {
