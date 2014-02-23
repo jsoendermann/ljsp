@@ -25,7 +25,7 @@ object c_conversion {
     val decls_sts_with_return = add_return_to_c_sts_list(sts)
 
     decls = decls ++ decls_sts_with_return._1
-    sts = sts ++ decls_sts_with_return._2
+    sts = decls_sts_with_return._2
 
     sts = decls ++ sts
     
