@@ -8,3 +8,5 @@ report/report.pdf
 report/report.toc
 
 report/.texpadtmp/*
+
+misc/fib.s
