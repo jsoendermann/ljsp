@@ -14,14 +14,14 @@ void *func_0(void *env_0, void *var_1) {
 
     // temp vars used
     void **casted_hl_var_0; 
-    void *(*func_pointer_0)(void**,void*);
+    void *(*func_pointer_0)(void*,void*);
 
     // assign env vars
     void *cont_0 = env_0c[0];
 
     // body
     casted_hl_var_0 = (void**)cont_0;
-    func_pointer_0 = (void* (*)(void**,void*)) casted_hl_var_0[0];
+    func_pointer_0 = (void* (*)(void*,void*)) casted_hl_var_0[0];
     return func_pointer_0(casted_hl_var_0[1], var_1);
 }
 
@@ -57,7 +57,7 @@ void *func_2(void *env_2, void *var_6) {
 
     // temp vars used
     void **casted_hl_var_1; 
-    void *(*func_pointer_1)(void**,void*);
+    void *(*func_pointer_1)(void*,void*);
     
     // assign env vars
     void *var_4 = env_2c[0];
@@ -68,7 +68,7 @@ void *func_2(void *env_2, void *var_6) {
     *(double*)var_3 = *(double*)var_4 + *(double*)var_6;
 
     casted_hl_var_1 = (void**)var_0;
-    func_pointer_1 = (void* (*)(void**,void*))casted_hl_var_1[0];
+    func_pointer_1 = (void* (*)(void*,void*))casted_hl_var_1[0];
     return func_pointer_1(casted_hl_var_1[1], var_3);
 }
 

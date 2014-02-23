@@ -7,7 +7,7 @@ define i8* @func_0(i8* %env_0, i8* %var_1) {
   %2 = alloca i8*
   %env_0c = alloca i8**
   %casted_hl_var_0 = alloca i8**
-  %func_pointer_0 = alloca i8* (i8**, i8*)*
+  %func_pointer_0 = alloca i8* (i8*, i8*)*
   %cont_0 = alloca i8*
   store i8* %env_0, i8** %1
   store i8* %var_1, i8** %2
@@ -24,16 +24,15 @@ define i8* @func_0(i8* %env_0, i8* %var_1) {
   %10 = load i8*** %casted_hl_var_0
   %11 = getelementptr inbounds i8** %10, i64 0
   %12 = load i8** %11
-  %13 = bitcast i8* %12 to i8* (i8**, i8*)*
-  store i8* (i8**, i8*)* %13, i8* (i8**, i8*)** %func_pointer_0
-  %14 = load i8* (i8**, i8*)** %func_pointer_0
+  %13 = bitcast i8* %12 to i8* (i8*, i8*)*
+  store i8* (i8*, i8*)* %13, i8* (i8*, i8*)** %func_pointer_0
+  %14 = load i8* (i8*, i8*)** %func_pointer_0
   %15 = load i8*** %casted_hl_var_0
   %16 = getelementptr inbounds i8** %15, i64 1
   %17 = load i8** %16
-  %18 = bitcast i8* %17 to i8**
-  %19 = load i8** %2
-  %20 = call i8* %14(i8** %18, i8* %19)
-  ret i8* %20
+  %18 = load i8** %2
+  %19 = call i8* %14(i8* %17, i8* %18)
+  ret i8* %19
 }
 
 define i8* @func_1(i8* %env_1, i8* %var_4) {
@@ -101,7 +100,7 @@ define i8* @func_2(i8* %env_2, i8* %var_6) {
   %2 = alloca i8*
   %env_2c = alloca i8**
   %casted_hl_var_1 = alloca i8**
-  %func_pointer_1 = alloca i8* (i8**, i8*)*
+  %func_pointer_1 = alloca i8* (i8*, i8*)*
   %var_4 = alloca i8*
   %var_0 = alloca i8*
   %var_3 = alloca i8*
@@ -136,16 +135,15 @@ define i8* @func_2(i8* %env_2, i8* %var_6) {
   %23 = load i8*** %casted_hl_var_1
   %24 = getelementptr inbounds i8** %23, i64 0
   %25 = load i8** %24
-  %26 = bitcast i8* %25 to i8* (i8**, i8*)*
-  store i8* (i8**, i8*)* %26, i8* (i8**, i8*)** %func_pointer_1
-  %27 = load i8* (i8**, i8*)** %func_pointer_1
+  %26 = bitcast i8* %25 to i8* (i8*, i8*)*
+  store i8* (i8*, i8*)* %26, i8* (i8*, i8*)** %func_pointer_1
+  %27 = load i8* (i8*, i8*)** %func_pointer_1
   %28 = load i8*** %casted_hl_var_1
   %29 = getelementptr inbounds i8** %28, i64 1
   %30 = load i8** %29
-  %31 = bitcast i8* %30 to i8**
-  %32 = load i8** %var_3
-  %33 = call i8* %27(i8** %31, i8* %32)
-  ret i8* %33
+  %31 = load i8** %var_3
+  %32 = call i8* %27(i8* %30, i8* %31)
+  ret i8* %32
 }
 
 define i8* @func_3(i8* %env_3, i8* %ident_param_0) {
