@@ -1,27 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *func_0(void **env_0, void *var_1);
-void *func_1(void **env_1, void *var_4);
-void *func_2(void **env_2, void *var_6);
-void *func_3(void **env_3, void *ident_param_0);
+void *func_0(void *env_0, void *var_1);
+void *func_1(void *env_1, void *var_4);
+void *func_2(void *env_2, void *var_6);
+void *func_3(void *env_3, void *ident_param_0);
 void *fib(void *cont_0, void *n);
 void *fib_copy(void *n);
 
-void *func_0(void **env_0, void *var_1) {
-    //printf("func_0\n");
-    void *cont_0 = env_0[0];
+void *func_0(void *env_0, void *var_1) {
+    // cast env
+    void **env_0c = (void**)env_0;
 
-    void *(*func_pointer_0)(void**,void*) = (void* (*)(void**,void*)) ((void**)cont_0)[0];
-    return func_pointer_0(((void**)cont_0)[1], var_1);
+    // temp vars used
+    void **casted_hl_var_0; 
+    void *(*func_pointer_0)(void**,void*);
+
+    // assign env vars
+    void *cont_0 = env_0c[0];
+
+    // body
+    casted_hl_var_0 = (void**)cont_0;
+    func_pointer_0 = (void* (*)(void**,void*)) casted_hl_var_0[0];
+    return func_pointer_0(casted_hl_var_0[1], var_1);
 }
 
 
-void *func_1(void **env_1, void *var_4) {
-    //printf("func_1\n");
-    void *n = env_1[0];
-    void *var_0 = env_1[1];
+void *func_1(void *env_1, void *var_4) {
+    // cast env
+    void **env_1c = (void**)env_1;
 
+    // assign env vars
+    void *n = env_1c[0];
+    void *var_0 = env_1c[1];
+    
+    // body
     void *var_7 = (void*)malloc(sizeof(double));
     *(double*)var_7 = *(double*)n - 2.0;
 
@@ -38,29 +51,39 @@ void *func_1(void **env_1, void *var_4) {
 
 
 
-void *func_2(void **env_2, void *var_6) {
-    //printf("func_2\n");
-    void *var_4 = env_2[0];
-    void *var_0 = env_2[1];
+void *func_2(void *env_2, void *var_6) {
+    // cast env
+    void **env_2c = (void**)env_2;
+
+    // temp vars used
+    void **casted_hl_var_1; 
+    void *(*func_pointer_1)(void**,void*);
     
+    // assign env vars
+    void *var_4 = env_2c[0];
+    void *var_0 = env_2c[1];
+
+    // body
     void *var_3 = (void*)malloc(sizeof(double));
     *(double*)var_3 = *(double*)var_4 + *(double*)var_6;
 
-    void *(*func_pointer_1)(void**,void*) = (void* (*)(void**,void*))((void**)var_0)[0];
-    return func_pointer_1(((void**)var_0)[1], var_3);
+    casted_hl_var_1 = (void**)var_0;
+    func_pointer_1 = (void* (*)(void**,void*))casted_hl_var_1[0];
+    return func_pointer_1(casted_hl_var_1[1], var_3);
 }
 
 
 
-void *func_3(void **env_3, void *ident_param_0) {
-    //printf("func_3\n");
+void *func_3(void *env_3, void *ident_param_0) {
+    void **env_3c = (void**)env_3;
+
     return ident_param_0;
 }
 
 
 
 void *fib(void *cont_0, void *n) {
-    //printf("fib\n");
+    // body
     int *var_2 = (int*)malloc(sizeof(int));
     *var_2 = *(double*)n < 2.0;
     
@@ -94,8 +117,7 @@ void *fib(void *cont_0, void *n) {
 
 
 void *fib_copy(void *n) {
-    //printf("fib_copy\n");
-
+    // body
     void **env_var_3 = (void**)malloc(sizeof(void*)*0);
 
     void **hoisted_lambda_var_2 = (void**)malloc(sizeof(void*)*2);
