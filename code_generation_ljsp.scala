@@ -2,7 +2,7 @@ package ljsp
 
 import ljsp.AST._
 
-object ljsp_code_generation {
+object code_generation_ljsp {
   
   def ljsp_prog_to_string(p: SProgram) : String = {
     "; defines\n" +

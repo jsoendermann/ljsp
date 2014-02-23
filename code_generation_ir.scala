@@ -2,7 +2,7 @@ package ljsp
 
 import ljsp.AST._
 
-object ir_code_generation {
+object code_generation_ir {
   
   def ir_module_to_string(m: IModule) : String = {
     "IRModule " + m.name + ":\n\n" +
@@ -11,7 +11,8 @@ object ir_code_generation {
 
   def ir_function_to_string(f: IFunction) : String = {
     "function " + f.name + "(" + f.params.mkString(", ") + ")" + "\n" +
-    f.statements.map{ir_statement_to_string}.mkString("\n") + "\n" +
+    "    " +
+    f.statements.map{ir_statement_to_string}.mkString("\n    ") + "\n" +
     "}"
   }
 
@@ -38,7 +39,7 @@ object ir_code_generation {
     }
     case IFunctionCallByVar(f_var, params) => {
       ir_exp_to_string(f_var) + "[0]" + 
-      "(" + ir_exp_to_string(f_var) + "[1]" + ", "
+      "(" + ir_exp_to_string(f_var) + "[1]" + ", " +
       params.map{ir_exp_to_string}.mkString(", ") + ")"
     }
     case IPrimitiveInstruction(op, is) => {

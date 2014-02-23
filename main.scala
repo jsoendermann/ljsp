@@ -2,9 +2,9 @@ package ljsp
 
 import ljsp.AST._
 
-import ljsp.ljsp_code_generation._
-import ljsp.asmjs_code_generation._
-import ljsp.ir_code_generation._
+import ljsp.code_generation_ljsp._
+import ljsp.code_generation_asmjs._
+import ljsp.code_generation_ir._
 
 import ljsp.parser._
 import ljsp.expand_let_ns._

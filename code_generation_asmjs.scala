@@ -2,7 +2,7 @@ package ljsp
 
 import ljsp.AST._
 
-object asmjs_code_generation {
+object code_generation_asmjs {
 
   def asmjs_module_to_string(m: AModule) : String = {
     // TODO inline alloc
