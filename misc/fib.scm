@@ -33,8 +33,7 @@
 
 (define (fib_copy n) 
   (let ((env_var_3 (make-env))) 
-    (let ((hoisted_lambda_var_2 
-            (hoisted-lambda func_3 env_var_3)))
+    (let ((hoisted_lambda_var_2 (hoisted-lambda func_3 env_var_3)))
       (fib hoisted_lambda_var_2 n))))
 
 ; expression
