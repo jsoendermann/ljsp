@@ -24,22 +24,22 @@ object ir_conversion {
     case SIdn(_) | SAppl(_, _) => List(convert_sexp_to_ir_exp(p, e))
 
     case SLet(i, SMakeEnv(idns), e2) => {
-      IVarAssignment(IIdn(i.idn), IMakeEnv(idns.map{i => IIdn(i.idn)})) :: 
+      IVarAssignment(i.idn, IMakeEnv(idns.map{i => i.idn})) :: 
       convert_sexp_to_ir_statement(p, e2)
     }
 
     case SLet(i, SHoistedLambda(f, env), e2) => {
-      IVarAssignment(IIdn(i.idn), IHoistedLambda(IIdn(f.idn), convert_sexp_to_ir_exp(p, env))) ::
+      IVarAssignment(i.idn, IHoistedLambda(f.idn, convert_sexp_to_ir_exp(p, env))) ::
       convert_sexp_to_ir_statement(p, e2)
     }
 
     case SLet(i, e1, e2) => {
-      IVarAssignment(IIdn(i.idn), convert_sexp_to_ir_exp(p, e1)) ::
+      IVarAssignment(i.idn, convert_sexp_to_ir_exp(p, e1)) ::
       convert_sexp_to_ir_statement(p, e2)
     }
 
     case SIf(e1, e2, e3) => {
-      val if_var = IIdn(fresh("if_var"))
+      val if_var = fresh("if_var")
       IVarAssignment(if_var, convert_sexp_to_ir_exp(p, e1)) ::
       IIf(if_var, convert_sexp_to_ir_statement(p, e2), convert_sexp_to_ir_statement(p, e3)) ::
       Nil
@@ -54,14 +54,14 @@ object ir_conversion {
     case SAppl(proc, es) => {
       // Two cases for function calls by name or by index
       if (proc.isInstanceOf[SIdn] && p.ds.foldLeft(false) {(v, d) => v || d.name == proc}) 
-        IFunctionCallByName(IIdn(proc.asInstanceOf[SIdn].idn), es.map{e => convert_sexp_to_ir_exp(p, e)})
+        IFunctionCallByName(proc.asInstanceOf[SIdn].idn, es.map{e => convert_sexp_to_ir_exp(p, e)})
       else {
         IFunctionCallByVar(convert_sexp_to_ir_exp(p, proc), es.map{e => convert_sexp_to_ir_exp(p, e)})
       }
     }
 
     case SApplPrimitive(proc, es) => IPrimitiveInstruction(proc.idn, es.map{e => convert_sexp_to_ir_exp(p, e)})
-    case SNth(n, e) => IArrayAccess(convert_sexp_to_ir_exp(p, e), n)
+    case SNth(n, e) => IArrayAccess(convert_sexp_to_ir_exp(p, e).asInstanceOf[IIdn].idn, n)
   }
 
 }

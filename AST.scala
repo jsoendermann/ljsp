@@ -42,52 +42,57 @@ object AST {
   case class IFunction(name: Idn, params: List[Idn], statements: List[IStatement])
 
   abstract class IStatement
-  // TODO change cond to if_var and its type to IIdn
-  case class IIf(cond: IExp, block1: List[IStatement], block2: List[IStatement]) extends IStatement
-  case class IVarAssignment(idn: IIdn, value: IExp) extends IStatement
-  case class IReturn(e: IExp) extends IStatement
+  case class IIf(if_var: Idn, block1: List[IStatement], block2: List[IStatement]) extends IStatement
+  case class IVarAssignment(idn: Idn, value: IExp) extends IStatement
 
   abstract class IExp extends IStatement
   case class IIdn(idn: Idn) extends IExp
   case class IStaticValue(d: Double) extends IExp
-  case class IFunctionCallByName(f_name: IIdn, params: List[IExp]) extends IExp
-  case class IFunctionCallByVar(f_var: IExp, params: List[IExp]) extends IExp
+  case class IFunctionCallByName(f_name: Idn, params: List[IExp]) extends IExp
+  case class IFunctionCallByVar(hl_var: IExp, params: List[IExp]) extends IExp
   // TODO add type for primitive instructions
   case class IPrimitiveInstruction(op: String, is: List[IExp]) extends IExp
-  case class IMakeEnv(idns: List[IIdn]) extends IExp
-  case class IHoistedLambda(f_name: IIdn, env: IExp) extends IExp
-  case class IArrayAccess(a: IExp, index: Int) extends IExp
+  case class IMakeEnv(idns: List[Idn]) extends IExp
+  case class IHoistedLambda(f_name: Idn, env: IExp) extends IExp
+  case class IArrayAccess(a: Idn, index: Int) extends IExp
 
 
 
   // C AST classes
-  case class CModule(name: Idn, functions: List[CModule])
+  case class CModule(name: Idn, functions: List[CFunction])
 
-  case class CFunction(name: Idn, params: List[Idn], statements: List[IStatement])
+  case class CFunction(name: Idn, params: List[Idn], statements: List[CStatement])
 
   abstract class CType
   case object CTInt extends CType
-  case object CDouble extends CType
+  case object CTIntPointer extends CType
+  case object CTDouble extends CType
+  case object CTDoublePointer extends CType
   case object CTVoidPointer extends CType
   case object CTVoidPointerPointer extends CType
   case class CTFunctionPointer(num_params: Int) extends CType
 
   abstract class CStatement
-  case class CCastEnv(env_name: Idn) extends CStatement
   case class CDeclareVar(var_name: Idn, var_type: CType) extends CStatement
-  case class CVarAssignment(v: Idn, e: CExp) extends CStatement
-  case class CDereferencedVarAssignment(v: Idn, v_type: CType, e: CExp) extends CStatement
-  case class CArrayAssignment(av: Idn, index: Int, e: CExp) extends CStatement
+
   case class CIf(if_var: Idn, block1: List[CStatement], block2: List[CStatement]) extends CStatement
+  case class CVarAssignment(v: Idn, e: CExp) extends CStatement
+  case class CDereferencedVarAssignment(v: Idn, e: CExp) extends CStatement
+  case class CArrayAssignment(av: Idn, index: Int, e: CExp) extends CStatement
+  case class CReturn(s: CStatement) extends CStatement
 
-
-  abstract class CExp
+  abstract class CExp extends CStatement
   case class CIdn(idn: Idn) extends CExp
   case class CStaticValue(d: Double) extends CExp
+  // TODO cast this to res_type with CCast
   case class CMalloc(res_type: CType, data_type: CType, num: Int) extends CExp
   case class CPrimitiveInstruction(op: String, cs: List[CExp]) extends CExp
   case class CFunctionPointer(f_name: Idn) extends CExp
-  case class CastedVar(v: Idn, t: CType) extends CExp
+  case class CCast(v: Idn, t: CType) extends CExp
+  case class CDereferenceVar(v: CExp) extends CExp
+  case class CArrayAccess(av: Idn, index: Int) extends CExp
+  case class CFunctionCallByName(f_name: Idn, params: List[CExp]) extends CExp
+  case class CFunctionCallByVar(hl_var: Idn, params: List[CExp]) extends CExp
 
 
 
