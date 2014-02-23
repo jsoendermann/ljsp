@@ -1,13 +1,17 @@
 package ljsp
 
 import ljsp.AST._
+
 import ljsp.ljsp_code_generation._
 import ljsp.asmjs_code_generation._
+import ljsp.ir_code_generation._
+
 import ljsp.parser._
 import ljsp.expand_let_ns._
 import ljsp.cps_translation._
 import ljsp.closure_conversion._
 import ljsp.hoisting._
+import ljsp.ir_conversion._
 import ljsp.asmjs_conversion._
 
 object Ljsp {
@@ -19,6 +23,7 @@ object Ljsp {
       --cps
       --cc
       --hoist
+      --ir
       --asmjs
       --llvmir
       */
@@ -100,8 +105,9 @@ object Ljsp {
         println(ljsp_prog_to_string(progH))
         println()
 
-        val module = convert_prog_to_asmjs(progH)
-        println(asmjs_module_to_string(module))
+        println("IR code:")
+        val moduleIr = convert_prog_to_ir(progH)
+        println(ir_module_to_string(moduleIr))
       }
     }
   }

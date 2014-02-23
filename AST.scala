@@ -5,6 +5,8 @@ object AST {
   type Idn = String
 
 
+
+  // LJSP AST classes
   abstract class SExp
 
   case class SProgram(ds: List[SDefine], e: SExp) extends SExp
@@ -33,7 +35,30 @@ object AST {
 
 
 
-  // Asm.js AST
+  // IR AST classes
+  // TODO either remove IIdn or use it consistently
+  case class IModule(name: Idn, functions: List[IFunction])
+
+  case class IFunction(name: Idn, params: List[Idn], statements: List[IStatement])
+
+  abstract class IStatement
+  case class IIf(cond: IExp, block1: List[IStatement], block2: List[IStatement]) extends IStatement
+  case class IVarAssignment(idn: IIdn, value: IExp) extends IStatement
+  case class IReturn(e: IExp) extends IStatement
+
+  abstract class IExp extends IStatement
+  case class IIdn(idn: Idn) extends IExp
+  case class IStaticValue(d: Double) extends IExp
+  case class IFunctionCallByName(f_name: IIdn, params: List[IExp]) extends IExp
+  case class IFunctionCallByVar(f_var: IExp, params: List[IExp]) extends IExp
+  case class IPrimitiveInstruction(op: String, is: List[IExp]) extends IExp
+  case class IMakeEnv(idns: List[IIdn]) extends IExp
+  case class IHoistedLambda(f_name: IIdn, env: IExp) extends IExp
+  case class IArrayAccess(a: IExp, index: Int) extends IExp
+
+
+
+  // Asm.js AST classes
   case class AModule(name: String, funtions: List[AFunction], ftables: Map[String, List[String]])  
   
   case class AFunction(name: String, params: List[AIdn], statements: List[AStatement]) 
