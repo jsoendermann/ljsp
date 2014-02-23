@@ -91,7 +91,7 @@ void *func_3(void *env_3, void *ident_param_0) {
 
 void *fib(void *cont_0, void *n) {
     // local vars
-    int *var_2;
+    void *var_2;
     void **env_var_1;
     void **var_0;
     void **casted_hl_var_2;
@@ -101,8 +101,8 @@ void *fib(void *cont_0, void *n) {
     void **hoisted_lambda_var_1;
 
     // body
-    var_2 = (int*)malloc(sizeof(int));
-    *var_2 = *(double*)n < 2.0;
+    var_2 = (void*)malloc(sizeof(int));
+    *(int*)var_2 = *(double*)n < 2.0;
     
     env_var_1 = (void**)malloc(sizeof(void*)*1);
     env_var_1[0] = cont_0;
@@ -111,7 +111,7 @@ void *fib(void *cont_0, void *n) {
     var_0[0] = &func_0;
     var_0[1] = env_var_1;
 
-    if (*var_2) {
+    if (*(int*)var_2) {
         casted_hl_var_2 = (void**)var_0;
         func_pointer_2 = (void* (*)(void**,void*))casted_hl_var_2[0];
         void *const_0 = (void*)malloc(sizeof(double));
