@@ -30,12 +30,12 @@ object code_generation_asmjs {
     }
     
     """ +
-    m.funtions.map{asmjs_function_to_string}.mkString("\n") + 
+    m.functions.map{asmjs_function_to_string}.mkString("\n") + 
     "\n\n" + 
     m.ftables.map{case (ftable, fnames) => "var "+ftable+ " = [" + fnames.mkString(",") + "];"}.mkString("\n") +
     "\n\n" +
     "return {" +
-    m.funtions.filter{f => !f.name.startsWith("func") && !f.name.endsWith("_copy")}.map{f => f.name + ": " + f.name + "_copy"}.mkString(", ") +
+    m.functions.filter{f => !f.name.startsWith("func") && !f.name.endsWith("_copy")}.map{f => f.name + ": " + f.name + "_copy"}.mkString(", ") +
     "};\n" +
     "}\n" + 
     "var module = " + 

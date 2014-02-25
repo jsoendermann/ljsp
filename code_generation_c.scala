@@ -14,6 +14,7 @@ object code_generation_c {
 
   def c_function_to_string(f: CFunction) : String = {
     "void* " + f.name + "(" + f.params.map{p => "void *"+p}.mkString(", ") + ") {" + "\n" +
+    f.declarations.map{c_statement_to_string}.mkString(";\n") + ";\n\n" +
     f.statements.map{c_statement_to_string}.mkString(";\n") + ";\n" +
     "}"
   }

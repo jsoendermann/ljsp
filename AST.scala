@@ -61,7 +61,7 @@ object AST {
   // C AST classes
   case class CModule(name: Idn, functions: List[CFunction])
 
-  case class CFunction(name: Idn, params: List[Idn], statements: List[CStatement])
+  case class CFunction(name: Idn, params: List[Idn], declarations: List[CDeclareVar], statements: List[CStatement])
 
   abstract class CType
   case object CTInt extends CType
@@ -124,8 +124,7 @@ object AST {
 
 
   // Asm.js AST classes
-  // TODO correct typo 'funtions'
-  case class AModule(name: String, funtions: List[AFunction], ftables: Map[String, List[String]])  
+  case class AModule(name: String, functions: List[AFunction], ftables: Map[String, List[String]])  
   
   case class AFunction(name: String, params: List[AIdn], statements: List[AStatement]) 
 

@@ -28,9 +28,7 @@ object c_conversion {
     decls = decls :+ CDeclareVar(ret_val, CTVoidPointer)
     sts_with_return = sts_with_return :+ CReturn(CIdn(ret_val))
 
-    sts = decls ++ sts_with_return
-    
-    CFunction(f.name, f.params, sts)
+    CFunction(f.name, f.params, decls, sts_with_return)
   }
 
   def convert_statement_to_c(s: IStatement) : (List[CDeclareVar], List[CStatement]) = s match {
