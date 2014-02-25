@@ -96,7 +96,35 @@ object AST {
 
 
 
+  // LLVM IR AST classes
+  case class LModule(name: String, functions: List[LFunction])
+
+  case class LFunction(name: String, params: List[Idn], statements: List[LStatement])
+
+  abstract class LType
+  case class LTI8Pointer extends LType
+  case class LTI8PointerPointer extends LType
+  case class LTI8PointerPointerPointer extends LType
+  case class LTFunctionPointer(num_params: Int) extends LType
+
+  abstract class LStatement
+  case class LVarAssignment(v: Idn, e: LExp) extends LStatement
+  case class LStore(e1: LExp, e2: LExp) extends LStatement
+  case class LRet(e: LExp) extends LStatement
+
+  abstract class LExp
+  case class LVarAccess(v: Idn, t: LType) extends LExp
+  case class LAlloca(t: LType) extends LExp
+  case class LLoad(e: LExp) extends LExp
+  case class LBitCast(v: Idn, old_type: LType, new_type: LType) extends LExp
+  case class LGetElementPtr(a: LExp, index: Int) extends LExp
+  case class LCall(f_pointer: Idn, params: List[Idn]) extends LExp
+  case class LMalloc(num_elements: Int) extends LExp
+
+
+
   // Asm.js AST classes
+  // TODO correct typo 'funtions'
   case class AModule(name: String, funtions: List[AFunction], ftables: Map[String, List[String]])  
   
   case class AFunction(name: String, params: List[AIdn], statements: List[AStatement]) 
@@ -119,6 +147,5 @@ object AST {
   case class AHeapAccess(index: AExp) extends AExp
   case class AArrayAccess(base: AExp, offset: AExp) extends AExp
   case class AAlloc(size: Int) extends AExp
-
 }
 

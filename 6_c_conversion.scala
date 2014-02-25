@@ -22,12 +22,13 @@ object c_conversion {
       decls =  CDeclareVar(env_var_c, CTVoidPointerPointer) :: decls
     }
 
-    val decls_sts_with_return = add_return_to_c_sts_list(sts)
+    val ret_val = fresh("ret_val")
+    var sts_with_return = assign_last_expr_in_c_sts_list_to_ret_val(ret_val, sts)
 
-    decls = decls ++ decls_sts_with_return._1
-    sts = decls_sts_with_return._2
+    decls = decls :+ CDeclareVar(ret_val, CTVoidPointer)
+    sts_with_return = sts_with_return :+ CReturn(CIdn(ret_val))
 
-    sts = decls ++ sts
+    sts = decls ++ sts_with_return
     
     CFunction(f.name, f.params, sts)
   }
@@ -212,23 +213,6 @@ object c_conversion {
       CVarAssignment(idn, CArrayAccess(rename_var(a, env_name, env_name + "c"), index))
     }
     case _ => s
-  }
-
-  def add_return_to_c_sts_list(statements: List[CStatement]) : (List[CDeclareVar], List[CStatement]) = statements match {
-    case (s::Nil) => s match {
-      case CIf(cond, block1, block2) => {
-        val ret_val = fresh("ret_val")
-        (CDeclareVar(ret_val, CTDoublePointer) :: Nil,
-          CIf(cond, assign_last_expr_in_c_sts_list_to_ret_val(ret_val, block1), assign_last_expr_in_c_sts_list_to_ret_val(ret_val, block2)) :: CReturn(CIdn(ret_val)) :: Nil)
-      }
-      case _ => (Nil, CReturn(s) :: Nil)
-    }
-    case (s::sts) => {
-      val decls_sts = add_return_to_c_sts_list(sts)
-      (decls_sts._1, s :: decls_sts._2)
-    } 
-    // This is necessary to suppress warnings
-    case Nil => throw new IllegalArgumentException()
   }
 
   def assign_last_expr_in_c_sts_list_to_ret_val(ret_val: Idn, statements: List[CStatement]) : List[CStatement] = statements match {
