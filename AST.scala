@@ -101,11 +101,19 @@ object AST {
 
   case class LFunction(name: String, params: List[Idn], statements: List[LStatement])
 
+  // TODO tidy this up, make it possible to go up and down pointer levels, use LTFunctionPointer for everything
   abstract class LType
-  case class LTI8Pointer extends LType
-  case class LTI8PointerPointer extends LType
-  case class LTI8PointerPointerPointer extends LType
+  case object LTInt extends LType
+  case object LTIntPointer extends LType
+  case object LTDouble extends LType
+  case object LTDoublePointer extends LType
+  case object LTDoublePointerPointerPointer extends LType
+  case object LTI8Pointer extends LType
+  case object LTI8PointerPointer extends LType
+  case object LTI8PointerPointerPointer extends LType
   case class LTFunctionPointer(num_params: Int) extends LType
+
+  case class LTPointerTo(t: LType) extends LType
 
   abstract class LStatement
   case class LVarAssignment(v: Idn, e: LExp) extends LStatement
