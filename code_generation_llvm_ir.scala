@@ -45,7 +45,16 @@ object code_generation_llvm_ir {
       llvm_ir_type_to_string(t2) + 
       "%" + v2
     }
+    case LStoreDouble(d, v) => {
+      "store double " + "%.3f".format(d) + ", double* %" + v
+    }
+
     case LLabel(l) => l + ":"
+
+    case LUnconditionalBr(l) => "br label %" + l
+    case LConditionalBr(br_var, l_true, l_false) => "br i1 %" + br_var + ", label %" + l_true + ", label %" + l_false
+ 
+
     case LRet(t, v) => "ret " + llvm_ir_type_to_string(t) + " %" + v
     case _ => llvm_ir_expression_to_string(s.asInstanceOf[LExp])
   }
@@ -82,8 +91,8 @@ object code_generation_llvm_ir {
         case "*" => "fmul"
         case "/" => "fdiv"
 
-        case "<" => "fcmp slt"
-        case ">" => "fcmp sgt"
+        case "<" => "fcmp olt"
+        case ">" => "fcmp ogt"
       }
       op match {
         case "+" | "-" | "*" | "/" => {
@@ -98,6 +107,8 @@ object code_generation_llvm_ir {
     }
 
     case LZext(v) => "zext i1 %" + v + " to i32"
+
+    case LIcmpNe(v) => "icmp ne i32 %" + v + ", 0"
 
     case _ => "### TODO"
   }

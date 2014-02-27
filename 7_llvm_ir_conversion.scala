@@ -44,7 +44,35 @@ object llvm_ir_conversion {
   }
 
   def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[LVarAssignment]) : List[LStatement] = s match {
-    // CIf
+    case CIf(if_var, block1, block2) => {
+      val sts1 = block1.map{s => convert_statement_to_llvm_ir(s, m, declarations)}.flatten
+      val sts2 = block2.map{s => convert_statement_to_llvm_ir(s, m, declarations)}.flatten
+
+      val label_true = fresh("label_true")
+      val label_false = fresh("label_false")
+      val label_end = fresh("label_end")
+
+      val llvm_ir_if_var = fresh("llvm_ir_if_var")
+      val bool_var = fresh("bool_var")
+
+      (LVarAssignment(llvm_ir_if_var, LLoad(LTPointerTo(LTInt), if_var)) ::
+        LVarAssignment(bool_var, LIcmpNe(llvm_ir_if_var)) ::
+        LConditionalBr(bool_var, label_true, label_false) ::
+        LLabel(label_true) :: Nil) ++
+      sts1 ++
+      (LUnconditionalBr(label_end) ::
+        LLabel(label_false) :: Nil) ++
+      sts2 ++
+      (LUnconditionalBr(label_end) ::
+        LLabel(label_end) :: Nil)
+    }
+
+    case CVarAssignment(lh_v, CIdn(rh_v)) => {
+      val direct_assign = fresh("direct_assign")
+      val t = get_var_type(lh_v, declarations)
+      LVarAssignment(direct_assign, LLoad(LTPointerTo(t), rh_v)) ::
+      LStore(t, direct_assign, t, lh_v) :: Nil
+    }
     case CVarAssignment(v, CCast(rh_v, t)) => {
       val type_org = get_var_type(rh_v, declarations)
       val type_new = convert_c_type_to_llvm_ir_type(t)
@@ -211,6 +239,13 @@ object llvm_ir_conversion {
       } else {
         throw new IllegalArgumentException("Too many operands: " + cs.toString)
       }
+    }
+
+    case CDereferencedVarAssignment(lh_v, CStaticValue(d)) => {
+      val const_assign = fresh("const_assign")
+      val type_lh_v = get_var_type(lh_v, declarations)
+      LVarAssignment(const_assign, LLoad(LTPointerTo(type_lh_v), lh_v)) ::
+      LStoreDouble(d, const_assign) :: Nil
     }
 
     case CReturn(rv) => {

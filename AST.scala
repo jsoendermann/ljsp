@@ -130,7 +130,10 @@ object AST {
   // TODO merge these classes into one
   case class LStore(t1: LType, v1: Idn, t2: LType, v2: Idn) extends LStatement
   case class LStoreFPointer(num_params: Int, f_name: Idn, t2: LType, v2: Idn) extends LStatement
+  case class LStoreDouble(d: Double, v: Idn) extends LStatement
   case class LLabel(l: Idn) extends LStatement
+  case class LUnconditionalBr(l: Idn) extends LStatement
+  case class LConditionalBr(br_var: Idn, l_true: Idn, l_false: Idn) extends LStatement
   case class LRet(t: LType, v: Idn) extends LStatement
 
   abstract class LExp
@@ -145,6 +148,7 @@ object AST {
   case class LCallFPointer(f_pointer: Idn, params: List[Idn]) extends LExp
   case class LMalloc(bytes: Int) extends LExp
   case class LZext(v: Idn) extends LExp
+  case class LIcmpNe(v: Idn) extends LExp
 
 
 
