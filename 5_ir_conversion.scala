@@ -14,12 +14,6 @@ object ir_conversion {
 
   def convert_sexp_to_ir_statement(p: SProgram, e: SExp) : List[IStatement] = e match {
     case SAppl(SHoistedLambda(f, SMakeEnv(idns)), es) => throw new IllegalArgumentException("nexted hl appl")
-    //case SAppl(SHoistedLambda(f, SMakeEnv(idns)), es) => {
-    //  val hl = SIdn(fresh("hoisted_lambda_var"))
-    //  val env = SIdn(fresh("env"))
-
-    //  convert_statement_to_asmjs(p, ftables, SLet(env, SMakeEnv(idns), SLet(hl, SHoistedLambda(f, env), SAppl(hl, es))))
-    //}
 
     case SIdn(_) | SAppl(_, _) => List(convert_sexp_to_ir_exp(p, e))
 
