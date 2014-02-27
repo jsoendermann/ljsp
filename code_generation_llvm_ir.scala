@@ -14,8 +14,8 @@ object code_generation_llvm_ir {
   }
 
   def llvm_ir_function_to_string(f: LFunction) : String = {
-    f.name + "(" + f.params.mkString(", ") + ")\n" +
-    f.statements.map{llvm_ir_statement_to_string}.mkString("\n") + "\n"
+    "define i8* @" + f.name + "(" + f.params.map{p => "i8* %" + p}.mkString(", ") + ") {\n" +
+    f.statements.map{llvm_ir_statement_to_string}.mkString("\n") + "\n" + "}\n"
   }
 
   def llvm_ir_type_to_string(t: LType) : String = t match {
@@ -45,6 +45,7 @@ object code_generation_llvm_ir {
       llvm_ir_type_to_string(t2) + 
       "%" + v2
     }
+    case LLabel(l) => l + ":"
     case LRet(t, v) => "ret " + llvm_ir_type_to_string(t) + " %" + v
     case _ => llvm_ir_expression_to_string(s.asInstanceOf[LExp])
   }
@@ -63,9 +64,13 @@ object code_generation_llvm_ir {
       llvm_ir_type_to_string(t) + " %" +
       av + ", i64 " + index.toString
     }
-    case LCall(f_pointer, params) => {
+    case LCallFPointer(f_pointer, params) => {
       "call i8* %" + f_pointer + "(" + params.map{p => "i8* %" + p}.mkString(", ") + ")"
     }
+    case LCallFName(f_name, params) => {
+      "call i8* @" + f_name + "(" + params.map{p => "i8* %" + p}.mkString(", ") + ")"
+    }
+
     case LMalloc(bytes) => {
       "call i8* @malloc(i64 " + bytes.toString + ")"
     }

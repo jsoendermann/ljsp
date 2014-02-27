@@ -96,7 +96,7 @@ object AST {
   case class CCast(v: Idn, t: CType) extends CExp
   case class CDereferenceVar(v: Idn) extends CExp
   case class CArrayAccess(av: Idn, index: Int) extends CExp
-  case class CFunctionCallByName(f_name: Idn, params: List[CExp]) extends CExp
+  case class CFunctionCallByName(f_name: Idn, params: List[Idn]) extends CExp
   case class CFunctionCallByVar(hl_var: Idn, params: List[Idn]) extends CExp
 
 
@@ -130,6 +130,7 @@ object AST {
   // TODO merge these classes into one
   case class LStore(t1: LType, v1: Idn, t2: LType, v2: Idn) extends LStatement
   case class LStoreFPointer(num_params: Int, f_name: Idn, t2: LType, v2: Idn) extends LStatement
+  case class LLabel(l: Idn) extends LStatement
   case class LRet(t: LType, v: Idn) extends LStatement
 
   abstract class LExp
@@ -140,7 +141,8 @@ object AST {
   case class LLoad(t: LType, v: Idn) extends LExp
   case class LBitCast(old_type: LType, v: Idn, new_type: LType) extends LExp
   case class LGetElementPtr(t: LType, av: Idn, index: Int) extends LExp
-  case class LCall(f_pointer: Idn, params: List[Idn]) extends LExp
+  case class LCallFName(f_name: Idn, params: List[Idn]) extends LExp
+  case class LCallFPointer(f_pointer: Idn, params: List[Idn]) extends LExp
   case class LMalloc(bytes: Int) extends LExp
   case class LZext(v: Idn) extends LExp
 

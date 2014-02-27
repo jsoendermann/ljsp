@@ -82,7 +82,7 @@ object code_generation_c {
     case CArrayAccess(av, index) => av + "[" + index.toString() + "]"
 
     case CFunctionCallByName(f_name, params) => {
-      f_name + "(" + params.map{c_exp_to_string}.mkString(", ") + ")"
+      f_name + "(" + params.mkString(", ") + ")"
     }
     case CFunctionCallByVar(hl_var, params) => {
       hl_var + "(" + params.mkString(", ") + ")"

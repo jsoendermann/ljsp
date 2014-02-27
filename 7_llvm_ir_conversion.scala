@@ -9,7 +9,6 @@ object llvm_ir_conversion {
   }
 
   def convert_function_to_llvm_ir(f: CFunction, m: CModule) : LFunction = {
-    // TODO rename params + alloc and move into alloca   
     var new_params = List[String]()
     var new_params_decls = List[LVarAssignment]()
     var store_params = List[LStore]()
@@ -68,8 +67,25 @@ object llvm_ir_conversion {
       LStore(LTUnderlyingType(type_a), c, LTPointerTo(type_lh_v), lh_v) :: Nil
     }
 
-    // TODO
-    //case CVarAssignment(lh_v, CFunctionCallByName(f_name, params)) => {
+    case CVarAssignment(lh_v, CFunctionCallByName(f_name, params)) => {
+      var param_vars = List[Idn]()
+      var load_params = List[LVarAssignment]()
+      params.map{p => {
+        val type_p = get_var_type(p, declarations)
+        val uncast_param_var = fresh("uncast_param_var")
+        val param_var = fresh("fv_param")
+        param_vars = param_vars :+ param_var
+        load_params = load_params ++ 
+          (LVarAssignment(uncast_param_var, LLoad(LTPointerTo(type_p), p)) ::
+            LVarAssignment(param_var, LBitCast(type_p, uncast_param_var, LTI8Pointer)) :: Nil)
+      }}
+
+      val fn_res = fresh("fn_res")
+
+      load_params ++
+      (LVarAssignment(fn_res, LCallFName(f_name, param_vars)) ::
+        LStore(LTI8Pointer, fn_res, LTI8PointerPointer, lh_v) :: Nil)
+    }
 
 
     case CVarAssignment(lh_v, CFunctionCallByVar(f_var, params)) => {
@@ -80,17 +96,21 @@ object llvm_ir_conversion {
 
       var param_vars = List[Idn]()
       var load_params = List[LVarAssignment]()
-      // TODO cast params
       params.map{p => {
+        val type_p = get_var_type(p, declarations)
+        val uncast_param_var = fresh("uncast_param_var")
         val param_var = fresh("fv_param")
         param_vars = param_vars :+ param_var
-        load_params = load_params :+ LVarAssignment(param_var, LLoad(LTI8PointerPointer, p))
+        load_params = load_params ++ 
+          (LVarAssignment(uncast_param_var, LLoad(LTPointerTo(type_p), p)) ::
+            LVarAssignment(param_var, LBitCast(type_p, uncast_param_var, LTI8Pointer)) :: Nil)
       }}
+
 
       val f_call_result = fresh("f_call_result")
 
       (load_f_pointer :: load_params) ++ 
-      (LVarAssignment(f_call_result, LCall(f_pointer, param_vars)) :: 
+      (LVarAssignment(f_call_result, LCallFPointer(f_pointer, param_vars)) :: 
         LStore(LTI8Pointer, f_call_result, LTI8PointerPointer, lh_v) :: Nil)
     }
 
@@ -120,8 +140,6 @@ object llvm_ir_conversion {
       LVarAssignment(b, LBitCast(LTI8Pointer, a, type_arr)) ::
       LStore(type_arr, b, LTPointerTo(type_arr), v) :: Nil
     }
-
-    // TODO prim op
 
     case CArrayAssignment(av, index, CFunctionPointer(f_name)) => {
       val type_arr = get_var_type(av, declarations)

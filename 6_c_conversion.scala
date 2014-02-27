@@ -53,16 +53,16 @@ object c_conversion {
 
     case IFunctionCallByName(f_name, params) => {
       var static_value_params = List[(Idn, Double)]()
-      var c_params = List[CExp]()
+      var c_params = List[Idn]()
 
       for (param <- params) {
         if (param.isInstanceOf[IStaticValue]) {
           val d = param.asInstanceOf[IStaticValue].d
           val const = fresh("const")
           static_value_params = static_value_params :+ (const, d)
-          c_params = c_params :+ CIdn(const)
+          c_params = c_params :+ const
         } else {
-          c_params = c_params :+ CIdn(param.asInstanceOf[IIdn].idn)
+          c_params = c_params :+ param.asInstanceOf[IIdn].idn
         }
       }
 
