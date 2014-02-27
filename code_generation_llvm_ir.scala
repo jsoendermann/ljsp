@@ -5,11 +5,27 @@ import ljsp.AST._
 object code_generation_llvm_ir {
   
   def llvm_ir_module_to_string(m: LModule) : String = {
-    // TODO main
     "declare i8* @malloc(i64)\n" +
+    "declare i32 @printf(i8*, ...)\n" +
+    // main function
+    """
+    @.str = private unnamed_addr constant [4 x i8] c"%f\0A\00"
+    define i32 @main(i32 %argc, i8** %argv) {
+      %1 = alloca i32
+      %2 = alloca i8**
+      %r = alloca double*
+      store i32 %argc, i32* %1
+      store i8** %argv, i8*** %2
+      %3 = call i8* @expression()
+      %4 = bitcast i8* %3 to double*
+      store double* %4, double** %r
+      %5 = load double** %r
+      %6 = load double* %5
+      %7 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([4 x i8]* @.str, i32 0, i32 0), double %6)
+      ret i32 0
+    }
+    """ +
     "\n" +
-    // TODO function declaration
-    //m.functions.map{f => "define i8* @" + f.name + "(" + f.params.map{p => "i8* %" + p}.mkString(", ") + ");"}.mkString("\n") + "\n" +
     m.functions.map{llvm_ir_function_to_string}.mkString("\n\n")
   }
 

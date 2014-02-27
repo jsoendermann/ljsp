@@ -9,7 +9,13 @@ object code_generation_c {
     "#include <stdio.h>\n" +
     "#include <stdlib.h>\n" +
     m.functions.map{f => "void *" + f.name + "(" + f.params.map{p => "void *" + p}.mkString(", ") + ");"}.mkString("\n") + "\n" +
-    m.functions.map{c_function_to_string}.mkString("\n\n")
+    m.functions.map{c_function_to_string}.mkString("\n\n") +
+    """
+    int main(int argc, char **argv) {
+      double *r = expression();
+      printf("%f\n", *r);
+    }
+    """
   }
 
   def c_function_to_string(f: CFunction) : String = {

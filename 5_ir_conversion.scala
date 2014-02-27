@@ -5,7 +5,7 @@ import ljsp.util._
 
 object ir_conversion {
   def convert_prog_to_ir(p: SProgram) : IModule = {
-    IModule("ModuleName", p.ds.map{d => convert_define_to_ir(p,d)})
+    IModule("ModuleName", convert_define_to_ir(p, SDefine(SIdn("expression"), Nil, p.e)) :: p.ds.map{d => convert_define_to_ir(p, d)})
   }
 
   def convert_define_to_ir(p: SProgram, d: SDefine) : IFunction = {
