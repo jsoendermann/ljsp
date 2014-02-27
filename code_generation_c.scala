@@ -51,7 +51,7 @@ object code_generation_c {
       block2.map{c_statement_to_string}.mkString(";\n") + ";\n" +
       "}"
     }
-    case CReturn(s) => "return " + c_statement_to_string(s)
+    case CReturn(s) => "return " + s
     case _ => c_exp_to_string(s.asInstanceOf[CExp])
   }
 
@@ -78,14 +78,14 @@ object code_generation_c {
         "(" + c_type_to_string(t) + ")" + v
       }
     }
-    case CDereferenceVar(v) => "*" + c_exp_to_string(v)
+    case CDereferenceVar(v) => "*" + v
     case CArrayAccess(av, index) => av + "[" + index.toString() + "]"
 
     case CFunctionCallByName(f_name, params) => {
       f_name + "(" + params.map{c_exp_to_string}.mkString(", ") + ")"
     }
     case CFunctionCallByVar(hl_var, params) => {
-      hl_var + "(" + params.map{c_exp_to_string}.mkString(", ") + ")"
+      hl_var + "(" + params.mkString(", ") + ")"
     }
 
 

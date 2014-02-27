@@ -26,7 +26,7 @@ object c_conversion {
     var sts_with_return = assign_last_expr_in_c_sts_list_to_ret_val(ret_val, sts)
 
     decls = decls :+ CDeclareVar(ret_val, CTVoidPointer)
-    sts_with_return = sts_with_return :+ CReturn(CIdn(ret_val))
+    sts_with_return = sts_with_return :+ CReturn(ret_val)
 
     CFunction(f.name, f.params, decls, sts_with_return)
   }
@@ -84,16 +84,16 @@ object c_conversion {
       val num_params = params.size + 1 // +1 for env
 
       var static_value_params = List[(Idn, Double)]()
-      var c_params = List[CExp]()
+      var c_params = List[Idn]()
 
       for (param <- params) {
         if (param.isInstanceOf[IStaticValue]) {
           val d = param.asInstanceOf[IStaticValue].d
           val const = fresh("const")
           static_value_params = static_value_params :+ (const, d)
-          c_params = c_params :+ CIdn(const)
+          c_params = c_params :+ const
         } else {
-          c_params = c_params :+ CIdn(param.asInstanceOf[IIdn].idn)
+          c_params = c_params :+ param.asInstanceOf[IIdn].idn
         }
       }
 
@@ -111,7 +111,7 @@ object c_conversion {
           CVarAssignment(sv._1, CMalloc(CTDoublePointer, CTDouble, 1)) ::
           CDereferencedVarAssignment(sv._1, CStaticValue(sv._2)) :: Nil
         }}.flatten ++
-        List(CFunctionCallByVar(func_pointer, CIdn(env_param) :: c_params)))
+        List(CFunctionCallByVar(func_pointer, env_param :: c_params)))
     }
 
     case IVarAssignment(idn, IPrimitiveInstruction(op, is)) => {
@@ -132,7 +132,7 @@ object c_conversion {
               CDeclareVar(prim_op_v, CTDouble) :: Nil)
 
             sts = sts ++ (CVarAssignment(prim_op_p, CCast(o_idn, CTDoublePointer)) ::
-              CVarAssignment(prim_op_v, CDereferenceVar(CIdn(prim_op_p))) :: Nil)
+              CVarAssignment(prim_op_v, CDereferenceVar(prim_op_p)) :: Nil)
 
             c_operands = c_operands :+ CIdn(prim_op_v)
           } else {
@@ -190,7 +190,7 @@ object c_conversion {
           CDeclareVar(idn, CTInt) :: Nil,
 
           CVarAssignment(cast_if_var_pointer, CCast(rh_idn, CTIntPointer)) ::
-          CVarAssignment(idn, CDereferenceVar(CIdn(cast_if_var_pointer))) :: Nil)
+          CVarAssignment(idn, CDereferenceVar(cast_if_var_pointer)) :: Nil)
       } else {
         throw new IllegalArgumentException("var = var assignment that's not an if_var")
       }

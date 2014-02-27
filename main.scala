@@ -6,6 +6,7 @@ import ljsp.code_generation_ljsp._
 import ljsp.code_generation_asmjs._
 import ljsp.code_generation_ir._
 import ljsp.code_generation_c._
+import ljsp.code_generation_llvm_ir._
 
 import ljsp.parser._
 import ljsp.expand_let_ns._
@@ -15,6 +16,7 @@ import ljsp.hoisting._
 import ljsp.ir_conversion._
 import ljsp.asmjs_conversion._
 import ljsp.c_conversion._
+import ljsp.llvm_ir_conversion._
 
 object Ljsp {
   def main(args: Array[String]) {
@@ -115,6 +117,12 @@ object Ljsp {
         println("C code:")
         val moduleC = convert_module_to_c(moduleIr)
         println(c_module_to_string(moduleC))
+        println()
+
+        println("LLVM IR code:")
+        val moduleLLVMIR = convert_module_to_llvm_ir(moduleC)
+        println(llvm_ir_module_to_string(moduleLLVMIR))
+        println()
       }
     }
   }

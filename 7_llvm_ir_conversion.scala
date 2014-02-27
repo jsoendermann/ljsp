@@ -5,18 +5,32 @@ import ljsp.util._
 
 object llvm_ir_conversion {
   def convert_module_to_llvm_ir(m: CModule) : LModule = {
-    LModule(m.name, m.functions.map{convert_function_to_llvm_ir})
+    LModule(m.name, m.functions.map{f => convert_function_to_llvm_ir(f, m)})
   }
 
-  def convert_function_to_llvm_ir(f: CFunction) : LFunction = {
+  def convert_function_to_llvm_ir(f: CFunction, m: CModule) : LFunction = {
     // TODO rename params + alloc and move into alloca   
-    val declarations = f.declarations.map{convert_declaration_to_llvm_ir}
-    val statements = f.statements{convert_statement_to_llvm_ir}.flatten
-    LFunction(f.name, f.params, statements)
+    var new_params = List[String]()
+    var new_params_decls = List[LVarAssignment]()
+    var store_params = List[LStore]()
+
+    f.params.map{p => {
+      val new_p = p + "_p"
+      new_params = new_params :+ new_p
+      new_params_decls = new_params_decls :+ LVarAssignment(p, LAlloca(LTI8Pointer))
+      store_params = store_params :+ LStore(LTI8Pointer, new_p, LTI8PointerPointer, p)
+      }
+    }
+
+    val declarations = new_params_decls ++ f.declarations.map{convert_declaration_to_llvm_ir}
+    val statements = store_params ++ f.statements.map{s => convert_statement_to_llvm_ir(s, m, declarations)}.flatten
+
+    val f_body = declarations ++ statements
+    LFunction(f.name, new_params, f_body)
   }
 
-  def convert_declaration_to_llvm_ir(d: CDeclareVar) : LStatement = {
-    LVarAccess(d.var_name, LAlloca(convert_c_type_to_llvm_ir_type(d.var_type)))
+  def convert_declaration_to_llvm_ir(d: CDeclareVar) : LVarAssignment = {
+    LVarAssignment(d.var_name, LAlloca(convert_c_type_to_llvm_ir_type(d.var_type)))
   }
 
   def convert_c_type_to_llvm_ir_type(ct: CType) : LType = ct match {
@@ -27,19 +41,134 @@ object llvm_ir_conversion {
     case CTDoublePointerPointer => LTDoublePointerPointerPointer
     case CTVoidPointer => LTI8Pointer
     case CTVoidPointerPointer => LTI8PointerPointer
-    case CTFunctionPointer(num_params) => LTFunctionPointer(num_params
+    case CTFunctionPointer(num_params) => LTFunctionPointer(num_params)
   }
 
-  def convert_statement_to_llvm_ir(s: CStatement) : List[LStatement] = s match {
+  def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[LVarAssignment]) : List[LStatement] = s match {
     // CIf
     case CVarAssignment(v, CCast(rh_v, t)) => {
+      val type_org = get_var_type(rh_v, declarations)
+      val type_new = convert_c_type_to_llvm_ir_type(t)
       val a = fresh("cast_a")
       val b = fresh("cast_b")
-      LVarAssignment(a, LLoad(
+      LVarAssignment(a, LLoad(LTPointerTo(type_org), rh_v)) ::
+      LVarAssignment(b, LBitCast(type_org, a, type_new)) ::
+      LStore(type_new, b, LTPointerTo(type_new), v) :: Nil
+    }
 
-    case _ => LIdn("###" + s.getClass.getSimpleName) :: Nil)
+    case CVarAssignment(lh_v, CArrayAccess(av, index)) => {
+      val type_lh_v = get_var_type(lh_v, declarations)
+      val type_a = get_var_type(av, declarations)
+      val a = fresh("arr_get_a")
+      val b = fresh("arr_get_b")
+      val c = fresh("arr_get_c")
+      LVarAssignment(a, LLoad(LTPointerTo(type_a), av)) ::
+      LVarAssignment(b, LGetElementPtr(type_a, a, index)) ::
+      LVarAssignment(c, LLoad(LTPointerTo(type_lh_v), b)) ::
+      LStore(LTUnderlyingType(type_a), c, LTPointerTo(type_lh_v), lh_v) :: Nil
+    }
+
+    // TODO
+    //case CVarAssignment(lh_v, CFunctionCallByName(f_name, params)) => {
+
+
+    case CVarAssignment(lh_v, CFunctionCallByVar(f_var, params)) => {
+      val type_f = get_var_type(f_var, declarations)
+      val f_pointer = fresh("f_pointer")
+
+      val load_f_pointer = LVarAssignment(f_pointer, LLoad(LTPointerTo(type_f), f_var))
+
+      var param_vars = List[Idn]()
+      var load_params = List[LVarAssignment]()
+      // TODO cast params
+      params.map{p => {
+        val param_var = fresh("fv_param")
+        param_vars = param_vars :+ param_var
+        load_params = load_params :+ LVarAssignment(param_var, LLoad(LTI8PointerPointer, p))
+      }}
+
+      val f_call_result = fresh("f_call_result")
+
+      (load_f_pointer :: load_params) ++ 
+      (LVarAssignment(f_call_result, LCall(f_pointer, param_vars)) :: 
+        LStore(LTI8Pointer, f_call_result, LTI8PointerPointer, lh_v) :: Nil)
+    }
+
+    case CVarAssignment(lh_v, CDereferenceVar(v)) => {
+      val type_lh = get_var_type(lh_v, declarations)
+      val type_rh = get_var_type(v, declarations)
+      val a = fresh("assign_deref")
+      val b = fresh("assign_deref")
+      LVarAssignment(a, LLoad(LTPointerTo(type_rh), v)) ::
+      LVarAssignment(b, LLoad(type_rh, a)) ::
+      LStore(LTUnderlyingType(type_rh), b, LTPointerTo(type_lh), lh_v) :: Nil
+    }
+
+    case CVarAssignment(v, CMalloc(res_type, data_type, num)) => {
+      var bytes = 0
+      // int is four bytes wide, all other types 8
+      if (data_type == CTInt)
+        bytes = 4 * num
+      else
+        bytes = 8 * num
+
+      val type_arr = convert_c_type_to_llvm_ir_type(res_type)
+      val a = fresh("malloc_var")
+      val b = fresh("cast_mem")
+
+      LVarAssignment(a, LMalloc(bytes)) ::
+      LVarAssignment(b, LBitCast(LTI8Pointer, a, type_arr)) ::
+      LStore(type_arr, b, LTPointerTo(type_arr), v) :: Nil
+    }
+
+    // TODO prim op
+
+    case CArrayAssignment(av, index, CFunctionPointer(f_name)) => {
+      val type_arr = get_var_type(av, declarations)
+      var num_params = -1
+      m.functions.map{f => {
+        if (f.name == f_name)
+          num_params = f.params.size
+      }}
+      val a = fresh("assign_fp_to_arr")
+      val b = fresh("assign_fp_to_arr")
+
+      LVarAssignment(a, LLoad(LTPointerTo(type_arr), av)) ::
+      LVarAssignment(b, LGetElementPtr(type_arr, a, index)) ::
+      LStoreFPointer(num_params, f_name, type_arr, b) :: Nil
+    }
+
+    case CArrayAssignment(av, index, CIdn(rh_v)) => {
+      val type_arr = get_var_type(av, declarations)
+      val type_rh_v = get_var_type(rh_v, declarations)
+      val a = fresh("assign_v_to_arr")
+      val b = fresh("assign_v_to_arr")
+      val c = fresh("assign_v_to_arr")
+      val d = fresh("assign_v_to_arr")
+
+      LVarAssignment(a, LLoad(LTPointerTo(type_rh_v), rh_v)) ::
+      LVarAssignment(b, LBitCast(type_rh_v, a, LTUnderlyingType(type_arr))) ::
+      LVarAssignment(c, LLoad(LTPointerTo(type_arr), av)) ::
+      LVarAssignment(d, LGetElementPtr(type_arr, c, index)) ::
+      LStore(LTUnderlyingType(type_arr), b, type_arr, d) :: Nil
+    }
+
+    case CReturn(rv) => {
+      val llvm_ir_ret_val = fresh("llvm_ir_ret_val")
+      LVarAssignment(llvm_ir_ret_val, LLoad(LTI8PointerPointer, rv)) ::
+      LRet(LTI8Pointer, llvm_ir_ret_val) :: Nil
+    }
+
+    case _ => LRet(LTInt, "###" + s.getClass.getSimpleName) :: Nil
   }
 
-    def get_var_type(v: Idn, 
+  def get_var_type(v: Idn, declarations: List[LVarAssignment]) : LType = {
+    declarations.map{d => {
+      if (d.v == v)
+        return d.e.asInstanceOf[LAlloca].t
+      }
+    }
+    throw new IllegalArgumentException("Type of var " + v + " unknown.")
+  }
 
 }
