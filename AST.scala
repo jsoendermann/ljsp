@@ -133,13 +133,16 @@ object AST {
   case class LRet(t: LType, v: Idn) extends LStatement
 
   abstract class LExp
-  case class LVarAccess(v: Idn, t: LType) extends LExp
+  case class LVarAccess(t: LType, v: Idn) extends LExp
+  case class LStaticValue(d: Double) extends LExp
+  case class LPrimitiveInstruction(op: String, ls: List[LExp]) extends LExp
   case class LAlloca(t: LType) extends LExp
   case class LLoad(t: LType, v: Idn) extends LExp
   case class LBitCast(old_type: LType, v: Idn, new_type: LType) extends LExp
   case class LGetElementPtr(t: LType, av: Idn, index: Int) extends LExp
   case class LCall(f_pointer: Idn, params: List[Idn]) extends LExp
   case class LMalloc(bytes: Int) extends LExp
+  case class LZext(v: Idn) extends LExp
 
 
 

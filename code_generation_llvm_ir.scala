@@ -50,7 +50,8 @@ object code_generation_llvm_ir {
   }
 
   def llvm_ir_expression_to_string(e: LExp) : String = e match {
-    case LVarAccess(v, t) => llvm_ir_type_to_string(t) + " %" + v
+    case LVarAccess(t, v) => "%" + v
+    case LStaticValue(d) => "%.3f".format(d)
     case LAlloca(t) => "alloca " + llvm_ir_type_to_string(t)
     case LLoad(t, v) => "load " + llvm_ir_type_to_string(t) + " %" + v
     case LBitCast(old_type, v, new_type) => {
@@ -68,6 +69,30 @@ object code_generation_llvm_ir {
     case LMalloc(bytes) => {
       "call i8* @malloc(i64 " + bytes.toString + ")"
     }
+
+    case LPrimitiveInstruction(op, ls) => {
+      def op_to_llvm_ir_instruction(op: String) : String = op match {
+        case "+" => "fadd"
+        case "-" => "fsub"
+        case "*" => "fmul"
+        case "/" => "fdiv"
+
+        case "<" => "fcmp slt"
+        case ">" => "fcmp sgt"
+      }
+      op match {
+        case "+" | "-" | "*" | "/" => {
+          op_to_llvm_ir_instruction(op) + " double " + 
+          ls.map{llvm_ir_expression_to_string}.mkString(", ")
+        }
+        case "<" | ">" => {
+          op_to_llvm_ir_instruction(op) + " double " +
+          ls.map{llvm_ir_expression_to_string}.mkString(", ")
+        }
+      }
+    }
+
+    case LZext(v) => "zext i1 %" + v + " to i32"
 
     case _ => "### TODO"
   }

@@ -153,6 +153,48 @@ object llvm_ir_conversion {
       LStore(LTUnderlyingType(type_arr), b, type_arr, d) :: Nil
     }
 
+    case CDereferencedVarAssignment(lh_v, CPrimitiveInstruction(op, cs)) => {
+      if (cs.size == 1) 
+        throw new IllegalArgumentException("Unary ops not implemented yet")
+      else if (cs.size == 2) {
+        var load_operands = List[LVarAssignment]()
+        var operands = List[LExp]()
+
+        cs.map{operand => {
+          if (operand.isInstanceOf[CIdn]) {
+            val idn = operand.asInstanceOf[CIdn].idn
+            val type_idn = get_var_type(idn, declarations)
+            val op_var = fresh("operand_var")
+
+            load_operands = load_operands :+ LVarAssignment(op_var, LLoad(LTPointerTo(type_idn), idn))
+            operands = operands :+ LVarAccess(type_idn, op_var)
+          }
+          if (operand.isInstanceOf[CStaticValue]) {
+            operands = operands :+ LStaticValue(operand.asInstanceOf[CStaticValue].d)
+          }
+        }}
+
+        val res = fresh("res")
+        val res_ptr = fresh("res_ptr")
+
+        val type_res = get_var_type(lh_v, declarations)
+
+        load_operands ++ 
+        (if (op == "<" || op == ">") {
+          val res_i1 = fresh("res_i1")
+          LVarAssignment(res_i1, LPrimitiveInstruction(op, operands)) ::
+          LVarAssignment(res, LZext(res_i1)) :: Nil
+          
+        } else {
+          LVarAssignment(res, LPrimitiveInstruction(op, operands)) :: Nil
+        }) ++
+        (LVarAssignment(res_ptr, LLoad(LTPointerTo(type_res), lh_v)) ::
+        LStore(LTUnderlyingType(type_res), res, type_res, res_ptr) :: Nil)
+      } else {
+        throw new IllegalArgumentException("Too many operands: " + cs.toString)
+      }
+    }
+
     case CReturn(rv) => {
       val llvm_ir_ret_val = fresh("llvm_ir_ret_val")
       LVarAssignment(llvm_ir_ret_val, LLoad(LTI8PointerPointer, rv)) ::
