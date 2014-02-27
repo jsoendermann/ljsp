@@ -71,7 +71,7 @@ object llvm_ir_conversion {
       val direct_assign = fresh("direct_assign")
       val t = get_var_type(lh_v, declarations)
       LVarAssignment(direct_assign, LLoad(LTPointerTo(t), rh_v)) ::
-      LStore(t, direct_assign, t, lh_v) :: Nil
+      LStore(t, direct_assign, LTPointerTo(t), lh_v) :: Nil
     }
     case CVarAssignment(v, CCast(rh_v, t)) => {
       val type_org = get_var_type(rh_v, declarations)
