@@ -6,7 +6,7 @@ import ljsp.AST._
 object parser {
 
   object JLispParsers extends JavaTokenParsers {
-    def expression: Parser[SExp] = identifier | double | _if | lambda | letN | primitive_application | application
+    def expression: Parser[SExp] = double | identifier | _if | lambda | letN | primitive_application | application
 
     protected override val whiteSpace = """(\s|;.*)+""".r //"""(\s|//.*|(?m)/\*(\*(?!/)|[^*])*\*/)+""".r
 
@@ -26,6 +26,8 @@ object parser {
       case name~params~")"~e => SDefine(name, params, e)
     }
 
+    def double: Parser[SDouble] = floatingPointNumber ^^ {d => SDouble(d.toDouble)}
+
     def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-_]*""".r ^^ (SIdn(_))
 
     def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "and" | "or" | "equal?" | "car" | "cdr" | "neg" | "min" | "max" | "sqrt") ^^ (SIdn(_))
@@ -33,8 +35,6 @@ object parser {
     def let_define_block: Parser[LetDefineBlock] = "("~>identifier~expression<~")" ^^ {
       case idn~e => LetDefineBlock(idn, e)
     }
-
-    def double: Parser[SDouble] = floatingPointNumber ^^ {d => SDouble(d.toDouble)}
 
     // TODO add #t and #f to parser
     def _if: Parser[SIf] = "("~>"if"~>expression~expression~expression<~')' ^^ {
