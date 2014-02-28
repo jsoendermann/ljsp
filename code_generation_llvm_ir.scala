@@ -62,7 +62,7 @@ object code_generation_llvm_ir {
       "%" + v2
     }
     case LStoreDouble(d, v) => {
-      "store double " + "%.3f".format(d) + ", double* %" + v
+      "store double " + "%.7f".format(d) + ", double* %" + v
     }
 
     case LLabel(l) => l + ":"
@@ -77,7 +77,7 @@ object code_generation_llvm_ir {
 
   def llvm_ir_expression_to_string(e: LExp) : String = e match {
     case LVarAccess(t, v) => "%" + v
-    case LStaticValue(d) => "%.3f".format(d)
+    case LStaticValue(d) => "%.7f".format(d)
     case LAlloca(t) => "alloca " + llvm_ir_type_to_string(t)
     case LLoad(t, v) => "load " + llvm_ir_type_to_string(t) + " %" + v
     case LBitCast(old_type, v, new_type) => {
