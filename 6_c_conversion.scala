@@ -116,7 +116,35 @@ object c_conversion {
 
     case IVarAssignment(idn, IPrimitiveInstruction(op, is)) => {
       if (is.size == 1) {
-        throw new IllegalArgumentException("prim ops with one operand not implemented yet")
+        op match {
+          case "neg" => {
+            val op_i = is(0).asInstanceOf[IIdn].idn
+            val prim_op_v = fresh("prim_op_v")
+            (CDeclareVar(prim_op_v, CTDoublePointer) ::
+              CDeclareVar(idn, CTDoublePointer) :: Nil,
+
+              CVarAssignment(prim_op_v, CCast(op_i, CTDoublePointer)) ::
+              CVarAssignment(idn, CMalloc(CTDoublePointer, CTDouble, 1)) ::
+              CDereferencedVarAssignment(idn, CPrimitiveInstruction(op, CDereferenceVar(prim_op_v) :: Nil)) :: Nil)
+          }
+          case "sqrt" => {
+            if (is(0).isInstanceOf[IIdn]) {
+                val op_i = is(0).asInstanceOf[IIdn].idn
+                val prim_op_v = fresh("prim_op_v")
+                (CDeclareVar(prim_op_v, CTDoublePointer) ::
+                  CDeclareVar(idn, CTDoublePointer) :: Nil,
+
+                  CVarAssignment(prim_op_v, CCast(op_i, CTDoublePointer)) ::
+                  CVarAssignment(idn, CMalloc(CTDoublePointer, CTDouble, 1)) ::
+                  CDereferencedVarAssignment(idn, CPrimitiveInstruction(op, CDereferenceVar(prim_op_v) :: Nil)) :: Nil)
+              } else if (is(0).isInstanceOf[IStaticValue]) {
+                val op_d = is(0).asInstanceOf[IStaticValue].d
+                (CDeclareVar(idn, CTDoublePointer) :: Nil,
+                  CVarAssignment(idn, CMalloc(CTDoublePointer, CTDouble, 1)) ::
+                  CDereferencedVarAssignment(idn, CPrimitiveInstruction(op, CStaticValue(op_d) :: Nil)) :: Nil)
+              } else throw new IllegalArgumentException()
+          }
+        }
       } else if (is.size == 2) {
         var decls = List[CDeclareVar]()
         var sts = List[CStatement]()
@@ -142,7 +170,7 @@ object c_conversion {
         }
 
         op match {
-          case "+" | "-" | "*" | "/" => {
+          case "+" | "-" | "*" | "/" | "min" | "max" => {
             (decls ++ (CDeclareVar(idn, CTDoublePointer) :: Nil),
               sts ++ (CVarAssignment(idn, CMalloc(CTDoublePointer, CTDouble, 1)) ::
                 CDereferencedVarAssignment(idn, CPrimitiveInstruction(op, c_operands)) :: Nil))
@@ -152,13 +180,6 @@ object c_conversion {
               sts ++ (CVarAssignment(idn, CMalloc(CTIntPointer, CTInt, 1)) ::
                 CDereferencedVarAssignment(idn, CPrimitiveInstruction(op, c_operands)) :: Nil))
           }
-          //case "+" | "-" | "*" | "/" => 
-          //case "<" | ">" =>
-          //case "neg" =>
-          //case "min" => {
-          //case "max" => {
-          //case "sqrt" =>
-
           case _ => throw new IllegalArgumentException("unrecognized prim op")
         }
       } else {
@@ -192,11 +213,15 @@ object c_conversion {
           CVarAssignment(cast_if_var_pointer, CCast(rh_idn, CTIntPointer)) ::
           CVarAssignment(idn, CDereferenceVar(cast_if_var_pointer)) :: Nil)
       } else {
-        throw new IllegalArgumentException("var = var assignment that's not an if_var")
+        // TODO test if this works
+        (CDeclareVar((idn), CTDoublePointer) :: Nil,
+
+          CVarAssignment(idn, CIdn(rh_idn)) :: Nil)
       }
     }
     
     case IIdn(idn) => (Nil, CIdn(idn) :: Nil)
+    case IStaticValue(d) => (Nil, CStaticValue(d) :: Nil)
 
 
     case _ => (Nil, CIdn("###" + s.getClass.getSimpleName) :: Nil)
@@ -213,6 +238,7 @@ object c_conversion {
     case _ => s
   }
 
+  // TODO this doesn't work with static values that get returned
   def assign_last_expr_in_c_sts_list_to_ret_val(ret_val: Idn, statements: List[CStatement]) : List[CStatement] = statements match {
     case (s::Nil) => {
       (s match {

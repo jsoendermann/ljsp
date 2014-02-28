@@ -5,9 +5,13 @@ import ljsp.AST._
 object code_generation_c {
   
   def c_module_to_string(m: CModule) : String = {
-    // TODO main
-    "#include <stdio.h>\n" +
-    "#include <stdlib.h>\n" +
+    """
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <math.h>
+    #define min(x,y) ((x)<(y)?(x):(y))
+    #define max(x,y) ((x)>(y)?(x):(y))
+    """ +
     m.functions.map{f => "void *" + f.name + "(" + f.params.map{p => "void *" + p}.mkString(", ") + ");"}.mkString("\n") + "\n" +
     m.functions.map{c_function_to_string}.mkString("\n\n") +
     """
@@ -69,11 +73,19 @@ object code_generation_c {
       c_type_to_string(data_type) + ") * " + num.toString + ")"
     }
     case CPrimitiveInstruction(op, cs) => {
-      // TODO add support for unary ops
-      if (cs.size == 2) 
-        c_exp_to_string(cs(0)) + op + c_exp_to_string(cs(1))
-      else
-        "TODO"
+      if (cs.size == 1) {
+        op match {
+          case "neg" => "-(" + c_exp_to_string(cs(0)) + ")"
+          case "sqrt" => "sqrt(" + c_exp_to_string(cs(0)) + ")"
+        }
+      }
+      else if (cs.size == 2) {
+        op match {
+          case "+" | "-" | "*" | "/" | "<" | ">" => c_exp_to_string(cs(0)) + op + c_exp_to_string(cs(1))
+          case "max" | "min" => op + "(" + c_exp_to_string(cs(0)) + ", " + c_exp_to_string(cs(1)) + ")"
+        }
+      } else
+        throw new IllegalArgumentException(op)
     }
     case CFunctionPointer(f_name) => "&" + f_name
     case CCast(v, t) => {

@@ -39,6 +39,7 @@ object ir_conversion {
       Nil
     }
 
+    case _ => convert_sexp_to_ir_exp(p, e) :: Nil
   }
 
   def convert_sexp_to_ir_exp(p: SProgram, e: SExp) : IExp = e match {
