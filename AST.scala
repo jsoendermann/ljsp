@@ -136,7 +136,7 @@ object AST {
   case class LConditionalBr(br_var: Idn, l_true: Idn, l_false: Idn) extends LStatement
   case class LRet(t: LType, v: Idn) extends LStatement
 
-  abstract class LExp
+  abstract class LExp extends LStatement
   case class LVarAccess(t: LType, v: Idn) extends LExp
   case class LStaticValue(d: Double) extends LExp
   case class LPrimitiveInstruction(op: String, ls: List[LExp]) extends LExp
