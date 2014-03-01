@@ -258,12 +258,13 @@ object llvm_ir_conversion {
 
     case CDereferencedVarAssignment(lh_v, CPrimitiveInstruction(op, cs)) => {
       if (cs.size == 1) {
-        op match {
+        /*op match {
           case "sqrt" => {
             // TODO
           }
           case _ => throw new IllegalArgumentException("Unary ops not implemented yet")
-        }
+        }*/
+        throw new IllegalArgumentException()
       }
       else if (cs.size == 2) {
         // TODO add min, max
