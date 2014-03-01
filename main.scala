@@ -32,6 +32,8 @@ object Ljsp {
       --ir
       --asmjs
       --llvmir
+
+      switches to: minify asm.js and c and to number llvm ir vars
       */
     args(0) match {
     /*  case "--expLetN" => {
