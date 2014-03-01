@@ -115,6 +115,11 @@ object Ljsp {
         val progH = hoist_prog(progCC)
         println(ljsp_prog_to_string(progH))
         println()
+        
+        println("asm.js:")
+        val progAsmjs = convert_prog_to_asmjs(progH)
+        println(asmjs_module_to_string(progAsmjs))
+        println()
 
         println("IR code:")
         val moduleIr = convert_prog_to_ir(progH)
