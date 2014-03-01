@@ -9,7 +9,9 @@ import ljsp.code_generation_c._
 import ljsp.code_generation_llvm_ir._
 
 import ljsp.parser._
+
 import ljsp.expand_let_ns._
+import ljsp.remove_negs._
 import ljsp.cps_translation._
 import ljsp.closure_conversion._
 import ljsp.hoisting._
@@ -32,7 +34,7 @@ object Ljsp {
       --llvmir
       */
     args(0) match {
-      case "--expLetN" => {
+    /*  case "--expLetN" => {
         val progTree = JLispParsers.parseExpr(args(1))
         val progExpand = expand_let_ns_prog(progTree)
         println(ljsp_prog_to_string(progExpand))
@@ -80,7 +82,7 @@ object Ljsp {
         val progH = hoist_prog(progCC)
         val module = convert_prog_to_asmjs(progH)
         println(asmjs_module_to_string(module))
-      }
+      }*/
 
 
       case _ => {
@@ -94,8 +96,13 @@ object Ljsp {
         println(ljsp_prog_to_string(progExpand))
         println()
 
+        println("Program with negs removed:")
+        val progNegsRemoved = remove_negs_prog(progExpand)
+        println(ljsp_prog_to_string(progNegsRemoved))
+        println()
+
         println("CPS translated program:")
-        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
+        val progCps = cps_trans_prog(progNegsRemoved, (x: SExp) => x)
         println(ljsp_prog_to_string(progCps))
         println()
 

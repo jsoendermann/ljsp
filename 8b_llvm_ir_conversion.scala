@@ -257,9 +257,16 @@ object llvm_ir_conversion {
     }
 
     case CDereferencedVarAssignment(lh_v, CPrimitiveInstruction(op, cs)) => {
-      if (cs.size == 1) 
-        throw new IllegalArgumentException("Unary ops not implemented yet")
+      if (cs.size == 1) {
+        op match {
+          case "sqrt" => {
+            // TODO
+          }
+          case _ => throw new IllegalArgumentException("Unary ops not implemented yet")
+        }
+      }
       else if (cs.size == 2) {
+        // TODO add min, max
         var load_operands = List[LVarAssignment]()
         var operands = List[LExp]()
 
