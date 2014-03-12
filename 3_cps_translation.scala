@@ -72,6 +72,7 @@ object cps_translation {
     case SApplPrimitive(proc, es) => {
       val z = SIdn(fresh("var"))
 
+      // TODO move this to separate stage
       // if es contains more than 2 elements, transform (+ a b c) into (+ (+ a b) c) first
       if (es.size > 2) {
         cps_trans(es.drop(2).foldLeft(SApplPrimitive(proc, List(es(0), es(1))))((x,y) => SApplPrimitive(proc, List(x, y))), k)
