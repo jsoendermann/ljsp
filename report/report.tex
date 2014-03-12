@@ -1,11 +1,15 @@
 \documentclass[11pt]{report}
 
 \usepackage[toc,page]{appendix}
+\usepackage{amsmath}
+\usepackage{stmaryrd}
 
 \title{LJSP - A LISP to asm.js compiler}
 \author{Jan S\"ondermann}
 \date{1st January 1900}
 
+\newcommand{\eqdef}{\stackrel{\text{def}}{=}}%
+\newcommand{\cpstrans}[1]{\ensuremath{\mathcal{K}\llbracket #1 \rrbracket}}
 
 \begin{document}
 
@@ -22,12 +26,12 @@
 \section{Motivation for LJSP}
 \section{Scope}
 
-\chapter{Background}
+\chapter{Background \& Existing Work}
 \section{Technologies involved}
+% AST
 \subsection{javascript engines/interpreters, new generation, history}
-\subsection{emscripten, LLVM}
 \subsection{asm.js}
-\subsection{LISP}
+\subsection{LLVM, LLVM IR}
 \section{Similar Languages}
 
 \chapter{Requirements}
@@ -41,12 +45,28 @@
 \section{Output Module}
 
 \chapter{Design}
+This chapter will describe @@@, this chapter: abstract, theoretical next chapter: concrete, details
 \section{Overall architecture}
-% diagram of stages
+The compiler is made up of two major components: A hierarchy of classes that get instantiated to create the Abstract Syntax Tree (AST) @described in detail below@ and a number of compilation stages that perform various transformation on this AST. I will first describe the AST classes before going through all the individual stages of the compiler in detail.
 % scheme is used for all internal code
+\section{AST}
+% class diagrams for all five sets of AST classes
+The compiler includes five sets of class hierarchies that all have their own abstract superclass: One that reflects LJSP code, one for an intermediate representation used at a later stage and one for each compilation target: asm.js, C and LLVM IR.
 \section{Detailed design of compilation stages}
+% diagram of stages
+% based on from system F...
 \subsection{Parsing}
 \subsection{CPS-Translation}
+
+\begin{align*}
+\cpstrans{y} k & \eqdef k(y) \\
+\cpstrans{i} k & \eqdef k(i) \\
+\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k & \eqdef \cpstrans{e_1} (\lambda x.(\text{if}\ x\ \cpstrans{e_2}k\ \cpstrans{e_3}k))) \\
+\cpstrans{(\text{lambda}\ (p_1, p_2, \dots, p_n)\ e)} k & \eqdef k((\text{lambda}\ (cont, p_1, p_2, \dots, p_n)\ \cpstrans{e}cont)) \\
+\cpstrans{(\text{define}\ (name, p_1, p_2, \dots, p_n)\ e)} k & \eqdef k((\text{define}\ (name, cont, p_1, p_2, \dots, p_n)\ \cpstrans{e}cont)) \\
+
+\end{align*}
+
 \subsection{Closure Conversion}
 \subsection{Hoisting}
 \subsection{Conversion to asm.js}
@@ -71,8 +91,6 @@
 % ray tracer to test performance
 
 \chapter{Evaluation}
-% code emission is a mess
-
 % ast transformations would be nicer if the compiler generated the subtrees
 % from short code snippets instead of creating the objects manually
 \section{Evaluation against requirements}
