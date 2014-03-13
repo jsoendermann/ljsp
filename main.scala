@@ -45,7 +45,7 @@ object Ljsp {
     def parsedProg(prog: String) : SProgram = JLispParsers.parseExpr(prog)
     def letExpandedProg(prog: String) : SProgram = expand_let_ns_prog(parsedProg(prog))
     def negsRemovedProg(prog: String) : SProgram = remove_negs_prog(letExpandedProg(prog))
-    def cpsTranslatedProg(prog: String) : SProgram = cps_trans_prog(parsedProg(prog), (x: SExp) => x)
+    def cpsTranslatedProg(prog: String) : SProgram = cps_trans_prog(negsRemovedProg(prog), (x: SExp) => x)
     def closureConvertedProg(prog: String) : SProgram = cl_conv_prog(cpsTranslatedProg(prog))
     def hoistedProg(prog: String) : SProgram = hoist_prog(closureConvertedProg(prog))
     def asmjsModule(prog: String) : AModule = convert_prog_to_asmjs(hoistedProg(prog))
