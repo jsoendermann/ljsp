@@ -287,7 +287,7 @@ function render(enableAsmJs) {
 
                 reflectedColour = trace(reflectedRay, depth - 1);
 
-                return coloursMix(0.3, reflectedColour, 0.7, colourScaled(intensity, closestObject.clr));
+                return coloursMix(0.25, reflectedColour, 0.75, colourScaled(intensity, closestObject.clr));
             } else {
                 return colourScaled(intensity, closestObject.clr);
             }
@@ -301,9 +301,9 @@ function render(enableAsmJs) {
     var start = new Date().getTime();
 
     spheres = [new Sphere(new Vector3(-50, -40, 250), 25, new Colour(255, 0, 0), true),
-            new Sphere(new Vector3(35, -40, 300), 50, new Colour(0, 255, 0), true),
-            new Sphere(new Vector3(-40, 30, 300), 25, new Colour(0, 0, 255), true),
-            new Sphere(new Vector3(50, 30, 200), 30, new Colour(255, 0, 255), true)];
+            new Sphere(new Vector3(35, -40, 300), 50, new Colour(255, 255, 255), true),
+            new Sphere(new Vector3(-40, 30, 300), 25, new Colour(50, 50, 255), true),
+            new Sphere(new Vector3(50, 30, 200), 30, new Colour(0, 0, 0), true)];
 
     planes = [new Plane(new Vector3(0, -1, 0), 60, new Colour(200, 200, 200), false),
            new Plane(new Vector3(0, 0, -1), 400, new Colour(200, 200, 200), false),
