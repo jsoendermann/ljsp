@@ -22,122 +22,74 @@ import ljsp.llvm_ir_conversion._
 
 object Ljsp {
   def main(args: Array[String]) {
+    // TODO switches to: minify asm.js and c and to number llvm ir vars
+    def parseOptions(parsed_options: Map[Symbol, String], arglist: List[String]) : Map[Symbol, String] = arglist match {
+      case "-i" :: in_file :: tail => parseOptions(parsed_options ++ Map('in_file -> in_file), tail)
+      case "-o" :: out_file :: tail => parseOptions(parsed_options ++ Map('out_file -> out_file), tail)
+      // TODO switch for expand prim ops
+      case "--parsed" :: tail => parseOptions(parsed_options ++ Map('target -> "parsed"), tail)
+      case "--letExp" :: tail => parseOptions(parsed_options ++ Map('target -> "letExp"), tail)
+      case "--negsRemoved" :: tail => parseOptions(parsed_options ++ Map('target -> "negsRemoved"), tail)
+      case "--cps" :: tail => parseOptions(parsed_options ++ Map('target -> "cps"), tail)
+      case "--cc" :: tail => parseOptions(parsed_options ++ Map('target -> "cc"), tail)
+      case "--hoist" :: tail => parseOptions(parsed_options ++ Map('target -> "hoist"), tail)
+      case "--ir" :: tail => parseOptions(parsed_options ++ Map('target -> "ir"), tail)
+      case "--asmjs" :: tail => parseOptions(parsed_options ++ Map('target -> "asmjs"), tail)
+      case "--c" :: tail => parseOptions(parsed_options ++ Map('target -> "c"), tail)
+      // TODO always spell this as 'llvm_ir', never llvmir
+      case "--llvmir" :: tail => parseOptions(parsed_options ++ Map('target -> "llvmir"), tail)
+      case prog :: tail => parseOptions(parsed_options ++ Map('prog -> prog), tail)
+      case Nil => parsed_options
+    }
 
-    /* TODO rewrite this function to accept these switches:
-      -i input file
-      -o output file
-      --cps
-      --cc
-      --hoist
-      --ir
-      --asmjs
-      --llvmir
+    def parsedProg(prog: String) : SProgram = JLispParsers.parseExpr(prog)
+    def letExpandedProg(prog: String) : SProgram = expand_let_ns_prog(parsedProg(prog))
+    def negsRemovedProg(prog: String) : SProgram = remove_negs_prog(letExpandedProg(prog))
+    def cpsTranslatedProg(prog: String) : SProgram = cps_trans_prog(parsedProg(prog), (x: SExp) => x)
+    def closureConvertedProg(prog: String) : SProgram = cl_conv_prog(cpsTranslatedProg(prog))
+    def hoistedProg(prog: String) : SProgram = hoist_prog(closureConvertedProg(prog))
+    def asmjsModule(prog: String) : AModule = convert_prog_to_asmjs(hoistedProg(prog))
+    def irModule(prog: String) : IModule = convert_prog_to_ir(hoistedProg(prog))
+    def cModule(prog: String) : CModule = convert_module_to_c(irModule(prog))
+    def llvmirModule(prog: String) : LModule = convert_module_to_llvm_ir(cModule(prog))
 
-      switches to: minify asm.js and c and to number llvm ir vars
-      */
-    args(0) match {
-    /*  case "--expLetN" => {
-        val progTree = JLispParsers.parseExpr(args(1))
-        val progExpand = expand_let_ns_prog(progTree)
-        println(ljsp_prog_to_string(progExpand))
-      }
-      case "--cps" => {
-        val progTree = JLispParsers.parseExpr(args(1))
-        val progExpand = expand_let_ns_prog(progTree)
-        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
-        println(ljsp_prog_to_string(progCps))
-      }
-      case "--cc" => {
-        val progTree = JLispParsers.parseExpr(args(1))
-        val progExpand = expand_let_ns_prog(progTree)
-        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
-        val progCC = cl_conv_prog(progCps)
-        println(ljsp_prog_to_string(progCC))
-      }
-      case "--h" => {
-        val progTree = JLispParsers.parseExpr(args(1))
-        val progExpand = expand_let_ns_prog(progTree)
-        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
-        val progCC = cl_conv_prog(progCps)
-        val progH = hoist_prog(progCC)
-        println(ljsp_prog_to_string(progH))
-      }
-      case "--asmjs" => {
-        val progTree = JLispParsers.parseExpr(args(1))
-        val progExpand = expand_let_ns_prog(progTree)
-        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
-        val progCC = cl_conv_prog(progCps)
-        val progH = hoist_prog(progCC)
-        val module = convert_prog_to_asmjs(progH)
-        println(asmjs_module_to_string(module))
-      }
-
-      case "-f" => {
-        val sourceFile = scala.io.Source.fromFile(args(1))
-        val source = sourceFile.mkString
-        sourceFile.close()
-
-        val progTree = JLispParsers.parseExpr(source)
-        val progExpand = expand_let_ns_prog(progTree)
-        val progCps = cps_trans_prog(progExpand, (x: SExp) => x)
-        val progCC = cl_conv_prog(progCps)
-        val progH = hoist_prog(progCC)
-        val module = convert_prog_to_asmjs(progH)
-        println(asmjs_module_to_string(module))
-      }*/
-
-
-      case _ => {
-        println("Parsed program:")
-        val progTree = JLispParsers.parseExpr(args(0))
-        println(ljsp_prog_to_string(progTree))
-        println()
-
-        println("LetN expanded program:")
-        val progExpand = expand_let_ns_prog(progTree)
-        println(ljsp_prog_to_string(progExpand))
-        println()
-
-        println("Program with negs removed:")
-        val progNegsRemoved = remove_negs_prog(progExpand)
-        println(ljsp_prog_to_string(progNegsRemoved))
-        println()
-
-        println("CPS translated program:")
-        val progCps = cps_trans_prog(progNegsRemoved, (x: SExp) => x)
-        println(ljsp_prog_to_string(progCps))
-        println()
-
-        println("Closure converted program:")
-        val progCC = cl_conv_prog(progCps)
-        println(ljsp_prog_to_string(progCC))
-        println()
-
-        println("Hoisted program:")
-        val progH = hoist_prog(progCC)
-        println(ljsp_prog_to_string(progH))
-        println()
-        
-        println("asm.js:")
-        val progAsmjs = convert_prog_to_asmjs(progH)
-        println(asmjs_module_to_string(progAsmjs))
-        println()
-
-        println("IR code:")
-        val moduleIr = convert_prog_to_ir(progH)
-        println(ir_module_to_string(moduleIr))
-        println()
-
-        println("C code:")
-        val moduleC = convert_module_to_c(moduleIr)
-        println(c_module_to_string(moduleC))
-        println()
-
-        println("LLVM IR code:")
-        val moduleLLVMIR = convert_module_to_llvm_ir(moduleC)
-        println(llvm_ir_module_to_string(moduleLLVMIR))
-        println()
+    def getProgram(options: Map[Symbol, String]) : String = {
+      options.get('prog) match {
+        case Some(prog) => prog
+        case None => {
+          options.get('in_file) match {
+            case Some(in_file) => {
+              val sourceFile = scala.io.Source.fromFile(in_file)
+              val prog = sourceFile.mkString
+              sourceFile.close()
+              prog
+            }
+            case None => throw new Exception("No input provided")
+          }
+        }
       }
     }
+
+    def getOutput(options: Map[Symbol, String], prog: String) : String = {
+      options.get('target) match {
+        case Some("parsed") => ljsp_prog_to_string(parsedProg(prog))
+        case Some("letExp") => ljsp_prog_to_string(letExpandedProg(prog))
+        case Some("negsRemoved") => ljsp_prog_to_string(negsRemovedProg(prog))
+        case Some("cps") => ljsp_prog_to_string(cpsTranslatedProg(prog))
+        case Some("cc") => ljsp_prog_to_string(closureConvertedProg(prog))
+        case Some("hoist") => ljsp_prog_to_string(hoistedProg(prog))
+        case Some("ir") => ir_module_to_string(irModule(prog))
+        case Some("asmjs") => asmjs_module_to_string(asmjsModule(prog))
+        case Some("c") => c_module_to_string(cModule(prog))
+        case Some("llvmir") => llvm_ir_module_to_string(llvmirModule(prog))
+        // TODO Output every step instead of throwing an exception
+        case None => throw new IllegalArgumentException("No target provided")
+      }
+    }
+
+    val options = parseOptions(Map(), args.toList)
+    println(getOutput(options, getProgram(options)))
+    
+    // TODO add file output
   }
 }
