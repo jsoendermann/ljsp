@@ -58,14 +58,21 @@ The compiler includes five sets of class hierarchies that all have their own abs
 \subsection{Parsing}
 \subsection{CPS-Translation}
 
-\begin{align*}
-\cpstrans{y} k & \eqdef k(y) \\
-\cpstrans{i} k & \eqdef k(i) \\
-\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k & \eqdef \cpstrans{e_1} (\lambda x.(\text{if}\ x\ \cpstrans{e_2}k\ \cpstrans{e_3}k))) \\
-\cpstrans{(\text{lambda}\ (p_1, p_2, \dots, p_n)\ e)} k & \eqdef k((\text{lambda}\ (cont, p_1, p_2, \dots, p_n)\ \cpstrans{e}cont)) \\
-\cpstrans{(\text{define}\ (name, p_1, p_2, \dots, p_n)\ e)} k & \eqdef k((\text{define}\ (name, cont, p_1, p_2, \dots, p_n)\ \cpstrans{e}cont)) \\
-
-\end{align*}
+% y = var, i = int, f = fresh idn
+\begin{center}
+\begin{figure}[ht]
+\begin{alignat*}{2}
+&\cpstrans{y} k &&\eqdef k(y) \\
+&\cpstrans{i} k &&\eqdef k(i) \\
+&\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k &&\eqdef \cpstrans{e_1} (\lambda x.(\text{if}\ x\ \cpstrans{e_2}k\ \cpstrans{e_3}k))) \\
+&\cpstrans{(\text{lambda}\ (p_1, p_2, \dots, p_n)\ e)} k &&\eqdef k((\text{lambda}\ (cont, p_1, p_2, \dots, p_n)\ \cpstrans{e}cont)) \\
+&\cpstrans{(\text{define}\ (name, p_1, p_2, \dots, p_n)\ e)} k &&\eqdef k((\text{define}\ (name, cont, p_1, p_2, \dots, p_n)\ \cpstrans{e}cont)) \\
+&\cpstrans{(proc\ p_1, p_2, \dots, p_n)} k &&\eqdef \cpstrans{proc} \lambda x_{proc}.(\cpstrans{p_1} \lambda x_1.(\cpstrans{p_2} \lambda x_2. \dots \cpstrans{p_n} \lambda x_n.(x_{proc}\ x_1, x_2, \dots, x_n))) \\
+&\cpstrans{(primitive\ p_1, p_2, \dots, p_n)} k &&\eqdef \cpstrans{p_1} \lambda x_1.(\cpstrans{p_2} \lambda x_2. \dots \cpstrans{p_n} \lambda x_n.(primitive\ x_1, x_2, \dots, x_n)) \\
+&\cpstrans{(\text{let}\ ((idn\ e_1))\ e_2)} k &&\eqdef \cpstrans{e_1} \lambda x_1.(\text{let}\ idn = x_1\ \text{in}\ \cpstrans{e_2} \lambda x_2.(k(x_2)))\\
+\end{alignat*}
+\end{figure}
+\end{center}
 
 \subsection{Closure Conversion}
 \subsection{Hoisting}
