@@ -25,10 +25,10 @@ def run_compiler(arguments, source):
     # FIXME this doesn't work
     return subprocess.check_output(["scala", "-cp", "ljsp/", "ljsp.Ljsp"] + arguments + ['"'+source+'"'])
 
-with open("test_lib.scm", "r") as test_lib_file:
+with open("test/test_lib.scm", "r") as test_lib_file:
 	test_lib = test_lib_file.read()
 
-for source_file_path in glob.glob("./tests/*.scm"):
+for source_file_path in glob.glob("./test/test_cases/*.scm"):
 	with open(source_file_path, "r") as source_file:
 		print "Testing "+os.path.basename(source_file_path)
 		source = source_file.read()
