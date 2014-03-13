@@ -93,6 +93,7 @@ object cps_translation {
       val f = SIdn(fresh("var"))
       //val c = SLambda(List(f), k(f))
 
+      // TODO can this be simplified to   => k(ce2) ?
       val ce2 = cps_trans(e2, (ce2: SExp) => SLet(f, ce2, k(f)))
 
       cps_trans(e1, (ce1: SExp) => SLet(idn, ce1, ce2))
