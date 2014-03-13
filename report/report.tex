@@ -59,7 +59,6 @@ The compiler includes five sets of class hierarchies that all have their own abs
 \subsection{CPS-Translation}
 
 % y = var, i = int, f = fresh idn
-\begin{center}
 \begin{figure}[ht]
 \begin{alignat*}{2}
 &\cpstrans{y} k &&\eqdef k(y) \\
@@ -72,7 +71,7 @@ The compiler includes five sets of class hierarchies that all have their own abs
 &\cpstrans{(\text{let}\ ((idn\ e_1))\ e_2)} k &&\eqdef \cpstrans{e_1} \lambda x_1.(\text{let}\ idn = x_1\ \text{in}\ \cpstrans{e_2} \lambda x_2.(k(x_2)))\\
 \end{alignat*}
 \end{figure}
-\end{center}
+
 
 \subsection{Closure Conversion}
 \subsection{Hoisting}
