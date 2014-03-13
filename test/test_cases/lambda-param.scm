@@ -1,1 +1,1 @@
-((lambda (x c) (c x)) 1 (lambda (x) x))
+((lambda (x c) (c x)) 1.0 (lambda (x) x))
