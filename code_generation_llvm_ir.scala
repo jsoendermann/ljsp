@@ -76,6 +76,7 @@ object code_generation_llvm_ir {
   }
 
   def llvm_ir_expression_to_string(e: LExp) : String = e match {
+    // TODO rename this to LIdn
     case LVarAccess(t, v) => "%" + v
     case LStaticValue(d) => "%.7f".format(d)
     case LAlloca(t) => "alloca " + llvm_ir_type_to_string(t)
@@ -125,6 +126,11 @@ object code_generation_llvm_ir {
     case LZext(v) => "zext i1 %" + v + " to i32"
 
     case LIcmpNe(v) => "icmp ne i32 %" + v + ", 0"
+
+    case LPhi(bs) => {
+      "phi double " + 
+      bs.map{b => "[ " + llvm_ir_expression_to_string(b._1) + ", %" + b._2 + " ]"}.mkString(", ")
+  }
 
     case _ => "### TODO"
   }
