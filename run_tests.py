@@ -38,6 +38,10 @@ def compile_to_file(file_name, target, source):
 with open("test/test_lib.scm", "r") as test_lib_file:
 	test_lib = test_lib_file.read()
 
+def floats_equal(a, b):
+    if abs(a-b) < 0.01:
+        return True
+    return False
 
 for source_file_path in glob.glob("./test/test_cases/*.scm"):
     print "Testing "+os.path.basename(source_file_path)
@@ -51,7 +55,7 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
     for target in LJSP_TARGETS:
         target_res = scheme_eval(test_lib + run_compiler(["--" + target], source))
 
-        if res == target_res:
+        if floats_equal(res, target_res):
             print GREEN + " " + target + " success" + OFF
         else:
             print RED + " " + target + " failure, " + str(res) + " != " + str(target_res) + OFF
@@ -71,7 +75,7 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
 
     c_output = float(subprocess.check_output([c_exe_file_name]))
 
-    if res == c_output:
+    if floats_equal(res, c_output):
         print GREEN + " C success" + OFF
     else:
         print RED + " C failure, " + str(res) + " != " + str(c_output) + OFF
@@ -83,7 +87,7 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
 
     llvm_ir_output = float(subprocess.check_output([LLI_PATH, llvm_ir_source_file_name]))
 
-    if res == llvm_ir_output:
+    if floats_equal(res, llvm_ir_output):
         print GREEN + " LLVM IR success" + OFF
     else:
         print RED + " LLVM IR failure, " + str(res) + " != " + str(llvm_ir_output) + OFF
@@ -95,7 +99,7 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
 
     num_llvm_ir_output = float(subprocess.check_output([LLI_PATH, num_llvm_ir_source_file_name]))
 
-    if res == num_llvm_ir_output:
+    if floats_equal(res, num_llvm_ir_output):
         print GREEN + " numbered LLVM IR success" + OFF
     else:
         print RED + " numbered LLVM IR failure, " + str(res) + " != " + str(num_llvm_ir_output) + OFF
