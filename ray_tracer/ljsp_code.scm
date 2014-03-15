@@ -24,7 +24,6 @@
                   (t_min (min t0 t1)))
               (if (< t_max 0.0)
                 1000000.0
-                (if (< t_min 0)
+                (if (< t_min 0.0)
                   t_max
-                  t_min)))))))))))))))
-
+                  t_min)))))))))
