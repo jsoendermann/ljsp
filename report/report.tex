@@ -3,6 +3,7 @@
 \usepackage[toc,page]{appendix}
 \usepackage{amsmath}
 \usepackage{stmaryrd}
+\usepackage{syntax}
 
 \title{LJSP - A LISP to asm.js compiler}
 \author{Jan S\"ondermann}
@@ -39,10 +40,65 @@
 \section{System Requirement}
 
 \chapter{Specification}
-\section{LJSP abstract syntax}
+\section{LJSP Grammar}
+The grammar of LJSP in Extended Backus-Naur Form is given below.
+\begin{grammar}
+<program> ::= <defines> [ <expr> ] <defines>
+
+<defines> ::= <define> <defines> | $\epsilon$
+
+<define> ::= `(define (' <ident> <params> `)' <expr> `)'
+
+<expr> ::= <double>
+\alt <ident>
+\alt `(if' <expr> <expr> <expr> `)'
+\alt <lambda>
+\alt `(let (' <letblocks> `)' <expr> `)'
+\alt `(' <primOp> <args> `)'
+\alt `(' <expr> <args> `)'
+
+% add scientific form
+<double> ::= \texttt{-?(\textbackslash d+(\textbackslash.\textbackslash d*)?|\textbackslash d*\textbackslash.\textbackslash d+)}
+
+<ident> ::= \texttt{[a-zA-Z=*+/\textless\textgreater!?-][a-zA-Z0-9=*+/\textless\textgreater!?-_]*}
+
+<lambda> ::= `(lambda (' <params> `)' <expr> `)'
+
+<params> ::= <ident> | <ident> <params>
+
+<letblocks> ::= <letblock> | <letblock> <letblocks>
+
+<letblock> ::= `(' <ident> <expr> `)'
+
+<primOp> ::= `+' | `-' | `*' | `/' | `neg'
+\alt `<' | `>'
+\alt `min' | `max'
+\alt `sqrt'
+
+% is an application to an empty argument list legal?
+<args> ::= <expr> | <expr> <args>
+\end{grammar}
+
+The grammar for expressions used in intermediate stages is as follows:
+\begin{grammar}
+<expr> ::= <env>
+\alt `(make-lambda' <lambda> <env> `)'
+\alt `(nth' <int> <expr> `)'
+\alt `(get-env' <expr> `)'
+\alt `(get-proc' <expr> `)'
+% should this be <expr> instead of <env>?
+\alt `(hoisted-lambda' <ident> <env> `)'
+
+<env> ::= `(make-env' <idents> `)'
+
+<int> ::= \texttt{-?(0|[1-9][0-9]*)}
+
+<idents> ::= <ident> <idents> | $\epsilon$
+\end{grammar}
+
 % subset of scheme
 \section{Small/big-step semantics of LJSP}
-\section{Output Module}
+\section{Backend Output}
 
 \chapter{Design}
 This chapter will describe @@@, this chapter: abstract, theoretical next chapter: concrete, details
@@ -87,9 +143,18 @@ The compiler includes five sets of class hierarchies that all have their own abs
 % (array index vars are all generated, user doesn't see them)
 
 \chapter{Testing}
-\section{Testing of internal stages}
-% testing framework, testing library
-\section{Testing of compiled code}
+This chapter describes the methods that were used to test the different subsystems of the LJSP compiler. While testing is imperative for all software development projects, it is especially important in compiler development. The reason for this is that it is usually impossible to determine whether or not the result given by the compiler is correct simply by looking at the generated code. \\
+
+During the development of LJSP, two means of testing were being used:
+\begin{itemize}
+\item A custom testing framework written in Python that covers all of the frontend stages and some of the backend stages.
+\item A ray tracer written in JavaScript that was used to test generated asm.js code specifically.
+\end{itemize}
+The following two sections will describe both systems in detail.
+
+\section{Testing using \texttt{run_tests.py}}
+Early on in the development of LJSP, it became necessary to test the output of every front end stage 
+\section{Testing using the ray tracer}
 % because asm.js evaluates to the same result regardless of
 % whether or not it's compiled according to asm.js specification,
 % it's possible to add invalid statements and still test the module
@@ -116,6 +181,7 @@ The compiler includes five sets of class hierarchies that all have their own abs
 
 \chapter{Userguide}
 \section{CLI switches}
+% how to run tests
 
 \chapter{Class diagrams}
 
