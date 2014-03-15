@@ -3,6 +3,11 @@
 import subprocess
 import glob
 import os
+from os import mkdir
+from os import path
+import string
+import random
+import shutil
 
 ### COLORS ###
 
@@ -20,10 +25,13 @@ LJSP_TARGETS = ["parsed", "letExp", "negsRemoved", "cps", "cc", "hoist"]
 #print "Done compiling"
 
 def scheme_eval(source):
-	return subprocess.check_output([RACKET_PATH, "--eval", source])
+	return float(subprocess.check_output([RACKET_PATH, "--eval", source]))
 
 def run_compiler(arguments, source):
     return subprocess.check_output(["scala", "-cp", "ljsp/", "ljsp.Ljsp"] + arguments + [source])
+
+def compile_to_file(file_name, target, source):
+    subprocess.call(["scala", "-cp", "ljsp/", "ljsp.Ljsp", "--" + target, source, "-o", file_name])
 
 with open("test/test_lib.scm", "r") as test_lib_file:
 	test_lib = test_lib_file.read()
@@ -44,7 +52,27 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
         if res == target_res:
             print GREEN + " " + target + " success" + OFF
         else:
-            print RED + " " + target + " failure" + OFF
+            print RED + " " + target + " failure, " + res + " != " + target_res + OFF
             exit(1)
 
-    # TODO test C and LLVM IR
+    
+    # make temp dir
+    temp_dir_name = "tmp_files_" + ''.join(random.choice(string.ascii_lowercase) for _ in range(5))
+    mkdir(temp_dir_name)
+
+    # compile to C
+    c_source_file_name = path.join(temp_dir_name, "c_output.c")
+    c_exe_file_name = path.join(temp_dir_name, "c_output")
+    compile_to_file(c_source_file_name, "c", source)
+
+    subprocess.call(["cc", c_source_file_name, "-o", c_exe_file_name])
+
+    c_output = float(subprocess.check_output([c_exe_file_name]))
+
+    if res == c_output:
+        print GREEN + " C success" + OFF
+    else:
+        print RED + " C failure, " + res + " != " + c_output + OFF
+        exit(1)
+    
+    shutil.rmtree(temp_dir_name)
