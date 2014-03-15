@@ -21,6 +21,8 @@ import ljsp.c_conversion._
 import ljsp.llvm_ir_conversion._
 import ljsp.numbered_llvm_ir_conversion._
 
+import java.io._
+
 object Ljsp {
   def main(args: Array[String]) {
     // TODO switches to: minify asm.js and c
@@ -91,8 +93,15 @@ object Ljsp {
     }
 
     val options = parseOptions(Map(), args.toList)
-    println(getOutput(options, getProgram(options)))
-    
-    // TODO add file output
+    val output = getOutput(options, getProgram(options))
+
+    options.get('out_file) match {
+      case Some(out_file) => {
+        val writer = new PrintWriter(out_file, "UTF-8")
+        writer.println(output)
+        writer.close()
+      }
+      case None => println(output)
+    } 
   }
 }
