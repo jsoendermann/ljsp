@@ -151,7 +151,7 @@ object AST {
   //      is to use LVarAccess instead of Idn for parameters and make
   //      code conversion respect the type of the var access by adding
   //      another class LIdn for when the type doesn't matter.
-  case class LSqrt(p: LExp) extends LExp
+  case class LSqrt(e: LExp) extends LExp
   case class LCallFPointer(f_pointer: Idn, params: List[Idn]) extends LExp
   case class LMalloc(bytes: Int) extends LExp
   case class LZext(v: Idn) extends LExp
