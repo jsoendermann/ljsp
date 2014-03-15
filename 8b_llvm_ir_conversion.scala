@@ -279,7 +279,7 @@ def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[L
             val false_val = fresh("false_val")
 
             ((
-              if (op == "max") 
+              if (op == "min") 
                 LVarAssignment(cmp_res, LPrimitiveInstruction("<", loaded_operands))
               else
                 LVarAssignment(cmp_res, LPrimitiveInstruction(">", loaded_operands))
@@ -287,32 +287,36 @@ def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[L
             LConditionalBr(cmp_res, label_true, label_false) ::
             LLabel(label_true) :: Nil) ++
             (
-              if (loaded_operands(0).isInstanceOf[LVarAccess])
-                LVarAssignment(true_val, LLoad(LTDoublePointer, loaded_operands(0).asInstanceOf[LVarAccess].v)) :: Nil
-              else
+              if (loaded_operands(0).isInstanceOf[LVarAccess]) {
+                val cast_cs_i = cs(0).asInstanceOf[CIdn].idn
+                val cast_cs_t = get_var_type(cast_cs_i, declarations)
+                LVarAssignment(true_val, LLoad(LTPointerTo(cast_cs_t), cast_cs_i)) :: Nil
+              } else
                 Nil
             ) ++
             (LUnconditionalBr(label_end) ::
             LLabel(label_false) :: Nil) ++
             (
-              if (loaded_operands(1).isInstanceOf[LVarAccess])
-                LVarAssignment(true_val, LLoad(LTDoublePointer, loaded_operands(1).asInstanceOf[LVarAccess].v)) :: Nil
-              else
+              if (loaded_operands(1).isInstanceOf[LVarAccess]) {
+                val cast_cs_i = cs(1).asInstanceOf[CIdn].idn
+                val cast_cs_t = get_var_type(cast_cs_i, declarations)
+                LVarAssignment(false_val, LLoad(LTPointerTo(cast_cs_t), cast_cs_i)) :: Nil
+              } else
                 Nil
             ) ++
             (LUnconditionalBr(label_end) ::
             LLabel(label_end) ::
             LVarAssignment(res, LPhi(
               (
-                if (loaded_operands(0).isInstanceOf[LVarAccess])
+                if (loaded_operands(0).isInstanceOf[LVarAccess]) {
                   (LVarAccess(LTDoublePointer, true_val), label_true)
-                else
+                } else
                   (loaded_operands(0), label_true)
               ) ::
               (
-                if (loaded_operands(1).isInstanceOf[LVarAccess])
+                if (loaded_operands(1).isInstanceOf[LVarAccess]) {
                   (LVarAccess(LTDoublePointer, false_val), label_false)
-                else
+                } else
                   (loaded_operands(1), label_false)
               ) :: Nil)) ::
             Nil)
