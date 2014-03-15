@@ -127,9 +127,17 @@ def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[L
 
   case CVarAssignment(lh_v, CIdn(rh_v)) => {
     val direct_assign = fresh("direct_assign")
-    val t = get_var_type(lh_v, declarations)
-    LVarAssignment(direct_assign, LLoad(LTPointerTo(t), rh_v)) ::
-    LStore(t, direct_assign, LTPointerTo(t), lh_v) :: Nil
+    val lh_t = get_var_type(lh_v, declarations)
+    val rh_t = get_var_type(rh_v, declarations)
+    if (lh_t == rh_t) {
+      LVarAssignment(direct_assign, LLoad(LTPointerTo(rh_t), rh_v)) ::
+      LStore(lh_t, direct_assign, LTPointerTo(lh_t), lh_v) :: Nil
+    } else {
+      val direct_assign_casted = fresh("direct_assign_casted")
+      LVarAssignment(direct_assign, LLoad(LTPointerTo(rh_t), rh_v)) ::
+      LVarAssignment(direct_assign_casted, LBitCast(rh_t, direct_assign, lh_t)) ::
+      LStore(lh_t, direct_assign_casted, LTPointerTo(lh_t), lh_v) :: Nil
+    }
   }
   case CVarAssignment(v, CCast(rh_v, t)) => {
     val type_org = get_var_type(rh_v, declarations)
