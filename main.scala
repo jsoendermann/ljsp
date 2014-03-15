@@ -19,10 +19,11 @@ import ljsp.ir_conversion._
 import ljsp.asmjs_conversion._
 import ljsp.c_conversion._
 import ljsp.llvm_ir_conversion._
+import ljsp.numbered_llvm_ir_conversion._
 
 object Ljsp {
   def main(args: Array[String]) {
-    // TODO switches to: minify asm.js and c and to number llvm ir vars
+    // TODO switches to: minify asm.js and c
     def parseOptions(parsed_options: Map[Symbol, String], arglist: List[String]) : Map[Symbol, String] = arglist match {
       case "-i" :: in_file :: tail => parseOptions(parsed_options ++ Map('in_file -> in_file), tail)
       case "-o" :: out_file :: tail => parseOptions(parsed_options ++ Map('out_file -> out_file), tail)
@@ -36,8 +37,8 @@ object Ljsp {
       case "--ir" :: tail => parseOptions(parsed_options ++ Map('target -> "ir"), tail)
       case "--asmjs" :: tail => parseOptions(parsed_options ++ Map('target -> "asmjs"), tail)
       case "--c" :: tail => parseOptions(parsed_options ++ Map('target -> "c"), tail)
-      // TODO always spell this as 'llvm_ir', never llvmir
-      case "--llvmir" :: tail => parseOptions(parsed_options ++ Map('target -> "llvmir"), tail)
+      case "--llvmIr" :: tail => parseOptions(parsed_options ++ Map('target -> "llvmIr"), tail)
+      case "--numLlvmIr" :: tail => parseOptions(parsed_options ++ Map('target -> "numLlvmIr"), tail)
       case prog :: tail => parseOptions(parsed_options ++ Map('prog -> prog), tail)
       case Nil => parsed_options
     }
@@ -51,7 +52,8 @@ object Ljsp {
     def asmjsModule(prog: String) : AModule = convert_prog_to_asmjs(hoistedProg(prog))
     def irModule(prog: String) : IModule = convert_prog_to_ir(hoistedProg(prog))
     def cModule(prog: String) : CModule = convert_module_to_c(irModule(prog))
-    def llvmirModule(prog: String) : LModule = convert_module_to_llvm_ir(cModule(prog))
+    def llvmIrModule(prog: String) : LModule = convert_module_to_llvm_ir(cModule(prog))
+    def numberedLlvmIrModule(prog: String) : LModule = convert_module_to_numbered_llvm_ir(llvmIrModule(prog))
 
     def getProgram(options: Map[Symbol, String]) : String = {
       options.get('prog) match {
@@ -81,7 +83,8 @@ object Ljsp {
         case Some("ir") => ir_module_to_string(irModule(prog))
         case Some("asmjs") => asmjs_module_to_string(asmjsModule(prog))
         case Some("c") => c_module_to_string(cModule(prog))
-        case Some("llvmir") => llvm_ir_module_to_string(llvmirModule(prog))
+        case Some("llvmIr") => llvm_ir_module_to_string(llvmIrModule(prog))
+        case Some("numLlvmIr") => llvm_ir_module_to_string(numberedLlvmIrModule(prog))
         // TODO Output every step instead of throwing an exception
         case None => throw new IllegalArgumentException("No target provided")
       }
