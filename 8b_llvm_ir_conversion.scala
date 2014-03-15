@@ -241,7 +241,7 @@ def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[L
     }
     else if (cs.size == 2) {
       var load_operands = List[LVarAssignment]()
-      var operands = List[LExp]()
+      var loaded_operands = List[LExp]()
 
       cs.map{operand => {
         if (operand.isInstanceOf[CIdn]) {
@@ -250,10 +250,10 @@ def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[L
           val op_var = fresh("operand_var")
 
           load_operands = load_operands :+ LVarAssignment(op_var, LLoad(LTPointerTo(type_idn), idn))
-          operands = operands :+ LVarAccess(type_idn, op_var)
+          loaded_operands = loaded_operands :+ LVarAccess(type_idn, op_var)
         }
         if (operand.isInstanceOf[CStaticValue]) {
-          operands = operands :+ LStaticValue(operand.asInstanceOf[CStaticValue].d)
+          loaded_operands = loaded_operands :+ LStaticValue(operand.asInstanceOf[CStaticValue].d)
         }
       }}
 
@@ -266,10 +266,10 @@ def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[L
       (op match {
           case "<" | ">" => {
             val res_i1 = fresh("res_i1")
-            LVarAssignment(res_i1, LPrimitiveInstruction(op, operands)) ::
+            LVarAssignment(res_i1, LPrimitiveInstruction(op, loaded_operands)) ::
             LVarAssignment(res, LZext(res_i1)) :: Nil
           } 
-          case "+" | "-" | "*" | "/" => LVarAssignment(res, LPrimitiveInstruction(op, operands)) :: Nil
+          case "+" | "-" | "*" | "/" => LVarAssignment(res, LPrimitiveInstruction(op, loaded_operands)) :: Nil
           case "min" | "max" => { 
             val cmp_res = fresh("cmp_res")
             val label_true = fresh(op + "_true")
@@ -280,23 +280,23 @@ def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[L
 
             ((
               if (op == "max") 
-                LVarAssignment(cmp_res, LPrimitiveInstruction("<", operands))
+                LVarAssignment(cmp_res, LPrimitiveInstruction("<", loaded_operands))
               else
-                LVarAssignment(cmp_res, LPrimitiveInstruction(">", operands))
+                LVarAssignment(cmp_res, LPrimitiveInstruction(">", loaded_operands))
             ) ::
             LConditionalBr(cmp_res, label_true, label_false) ::
             LLabel(label_true) :: Nil) ++
             (
-              if (operands(0).isInstanceOf[LVarAccess])
-                LVarAssignment(true_val, LLoad(LTDoublePointer, operands(0).asInstanceOf[LVarAccess].v)) :: Nil
+              if (loaded_operands(0).isInstanceOf[LVarAccess])
+                LVarAssignment(true_val, LLoad(LTDoublePointer, loaded_operands(0).asInstanceOf[LVarAccess].v)) :: Nil
               else
                 Nil
             ) ++
             (LUnconditionalBr(label_end) ::
             LLabel(label_false) :: Nil) ++
             (
-              if (operands(1).isInstanceOf[LVarAccess])
-                LVarAssignment(true_val, LLoad(LTDoublePointer, operands(1).asInstanceOf[LVarAccess].v)) :: Nil
+              if (loaded_operands(1).isInstanceOf[LVarAccess])
+                LVarAssignment(true_val, LLoad(LTDoublePointer, loaded_operands(1).asInstanceOf[LVarAccess].v)) :: Nil
               else
                 Nil
             ) ++
@@ -304,16 +304,16 @@ def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[L
             LLabel(label_end) ::
             LVarAssignment(res, LPhi(
               (
-                if (operands(0).isInstanceOf[LVarAccess])
+                if (loaded_operands(0).isInstanceOf[LVarAccess])
                   (LVarAccess(LTDoublePointer, true_val), label_true)
                 else
-                  (operands(0), label_true)
+                  (loaded_operands(0), label_true)
               ) ::
               (
-                if (operands(1).isInstanceOf[LVarAccess])
+                if (loaded_operands(1).isInstanceOf[LVarAccess])
                   (LVarAccess(LTDoublePointer, false_val), label_false)
                 else
-                  (operands(1), label_false)
+                  (loaded_operands(1), label_false)
               ) :: Nil)) ::
             Nil)
           }
