@@ -136,13 +136,16 @@ object c_conversion {
           case "sqrt" => {
             if (is(0).isInstanceOf[IIdn]) {
                 val op_i = is(0).asInstanceOf[IIdn].idn
+                val prim_op_p = fresh("prim_op_p")
                 val prim_op_v = fresh("prim_op_v")
-                (CDeclareVar(prim_op_v, CTDoublePointer) ::
+                (CDeclareVar(prim_op_p, CTDoublePointer) ::
+                  CDeclareVar(prim_op_v, CTDouble) ::
                   CDeclareVar(idn, CTDoublePointer) :: Nil,
 
-                  CVarAssignment(prim_op_v, CCast(op_i, CTDoublePointer)) ::
+                  CVarAssignment(prim_op_p, CCast(op_i, CTDoublePointer)) ::
+                  CVarAssignment(prim_op_v, CDereferenceVar(prim_op_p)) ::
                   CVarAssignment(idn, CMalloc(CTDoublePointer, CTDouble, 1)) ::
-                  CDereferencedVarAssignment(idn, CPrimitiveInstruction(op, CDereferenceVar(prim_op_v) :: Nil)) :: Nil)
+                  CDereferencedVarAssignment(idn, CPrimitiveInstruction(op, CIdn(prim_op_v) :: Nil)) :: Nil)
               } else if (is(0).isInstanceOf[IStaticValue]) {
                 val op_d = is(0).asInstanceOf[IStaticValue].d
                 (CDeclareVar(idn, CTDoublePointer) :: Nil,
