@@ -7,6 +7,7 @@ object code_generation_llvm_ir {
   def llvm_ir_module_to_string(m: LModule) : String = {
     "declare i8* @malloc(i64)\n" +
     "declare i32 @printf(i8*, ...)\n" +
+    "declare double @sqrt(double)\n" +
     // main function
     """
     @.str = private unnamed_addr constant [4 x i8] c"%f\0A\00"
@@ -97,6 +98,10 @@ object code_generation_llvm_ir {
       "call i8* @" + f_name + "(" + params.map{p => "i8* %" + p}.mkString(", ") + ")"
     }
 
+    case LSqrt(e) => {
+      "call double @sqrt(double " + llvm_ir_expression_to_string(e) + ")"
+    }
+
     case LMalloc(bytes) => {
       "call i8* @malloc(i64 " + bytes.toString + ")"
     }
@@ -120,6 +125,7 @@ object code_generation_llvm_ir {
           op_to_llvm_ir_instruction(op) + " double " +
           ls.map{llvm_ir_expression_to_string}.mkString(", ")
         }
+        // min and max get reduced to < and >
       }
     }
 

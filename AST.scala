@@ -146,6 +146,12 @@ object AST {
   case class LBitCast(old_type: LType, v: Idn, new_type: LType) extends LExp
   case class LGetElementPtr(t: LType, av: Idn, index: Int) extends LExp
   case class LCallFName(f_name: Idn, params: List[Idn]) extends LExp
+  // TODO this is a special case of LCallFName but LCallFName assumes
+  //      its parameters to be of type i8* at the moment. The way to fix this
+  //      is to use LVarAccess instead of Idn for parameters and make
+  //      code conversion respect the type of the var access by adding
+  //      another class LIdn for when the type doesn't matter.
+  case class LSqrt(p: LExp) extends LExp
   case class LCallFPointer(f_pointer: Idn, params: List[Idn]) extends LExp
   case class LMalloc(bytes: Int) extends LExp
   case class LZext(v: Idn) extends LExp

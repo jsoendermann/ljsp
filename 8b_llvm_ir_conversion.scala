@@ -211,16 +211,35 @@ def convert_statement_to_llvm_ir(s: CStatement, m: CModule, declarations: List[L
 
   case CDereferencedVarAssignment(lh_v, CPrimitiveInstruction(op, cs)) => {
     if (cs.size == 1) {
-      /*op match {
-         case "sqrt" => {
-           // TODO
-         }
-         case _ => throw new IllegalArgumentException("Unary ops not implemented yet")
-       }*/
-      throw new IllegalArgumentException()
+      op match {
+        case "sqrt" => {
+          val res = fresh("res")
+          val res_ptr = fresh("res_ptr")
+          val type_res = get_var_type(lh_v, declarations)
+
+          val operand = cs(0)
+
+          (
+            if (operand.isInstanceOf[CIdn]) {
+              val idn = operand.asInstanceOf[CIdn].idn
+              val type_idn = get_var_type(idn, declarations)
+              val op_var = fresh("operand_var")
+
+              LVarAssignment(op_var, LLoad(LTPointerTo(type_idn), idn)) ::
+              LVarAssignment(res, LSqrt(LVarAccess(LTDouble, op_var))) :: Nil
+            } else { // (operand.isInstanceOf[CStaticValue])
+              val d = operand.asInstanceOf[CStaticValue].d
+
+              LVarAssignment(res, LSqrt(LStaticValue(d))) :: Nil
+            }
+          ) ++
+          (LVarAssignment(res_ptr, LLoad(LTPointerTo(type_res), lh_v)) ::
+            LStore(LTUnderlyingType(type_res), res, type_res, res_ptr) :: Nil)
+       }
+       case _ => throw new IllegalArgumentException("Unknown prim op: " + op)
+      }
     }
     else if (cs.size == 2) {
-      // TODO add min, max
       var load_operands = List[LVarAssignment]()
       var operands = List[LExp]()
 
