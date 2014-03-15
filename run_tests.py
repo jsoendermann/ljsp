@@ -16,6 +16,7 @@ RED = '\033[91m'
 OFF = '\033[0m'
 
 RACKET_PATH = "/Applications/Racket v5.3.6/bin/racket"
+LLI_PATH = "/Users/json/clang+llvm-3.3-x86_64-apple-darwin12/bin/lli"
 
 LJSP_TARGETS = ["parsed", "letExp", "negsRemoved", "cps", "cc", "hoist"]
 
@@ -74,5 +75,29 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
     else:
         print RED + " C failure, " + res + " != " + c_output + OFF
         exit(1)
-    
+
+    # compile to LLVM IR
+    llvm_ir_source_file_name = path.join(temp_dir_name, "llvm_ir_output.s")
+    compile_to_file(llvm_ir_source_file_name, "llvmIr", source)
+
+    llvm_ir_output = float(subprocess.check_output([LLI_PATH, llvm_ir_source_file_name]))
+
+    if res == llvm_ir_output:
+        print GREEN + " LLVM IR success" + OFF
+    else:
+        print RED + " LLVM IR failure, " + res + " != " + llvm_ir_output + OFF
+        exit(1)
+
+    # compile to numbered LLVM IR
+    num_llvm_ir_source_file_name = path.join(temp_dir_name, "num_llvm_ir_output.s")
+    compile_to_file(num_llvm_ir_source_file_name, "numLlvmIr", source)
+
+    num_llvm_ir_output = float(subprocess.check_output([LLI_PATH, num_llvm_ir_source_file_name]))
+
+    if res == num_llvm_ir_output:
+        print GREEN + " numbered LLVM IR success" + OFF
+    else:
+        print RED + " numbered LLVM IR failure, " + res + " != " + num_llvm_ir_output + OFF
+        exit(1)
+
     shutil.rmtree(temp_dir_name)
