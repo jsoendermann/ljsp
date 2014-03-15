@@ -137,6 +137,7 @@ object AST {
   case class LRet(t: LType, v: Idn) extends LStatement
 
   abstract class LExp extends LStatement
+  // TODO add LIdn class for when type isn't being used
   case class LVarAccess(t: LType, v: Idn) extends LExp
   case class LStaticValue(d: Double) extends LExp
   case class LPrimitiveInstruction(op: String, ls: List[LExp]) extends LExp
