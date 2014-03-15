@@ -15,6 +15,7 @@ GREEN = '\033[92m'
 RED = '\033[91m'
 OFF = '\033[0m'
 
+# TODO get these paths from env vars
 RACKET_PATH = "/Applications/Racket v5.3.6/bin/racket"
 LLI_PATH = "/Users/json/clang+llvm-3.3-x86_64-apple-darwin12/bin/lli"
 
@@ -53,7 +54,7 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
         if res == target_res:
             print GREEN + " " + target + " success" + OFF
         else:
-            print RED + " " + target + " failure, " + res + " != " + target_res + OFF
+            print RED + " " + target + " failure, " + str(res) + " != " + str(target_res) + OFF
             exit(1)
 
     
@@ -73,7 +74,7 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
     if res == c_output:
         print GREEN + " C success" + OFF
     else:
-        print RED + " C failure, " + res + " != " + c_output + OFF
+        print RED + " C failure, " + str(res) + " != " + str(c_output) + OFF
         exit(1)
 
     # compile to LLVM IR
@@ -85,7 +86,7 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
     if res == llvm_ir_output:
         print GREEN + " LLVM IR success" + OFF
     else:
-        print RED + " LLVM IR failure, " + res + " != " + llvm_ir_output + OFF
+        print RED + " LLVM IR failure, " + str(res) + " != " + str(llvm_ir_output) + OFF
         exit(1)
 
     # compile to numbered LLVM IR
@@ -97,7 +98,7 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
     if res == num_llvm_ir_output:
         print GREEN + " numbered LLVM IR success" + OFF
     else:
-        print RED + " numbered LLVM IR failure, " + res + " != " + num_llvm_ir_output + OFF
+        print RED + " numbered LLVM IR failure, " + str(res) + " != " + str(num_llvm_ir_output) + OFF
         exit(1)
 
     shutil.rmtree(temp_dir_name)
