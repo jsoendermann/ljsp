@@ -114,6 +114,12 @@ object c_conversion {
         List(CFunctionCallByVar(func_pointer, env_param :: c_params)))
     }
 
+    case IVarAssignment(idn, IStaticValue(d)) => {
+      (CDeclareVar(idn, CTDoublePointer) :: Nil,
+        CVarAssignment(idn, CMalloc(CTDoublePointer, CTDouble, 1)) ::
+        CDereferencedVarAssignment(idn, CStaticValue(d)) :: Nil)
+    }
+
     case IVarAssignment(idn, IPrimitiveInstruction(op, is)) => {
       if (is.size == 1) {
         op match {
@@ -224,7 +230,7 @@ object c_conversion {
     case IStaticValue(d) => (Nil, CStaticValue(d) :: Nil)
 
 
-    case _ => (Nil, CIdn("###" + s.getClass.getSimpleName) :: Nil)
+    case _ => (Nil, CIdn("###" + s.getClass.getSimpleName + " " + s.toString) :: Nil)
   }
 
   def rename_env_var_in_c_statement_list(sts: List[CStatement], env_name: Idn) : List[CStatement] = {
