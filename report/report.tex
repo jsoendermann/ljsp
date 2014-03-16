@@ -4,6 +4,13 @@
 \usepackage{amsmath}
 \usepackage{stmaryrd}
 \usepackage{syntax}
+\usepackage{tikz}
+
+
+\usetikzlibrary{shapes,arrows}
+\tikzstyle{internalStage} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, minimum height=4em]
+\tikzstyle{conversion} = [draw, -latex']
 
 \title{LJSP - A LISP to asm.js compiler}
 \author{Jan S\"ondermann}
@@ -109,7 +116,43 @@ The compiler is made up of two major components: A hierarchy of classes that get
 % class diagrams for all five sets of AST classes
 The compiler includes five sets of class hierarchies that all have their own abstract superclass: One that reflects LJSP code, one for an intermediate representation used at a later stage and one for each compilation target: asm.js, C and LLVM IR.
 \section{Detailed design of compilation stages}
-% diagram of stages
+
+\begin{tikzpicture}[node distance = 2cm, auto]
+    % Place nodes
+    \node[internalStage](parsing){Parsing};
+    \node[internalStage, below of=parsing](expandLetNs){Expand letNs};
+    \node[internalStage, below of=expandLetNs](removeNegs){Remove negs};
+    \node[internalStage, below of=removeNegs](cpsTrans){CPS Translation};
+    \node[internalStage, below of=cpsTrans](clConv){Closure Conversion};
+    \node[internalStage, below of=clConv](hoisting){Hoisting};
+
+    
+    \path[conversion] (parsing) -- (expandLetNs);
+    \path[conversion] (expandLetNs) -- (removeNegs);
+    \path[conversion] (removeNegs) -- (cpsTrans);
+    \path[conversion] (cpsTrans) -- (clConv);
+    \path[conversion] (clConv) -- (hoisting);
+
+%    \node [block] (init) {initialize model};
+%    \node [cloud, left of=init] (expert) {expert};
+%    \node [cloud, right of=init] (system) {system};
+%    \node [block, below of=init] (identify) {identify candidate models};
+%    \node [block, below of=identify] (evaluate) {evaluate candidate models};
+%    \node [block, left of=evaluate, node distance=3cm] (update) {update model};
+%    \node [decision, below of=evaluate] (decide) {is best candidate better?};
+%    \node [block, below of=decide, node distance=3cm] (stop) {stop};
+%    % Draw edges
+%    \path [line] (init) -- (identify);
+%    \path [line] (identify) -- (evaluate);
+%    \path [line] (evaluate) -- (decide);
+%    \path [line] (decide) -| node [near start] {yes} (update);
+%    \path [line] (update) |- (identify);
+%    \path [line] (decide) -- node {no}(stop);
+%    \path [line,dashed] (expert) -- (init);
+%    \path [line,dashed] (system) -- (init);
+%    \path [line,dashed] (system) |- (evaluate);
+\end{tikzpicture}
+
 % based on from system F...
 \subsection{Parsing}
 \subsection{CPS-Translation}
