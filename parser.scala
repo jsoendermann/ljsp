@@ -17,6 +17,7 @@ object parser {
           // TODO This is a hack, e should be set to None or null.
           //      It works because the expression gets thrown away
           //      before compiling to asm.js code.
+          // FIXME This breaks when converting to C and LLVM IR
           case None => SProgram(ds1 ::: ds2, SDouble(-42))
         }
       }
