@@ -18,6 +18,7 @@ import ljsp.hoisting._
 import ljsp.ir_conversion._
 import ljsp.asmjs_conversion._
 import ljsp.c_conversion._
+import ljsp.em_c_conversion._
 import ljsp.llvm_ir_conversion._
 import ljsp.numbered_llvm_ir_conversion._
 
@@ -39,6 +40,7 @@ object Ljsp {
       case "--ir" :: tail => parseOptions(parsed_options ++ Map('target -> "ir"), tail)
       case "--asmjs" :: tail => parseOptions(parsed_options ++ Map('target -> "asmjs"), tail)
       case "--c" :: tail => parseOptions(parsed_options ++ Map('target -> "c"), tail)
+      case "--emC" :: tail => parseOptions(parsed_options ++ Map('target -> "emC"), tail)
       case "--llvmIr" :: tail => parseOptions(parsed_options ++ Map('target -> "llvmIr"), tail)
       case "--numLlvmIr" :: tail => parseOptions(parsed_options ++ Map('target -> "numLlvmIr"), tail)
       case prog :: tail => parseOptions(parsed_options ++ Map('prog -> prog), tail)
@@ -54,6 +56,7 @@ object Ljsp {
     def asmjsModule(prog: String) : AModule = convert_prog_to_asmjs(hoistedProg(prog))
     def irModule(prog: String) : IModule = convert_prog_to_ir(hoistedProg(prog))
     def cModule(prog: String) : CModule = convert_module_to_c(irModule(prog))
+    def emCModule(prog: String) : CModule = convert_module_to_em_c(cModule(prog))
     def llvmIrModule(prog: String) : LModule = convert_module_to_llvm_ir(cModule(prog))
     def numberedLlvmIrModule(prog: String) : LModule = convert_module_to_numbered_llvm_ir(llvmIrModule(prog))
 
@@ -84,7 +87,8 @@ object Ljsp {
         case Some("hoist") => ljsp_prog_to_string(hoistedProg(prog))
         case Some("ir") => ir_module_to_string(irModule(prog))
         case Some("asmjs") => asmjs_module_to_string(asmjsModule(prog))
-        case Some("c") => c_module_to_string(cModule(prog))
+        case Some("c") => c_module_to_string(cModule(prog), false)
+        case Some("emC") => c_module_to_string(emCModule(prog), true)
         case Some("llvmIr") => llvm_ir_module_to_string(llvmIrModule(prog))
         case Some("numLlvmIr") => llvm_ir_module_to_string(numberedLlvmIrModule(prog))
         // TODO Output every step instead of throwing an exception

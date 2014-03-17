@@ -91,6 +91,7 @@ object AST {
   case class CStaticValue(d: Double) extends CExp
   // TODO cast this to res_type with CCast
   case class CMalloc(res_type: CType, data_type: CType, num: Int) extends CExp
+  case class JMalloc(res_type: CType, data_type: CType, num: Int) extends CExp
   case class CPrimitiveInstruction(op: String, cs: List[CExp]) extends CExp
   case class CFunctionPointer(f_name: Idn) extends CExp
   case class CCast(v: Idn, t: CType) extends CExp

@@ -4,31 +4,53 @@ import ljsp.AST._
 
 object code_generation_c {
   
-  def c_module_to_string(m: CModule) : String = {
+  def c_module_to_string(m: CModule, is_em_c: Boolean) : String = {
     """
     #include <stdio.h>
     #include <stdlib.h>
     #include <math.h>
+    """ + 
+    (if (is_em_c) "#include \"pool.c\"" else "") +
+    """
     #define min(x,y) ((x)<(y)?(x):(y))
     #define max(x,y) ((x)>(y)?(x):(y))
     """ +
-    m.functions.map{f => "void *" + f.name + "(" + f.params.map{p => "void *" + p}.mkString(", ") + ");"}.mkString("\n") + "\n" +
+    m.functions.map{f => {
+      if (f.name.endsWith("_by_value")) 
+        "double " + f.name + "(" + f.params.map{p => "double " + p}.mkString(", ") + ");"
+      else
+        "void *" + f.name + "(" + f.params.map{p => "void *" + p}.mkString(", ") + ");"
+    }}.mkString("\n") + "\n\n" +
     m.functions.map{c_function_to_string}.mkString("\n\n") +
-    """
-    int main(int argc, char **argv) {
-      double *r = expression();
-      printf("%f\n", *r);
-    }
-    """
+    (if (is_em_c) {
+        """
+        int main(int argc, char **argv) {
+          printf("Emscripten asm.js module loaded\n");
+        }
+        """
+      } else {
+        """
+        int main(int argc, char **argv) {
+          double *r = expression();
+          printf("%f\n", *r);
+        }
+        """
+      }
+    )
   }
 
   def c_function_to_string(f: CFunction) : String = {
-    "void* " + f.name + "(" + f.params.map{p => "void *"+p}.mkString(", ") + ") {" + "\n" +
+    // TODO find a cleaner solution for this
+    (
+      if (f.name.endsWith("_by_value")) 
+        "double " + f.name + "(" + f.params.map{p => "double "+p}.mkString(", ") + ") {" + "\n"
+      else
+        "void* " + f.name + "(" + f.params.map{p => "void *"+p}.mkString(", ") + ") {" + "\n"
+    ) +
     f.declarations.map{c_statement_to_string}.mkString(";\n") + ";\n\n" +
     f.statements.map{c_statement_to_string}.mkString(";\n") + ";\n" +
     "}"
   }
-
   def c_type_to_string(t: CType) : String = t match {
     case CTInt => "int"
     case CTIntPointer => "int*"
@@ -70,6 +92,10 @@ object code_generation_c {
     case CStaticValue(d) => d.toString()
     case CMalloc(res_type, data_type, num) => {
       "(" + c_type_to_string(res_type) + ")malloc(sizeof(" +
+      c_type_to_string(data_type) + ") * " + num.toString + ")"
+    }
+    case JMalloc(res_type, data_type, num) => {
+      "(" + c_type_to_string(res_type) + ")jalloc(sizeof(" +
       c_type_to_string(data_type) + ") * " + num.toString + ")"
     }
     case CPrimitiveInstruction(op, cs) => {
