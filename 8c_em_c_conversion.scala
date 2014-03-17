@@ -20,12 +20,12 @@ object em_c_conversion {
             (CDeclareVar(ret_val, CTVoidPointer) ::
               CDeclareVar(ret_val_cast, CTDoublePointer) ::
               CDeclareVar(ret_val_double, CTDouble) :: Nil),
+          CFunctionCallByName("free_all", Nil) ::
           f.params.map{p => CVarAssignment(p + "_p", JMalloc(CTDoublePointer, CTDouble, 1)) ::
                               CDereferencedVarAssignment(p + "_p", CIdn(p)) :: Nil}.flatten ++
           (CVarAssignment(ret_val, CFunctionCallByName(f.name, f.params.map{p => p + "_p"})) ::
             CVarAssignment(ret_val_cast, CCast(ret_val, CTDoublePointer)) ::
             CVarAssignment(ret_val_double, CDereferenceVar(ret_val_cast)) ::
-            CFunctionCallByName("free_all", Nil) ::
             CReturn(ret_val_double) :: Nil))
       }
     }}
