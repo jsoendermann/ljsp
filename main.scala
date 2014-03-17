@@ -26,19 +26,37 @@ import java.io._
 
 object Ljsp {
   def main(args: Array[String]) {
-    // TODO switches to: minify asm.js and c
+    def printUsage() = {
+      val usage = """|Usage: scala -cp ljsp/ ljsp.Ljsp [target] [-o <output_file] [-i <input file> | source]
+        |  Targets:
+        |    --parsed: Parsed, unaltered code
+        |    --letExp: let expressions that define more than one var, e.g. (let ((a 1) (b 2)) <expr>), get expanded
+        |              to single lets: (let ((a 1)) (let ((b 2)) <expr>))
+        |    --negsRemoved: (neg <expr>) expressions get reduced to (- 0 <expr>)
+        |    --cps: Code in Continuation-Passing Style
+        |    --cc: Closure converted code (lambdas get their environment in a parameter)
+        |    --hoist: Hoisted code (lambdas get lifted to the top level an converted to normal functions)
+        |    --asmjs: Asm.js code
+        |    --ir: Internal intermediate representation
+        |    --c: C code 
+        |    --emC: C code that removes any expression given in addition to the defines, includes pool.c and adds
+        |           another function for every function in the original code that takes and returns doubles instead
+        |           of void pointers. This is meant to be compiled to asm.js using emscripten
+        |    --llvmIr: LLVM IR code with named register vars
+        |    --numLlvmIr: LLVM IR code with numbered register vars""".stripMargin
+        println(usage)
+    }
     def parseOptions(parsed_options: Map[Symbol, String], arglist: List[String]) : Map[Symbol, String] = arglist match {
       case "-i" :: in_file :: tail => parseOptions(parsed_options ++ Map('in_file -> in_file), tail)
       case "-o" :: out_file :: tail => parseOptions(parsed_options ++ Map('out_file -> out_file), tail)
-      // TODO switch for expand prim ops
       case "--parsed" :: tail => parseOptions(parsed_options ++ Map('target -> "parsed"), tail)
       case "--letExp" :: tail => parseOptions(parsed_options ++ Map('target -> "letExp"), tail)
       case "--negsRemoved" :: tail => parseOptions(parsed_options ++ Map('target -> "negsRemoved"), tail)
       case "--cps" :: tail => parseOptions(parsed_options ++ Map('target -> "cps"), tail)
       case "--cc" :: tail => parseOptions(parsed_options ++ Map('target -> "cc"), tail)
       case "--hoist" :: tail => parseOptions(parsed_options ++ Map('target -> "hoist"), tail)
-      case "--ir" :: tail => parseOptions(parsed_options ++ Map('target -> "ir"), tail)
       case "--asmjs" :: tail => parseOptions(parsed_options ++ Map('target -> "asmjs"), tail)
+      case "--ir" :: tail => parseOptions(parsed_options ++ Map('target -> "ir"), tail)
       case "--c" :: tail => parseOptions(parsed_options ++ Map('target -> "c"), tail)
       case "--emC" :: tail => parseOptions(parsed_options ++ Map('target -> "emC"), tail)
       case "--llvmIr" :: tail => parseOptions(parsed_options ++ Map('target -> "llvmIr"), tail)
@@ -71,7 +89,10 @@ object Ljsp {
               sourceFile.close()
               prog
             }
-            case None => throw new Exception("No input provided")
+            case None => {
+              printUsage()
+              sys.exit(1)
+            }
           }
         }
       }
@@ -85,14 +106,50 @@ object Ljsp {
         case Some("cps") => ljsp_prog_to_string(cpsTranslatedProg(prog))
         case Some("cc") => ljsp_prog_to_string(closureConvertedProg(prog))
         case Some("hoist") => ljsp_prog_to_string(hoistedProg(prog))
-        case Some("ir") => ir_module_to_string(irModule(prog))
         case Some("asmjs") => asmjs_module_to_string(asmjsModule(prog))
+        case Some("ir") => ir_module_to_string(irModule(prog))
         case Some("c") => c_module_to_string(cModule(prog), false)
         case Some("emC") => c_module_to_string(emCModule(prog), true)
         case Some("llvmIr") => llvm_ir_module_to_string(llvmIrModule(prog))
         case Some("numLlvmIr") => llvm_ir_module_to_string(numberedLlvmIrModule(prog))
-        // TODO Output every step instead of throwing an exception
-        case None => throw new IllegalArgumentException("No target provided")
+        case None => {
+          "Parsed code:\n" +
+          ljsp_prog_to_string(parsedProg(prog)) +
+          "\n\n" +
+          "Let expanded code:\n" +
+          ljsp_prog_to_string(letExpandedProg(prog)) +
+          "\n" +
+          "Code with negs removed:\n" +
+          ljsp_prog_to_string(negsRemovedProg(prog)) +
+          "\n\n" +
+          "CPS translated code:\n" +
+          ljsp_prog_to_string(cpsTranslatedProg(prog)) +
+          "\n\n" +
+          "Closure converted code:\n" +
+          ljsp_prog_to_string(closureConvertedProg(prog)) +
+          "\n\n" +
+          "Hoisted code:\n" +
+          ljsp_prog_to_string(hoistedProg(prog)) +
+          "\n\n" +
+          "asm.js module:\n" +
+          asmjs_module_to_string(asmjsModule(prog)) +
+          "\n\n" +
+          "IR module:\n" +
+          ir_module_to_string(irModule(prog)) +
+          "\n\n" +
+          "C code:\n" +
+          c_module_to_string(cModule(prog), false) +
+          "\n\n" +
+          "em C code:\n" +
+          c_module_to_string(emCModule(prog), true) +
+          "\n\n" +
+          "LLVM IR code:\n" +
+          llvm_ir_module_to_string(llvmIrModule(prog)) +
+          "\n\n" +
+          "Numbered LLVM IR code:\n" +
+          llvm_ir_module_to_string(numberedLlvmIrModule(prog)) +
+          "\n\n"
+        }
       }
     }
 
