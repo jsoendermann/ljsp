@@ -1,8 +1,10 @@
 <html>
     <head>
         <meta charset="utf-8" />
+        <!--script type="text/javascript" src='https://dl.dropboxusercontent.com/u/40949268/emcc/memoryprofiler/memoryprofiler.js'></script-->
         <script type="text/javascript" src="gen_code.js"></script>
         <script type="text/javascript" src="ray_tracer.js"></script>
+        <script type="text/javascript" src="emcc_output.js"></script>
     </head>
     <body>
         <div id="slow">
@@ -10,10 +12,15 @@
             <canvas id="result_twice" width="1000" height="1000" style="border-style: solid; border-width: 1px; display:none;"></canvas>
             <br />
             <br />
-            <button onclick="render(false)" >Render using standard JS</button>
-            <button onclick="render(true)" >Render using asm.js</button>
+            <button onclick="render(0)" >Render using standard JS</button>
+            <button onclick="render(1)" >Render using LJSP asm.js</button>
+            <button onclick="render(2)" >Render using emscripten asm.js</button>
             <p id="timeStandard"></p>
             <p id="timeAsmJs"></p>
         </div>
+
+
+
+
     </body>
 </html>

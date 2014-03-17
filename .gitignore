@@ -1,6 +1,7 @@
 ljsp/*
 
 ray_tracer/gen_code.js
+ray_tracer/emcc_output.js
 
 report/report.aux
 report/report.log

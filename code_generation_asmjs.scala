@@ -38,7 +38,7 @@ object code_generation_asmjs {
     m.functions.filter{f => !f.name.startsWith("func") && !f.name.endsWith("_copy")}.map{f => f.name + ": " + f.name + "_copy"}.mkString(", ") +
     "};\n" +
     "}\n" + 
-    "var module = " + 
+    "var jModule = " + 
     m.name + 
     "({ Math: Math, Float32Array: Float32Array}, {}, new ArrayBuffer(10*4096));"
   }
