@@ -57,7 +57,7 @@ object cps_translation {
       // CPS-Translate the expression for the procedure first
       cps_trans(proc, (cproc: SExp) => {
 
-          // this function calls CPS recursively for all expressions in es and accumulates the result in ces
+          // this function calls cps_trans recursively for all expressions in es and accumulates the result in ces
           // the last call with an empty es creates calls the function with the additional lambda mentioned above
           def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
             case Nil => SAppl(cproc, SLambda(List(f), k(f)) :: ces) //SLet(f, SAppl(cproc, ces), k(f))
@@ -77,8 +77,8 @@ object cps_translation {
       if (es.size > 2) {
         cps_trans(es.drop(2).foldLeft(SApplPrimitive(proc, List(es(0), es(1))))((x,y) => SApplPrimitive(proc, List(x, y))), k)
       } else {
-        // this function calls CPS recursively for all expressions in es and accumulates the result in ces
-        // the last call with an empty es creates calls the function with the additional lambda mentioned above
+        // this function calls cps_trans recursively for all expressions (one or two at this point) in es 
+        // and accumulates the result in ces.
         def aux(es: List[SExp], ces: List[SExp]) : SExp = es match {
           case Nil => SLet(z, SApplPrimitive(proc, ces), k(z))
           case (e::es) => cps_trans(e, (ce: SExp) => aux(es, ces ::: List(ce)))
