@@ -28,14 +28,9 @@ object cps_translation {
     // For atomic values, no CPS-Translation is necessary. Simply apply k to e
     case SIdn(_) | SDouble(_) => k(e)
 
-    // For if, evaluate e1 first, then branch with two recursive calls
+    // For if, evaluate e1 first, then branch
     case SIf(e1, e2, e3) => {
       cps_trans(e1, (ce1: SExp) => SIf(ce1, cps_trans(e2, k), cps_trans(e3, k)))
-      //val c = SIdn(fresh("var"))
-      //val p = SIdn(fresh("var"))
-      //cps_trans(e1, (ce1: SExp) =>
-      //  SLet(c, SLambda(List(p), k(p)),
-      //    SIf(ce1, cps_tail_trans(e2, c), cps_tail_trans(e3, c))))
     }
 
     // for lambdas and defines, add an additional parameter that will hold the continuation
@@ -112,11 +107,6 @@ object cps_translation {
 
     case SIf(e1, e2, e3) => {
       cps_trans(e1, (ce1: SExp) => SIf(ce1, cps_tail_trans(e2, c), cps_tail_trans(e3, c)))
-      //val c_ = SIdn(fresh("var"))
-      //val p = SIdn(fresh("var"))
-      //cps_trans(e1, (ce1: SExp) =>
-      //  SLet(c_, SLambda(List(p), SAppl(c, List(p))),
-      //    SIf(ce1, cps_tail_trans(e2, c_), cps_tail_trans(e3, c_))))
     }
 
     case SLambda(params, e) => {
