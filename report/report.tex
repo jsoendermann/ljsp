@@ -5,7 +5,15 @@
 \usepackage{stmaryrd}
 \usepackage{syntax}
 \usepackage{tikz}
-
+% Chapter number and name on one line
+\usepackage{titlesec}
+\titleformat{\chapter}[hang] 
+{\normalfont\huge\bfseries}{\thechapter}{1em}{} 
+% No new page after chapter
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
+\makeatother
 
 \usetikzlibrary{shapes,arrows}
 \tikzstyle{internalStage} = [rectangle, draw, fill=blue!20, 
@@ -20,26 +28,78 @@
 \newcommand{\cpstrans}[1]{\ensuremath{\mathcal{K}\llbracket #1 \rrbracket}}
 
 \begin{document}
+% TODO
+% why scala? why LLVM IR/C
+
+
 
 \maketitle
 
-% originality
-% abstract
-% what it is?
-% acknowledgements
+\begin{center}
+\textbf{Originality avowal}
+\end{center}
+
+I verify that I am the sole author of this report, except where explicitly stated to the contrary.
+
+I grant the right to King's College London to make paper and electronic copies of the submitted work for purposes of marking, plagiarism detection and archival, and to upload a copy of the work to Turnitin or another trusted plagiarism detection service.
+
+\begin{flushright}
+Jan Söndermann \\
+@@date@@@
+\end{flushright}
+\newpage
+			
+\begin{center}
+\textbf{Abstract}
+\end{center}
+
+@@@
+\newpage
+
+\begin{center}
+\textbf{Acknowledgements}
+\end{center}
+I would like to thank my supervisor Dr. Christian Urban for supervising my project and for providing me with both guidance and freedom.
+\newpage
 
 \tableofcontents
 
 \chapter{Introduction}
-\section{Motivation for LJSP}
-\section{Scope}
+One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to the web. This phenomenon, often @dubbed@ "Web 2.0"@ajax@ is visible in the success of web applications such as GMail and Facebook @other examples@.
+
+This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language that is supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, show this success: in 2013, JavaScript led this list by a substantial margin. @cite
+
+Since JavaScript is no longer confined to being used for simple animation and input-validation tasks, the complexity of web apps has increased tremendously. Modern JavaScript frameworks, such as Ember.js@link or Meteor@link use the full register of functionality the language offers and are @just as complex as traditional web frameworks that use languages such as Ruby or Python.@
+
+Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially conceived for @cite. There is a widespread consensus@cite the language has a number of shortcomings. Brendan Eich, the creator of JavaScript, writes about its early history:
+\begin{quote}
+In April 1995 I joined Netscape in order to "add Scheme to the browser." [...]
+
+So in 10 days in May 1995, I prototyped "Mocha," the code name Marc Andreessen had chosen. [...]
+
+To overcome all doubts, I needed a demo in 10 days. I worked day and night, and consequently made a few language-design mistakes (some recapitulating bad design paths in the evolution of LISP), but I met the deadline and did the demo.
+\end{quote}
+% http://chimera.labs.oreilly.com/books/1234000001808/pr02.html
+
+Criticism of JavaScript has mostly focussed on two areas:
+\begin{itemize}
+\item Inconsistencies and mistakes in the design of the language. Examples for this often given include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \\
+\mbox{\texttt{typeof x === 'undefined'}} to avoid comparing against a redefined \texttt{undefined}.
+\item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinary difficult task for browser @manufacturers. @why?@
+\end{itemize}
+
+Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular "JavaScript: The Good Parts"@cite). Another response has been to create new languages that compile to JavaScript, such as the very popular CoffeeScript @cite, Microsoft's TypeScript and Google's Dart.
+
+The second problem has been partly remedied by a new generation of JavaScript engines spearheaded by Google's V8, released in 2008 as part of Google Chrome. The other browser makers, including Mozilla soon followed by rewriting their own JavaScript engines. These new engines often brought impressive speed gains.
+
+In early 2013, Mozilla released asm.js, a project that claims to take these two approaches to their logical conclusion. It defines an extremely limited, statically typed subset of JavaScript that can be executed very quickly. This subset is intended as compilation targets for high level languages.
+
+This project defines such a language and provides a compiler for it that outputs, among other targets, asm.js. It sets out to explore the performance @@
 
 \chapter{Background \& Existing Work}
 \section{Technologies involved}
-% AST
-\subsection{javascript engines/interpreters, new generation, history}
 \subsection{asm.js}
-\subsection{LLVM, LLVM IR}
+\subsection{emscripten and LLVM}
 \section{Similar Languages}
 
 \chapter{Requirements}
@@ -161,15 +221,37 @@ The compiler includes five sets of class hierarchies that all have their own abs
 \begin{figure}[ht]
 \begin{alignat*}{2}
 &\cpstrans{y} k &&\eqdef k(y) \\
+%
 &\cpstrans{i} k &&\eqdef k(i) \\
+%
 &\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k &&\eqdef \cpstrans{e_1} (\lambda x.(\text{if}\ x\ \cpstrans{e_2}k\ \cpstrans{e_3}k))) \\
-&\cpstrans{(\text{lambda}\ (p_1, p_2, \dots, p_n)\ e)} k &&\eqdef k((\text{lambda}\ (cont, p_1, p_2, \dots, p_n)\ \cpstrans{e}cont)) \\
-&\cpstrans{(\text{define}\ (name, p_1, p_2, \dots, p_n)\ e)} k &&\eqdef k((\text{define}\ (name, cont, p_1, p_2, \dots, p_n)\ \cpstrans{e}cont)) \\
-&\cpstrans{(proc\ p_1, p_2, \dots, p_n)} k &&\eqdef \cpstrans{proc} \lambda x_{proc}.(\cpstrans{p_1} \lambda x_1.(\cpstrans{p_2} \lambda x_2. \dots \cpstrans{p_n} \lambda x_n.(x_{proc}\ x_1, x_2, \dots, x_n))) \\
-&\cpstrans{(primitive\ p_1, p_2, \dots, p_n)} k &&\eqdef \cpstrans{p_1} \lambda x_1.(\cpstrans{p_2} \lambda x_2. \dots \cpstrans{p_n} \lambda x_n.(primitive\ x_1, x_2, \dots, x_n)) \\
-&\cpstrans{(\text{let}\ ((idn\ e_1))\ e_2)} k &&\eqdef \cpstrans{e_1} \lambda x_1.(\text{let}\ idn = x_1\ \text{in}\ \cpstrans{e_2} \lambda x_2.(k(x_2)))\\
+%
+&\cpstrans{(\text{lambda}\ (p_1, \dots, p_n)\ e)} k &&\eqdef k((\text{lambda}\ (cont, p_1, \dots, p_n)\ \\
+&&&\hspace{1cm}\cpstrans{e}cont)) \\
+%
+&\cpstrans{(\text{define}\ (name, p_1, \dots, p_n)\ e)} k &&\eqdef k((\text{define}\ (name, cont, p_1, \dots, p_n)\ \\
+&&&\hspace{1cm}\cpstrans{e}cont)) \\
+%
+&\cpstrans{(proc\ p_1, \dots, p_n)} k &&\eqdef \cpstrans{proc} \lambda x_{proc}.\cpstrans{p_1} \lambda x_1. \dots \\
+&&&\hspace{1cm}\cpstrans{p_n} \lambda x_n.\\
+&&&\hspace{1.5cm}(x_{proc}\ \lambda x_k.k(x_k), x_1, \dots, x_n) \\
+%
+&\cpstrans{(prim\ p_1, \dots, p_n)} k &&\eqdef \cpstrans{p_1} \lambda x_1. \dots  \\
+&&&\hspace{1 cm}\cpstrans{p_n} \lambda x_n.\\
+&&&\hspace{1.5 cm}(prim\ \lambda x_k.k(x_k), x_1, \dots, x_n) \\
+%
+&\cpstrans{(\text{let}\ ((idn\ e_1))\ e_2)} k &&\eqdef \cpstrans{e_1} \lambda x_1. \\
+&&&\hspace{1 cm}(\text{let}\ idn = x_1\ \text{in}\ \cpstrans{e_2} \lambda x_2.(k(x_2)))\\
 \end{alignat*}
+\caption{CPS translation}
 \end{figure}
+
+This stage converts the program to continuation-passing style (CPS). Because it is the central stage of the compilation pipeline, we will first explain continuation-passing style in general before describing the particularities of the CPS-translation in the LJSP compiler.
+
+\subsubsection{Continuation-Passing Style}
+
+\subsubsection{CPS-Translation in LJSP}
+\cite{sysftal}
 
 
 \subsection{Closure Conversion}
@@ -219,12 +301,16 @@ Early on in the development of LJSP, it became necessary to test the output of e
 \subsection{Types}
 
 \chapter{Bibliography}
+\begin{thebibliography}{1}
+  \bibitem{sysftal} Morrisett, Greg and Walker, David and Crary, Karl and Glew, Neal (1999). {\em From System F to Typed Assembly Language}, ACM Trans. Program. Lang. Syst.
 
+\end{thebibliography}
 \begin{appendices}
 
-\chapter{Userguide}
-\section{CLI switches}
-% how to run tests
+\chapter{User Guide}
+\section{Compiler}
+\section{Ray Tracer}
+\section{Testing}
 
 \chapter{Class diagrams}
 
