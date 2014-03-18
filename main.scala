@@ -118,7 +118,7 @@ object Ljsp {
           "\n\n" +
           "Let expanded code:\n" +
           ljsp_prog_to_string(letExpandedProg(prog)) +
-          "\n" +
+          "\n\n" +
           "Code with negs removed:\n" +
           ljsp_prog_to_string(negsRemovedProg(prog)) +
           "\n\n" +
