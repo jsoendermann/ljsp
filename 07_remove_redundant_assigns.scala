@@ -15,7 +15,13 @@ object remove_redundant_assigns_conversion {
   def convert_statements_to_rra_ir(statements: List[IStatement]) : List[IStatement] = statements match {
     case Nil => Nil
     case (s::sts) => s match {
-      case IVarAssignment(lh, IIdn(rh)) => sts.map{rename_var_in_ir_statement(_, lh, rh)}
+      case IVarAssignment(lh, IIdn(rh)) => {
+        // TODO Remove this special case (git grep if_var)
+        if (lh.startsWith("if_var_"))
+          s :: convert_statements_to_rra_ir(sts)
+        else
+          convert_statements_to_rra_ir(sts.map{rename_var_in_ir_statement(_, lh, rh)})
+      }
       case _ => s :: convert_statements_to_rra_ir(sts)
     }
   }
