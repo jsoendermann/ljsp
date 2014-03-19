@@ -5,8 +5,10 @@ import ljsp.util._
 
 object asmjs_conversion {
   def convert_module_to_asmjs(m: IModule) : AModule = {
+    val functions_without_expression = m.functions.filter{_.name != "expression"}
+
     // To build ftables, first group functions by number of parameters.
-    val fs_map = m.functions.groupBy(_.params.size)
+    val fs_map = functions_without_expression.groupBy(_.params.size)
     // Create a new map that instead of mapping #params ints to lists of SDefines, maps strings of the form "ftable"+#params to lists of function names (strings)
     val fnames_map = fs_map.map{ case (size, fs) => ("ftable"+size.toString, fs.map{_.name})}
     // every ftable needs to be equal in size to a power of two. this is achieved by appending the first
@@ -14,7 +16,7 @@ object asmjs_conversion {
     // of the table won't be used by the program and are just there to produce valid asm.js
     val fnames_map_pow_2 = fnames_map.map{ case (ftable, fnames) => (ftable, fnames ++ List.fill(find_next_power_of_2(fnames.size)-fnames.size)(fnames(0)))}
 
-    AModule("AsmModule", m.functions.map{f => convert_function_to_asmjs(fnames_map_pow_2, f)}, fnames_map_pow_2)
+    AModule("AsmModule", functions_without_expression.map{f => convert_function_to_asmjs(fnames_map_pow_2, f)}, fnames_map_pow_2)
   }
 
   def ftable_name_and_index_for_fname(ftables: Map[String, List[Idn]], f: String): Tuple2[String, Int] = {

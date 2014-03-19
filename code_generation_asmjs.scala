@@ -90,8 +90,8 @@ object code_generation_asmjs {
 
 
   def asmjs_exp_to_string(e: AExp) : String = e match {
-    case AIdn(idn) => idn
-    case AStaticValue(d) => "(+" + d.toString + ")"
+    case AIdn(idn) => "(+"+idn+")"
+    case AStaticValue(d) => "(+(" + d.toString + "))"
     case ADoubleToInt(e) => "(~~+floor(" + asmjs_exp_to_string(e) + ")|0)"
     case AFunctionCallByName(f, params) => {
       "(+" + f + "(" + 
