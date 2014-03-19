@@ -10,7 +10,7 @@ object code_generation_c {
     #include <stdlib.h>
     #include <math.h>
     """ + 
-    (if (is_em_c) "#include \"pool.c\"" else "") +
+    (if (is_em_c) "#include \"jalloc.c\"" else "") +
     """
     #define min(x,y) ((x)<(y)?(x):(y))
     #define max(x,y) ((x)>(y)?(x):(y))

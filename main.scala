@@ -39,7 +39,7 @@ object Ljsp {
         |    --asmjs: Asm.js code
         |    --ir: Internal intermediate representation
         |    --c: C code 
-        |    --emC: C code that removes any expression given in addition to the defines, includes pool.c and adds
+        |    --emC: C code that removes any expression given in addition to the defines, includes jalloc.c and adds
         |           another function for every function in the original code that takes and returns doubles instead
         |           of void pointers. This is meant to be compiled to asm.js using emscripten
         |    --llvmIr: LLVM IR code with named register vars

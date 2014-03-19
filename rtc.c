@@ -2,7 +2,7 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include <math.h>
-    #include "pool.c"
+    #include "jalloc.c"
     #define min(x,y) ((x)<(y)?(x):(y))
     #define max(x,y) ((x)>(y)?(x):(y))
     void *func_0(void *env_0, void *var_30);

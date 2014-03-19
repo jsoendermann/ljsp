@@ -1,4 +1,4 @@
-/* This is a custom memory pooler that provides two functions:
+/* This is a custom memory allocator that provides two functions:
  * jalloc: This function has the same functionality as malloc.
  * free_all: This function frees all memory that has been allocated with jalloc.
  */
