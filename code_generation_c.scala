@@ -16,7 +16,7 @@ object code_generation_c {
     #define max(x,y) ((x)>(y)?(x):(y))
     """ +
     m.functions.map{f => {
-      if (f.name.endsWith("_by_value")) 
+      if (f.name.endsWith("_call_by_value")) 
         "double " + f.name + "(" + f.params.map{p => "double " + p}.mkString(", ") + ");"
       else
         "void *" + f.name + "(" + f.params.map{p => "void *" + p}.mkString(", ") + ");"
@@ -42,7 +42,7 @@ object code_generation_c {
   def c_function_to_string(f: CFunction) : String = {
     // TODO find a cleaner solution for this
     (
-      if (f.name.endsWith("_by_value")) 
+      if (f.name.endsWith("_call_by_value")) 
         "double " + f.name + "(" + f.params.map{p => "double "+p}.mkString(", ") + ") {" + "\n"
       else
         "void* " + f.name + "(" + f.params.map{p => "void *"+p}.mkString(", ") + ") {" + "\n"

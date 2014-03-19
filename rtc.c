@@ -14,8 +14,8 @@ void *vectorsDotProduct(void *cont_0, void *v1_x, void *v1_y, void *v1_z, void *
 void *raySphereIntersectionPoint(void *cont_1, void *ro_org_x, void *ro_org_y, void *ro_org_z, void *ro_dir_x, void *ro_dir_y, void *ro_dir_z, void *s_x, void *s_y, void *s_z, void *s_r);
 void *vectorsDotProduct_copy(void *v1_x, void *v1_y, void *v1_z, void *v2_x, void *v2_y, void *v2_z);
 void *raySphereIntersectionPoint_copy(void *ro_org_x, void *ro_org_y, void *ro_org_z, void *ro_dir_x, void *ro_dir_y, void *ro_dir_z, void *s_x, void *s_y, void *s_z, void *s_r);
-double vectorsDotProduct_copy_by_value(double v1_x, double v1_y, double v1_z, double v2_x, double v2_y, double v2_z);
-double raySphereIntersectionPoint_copy_by_value(double ro_org_x, double ro_org_y, double ro_org_z, double ro_dir_x, double ro_dir_y, double ro_dir_z, double s_x, double s_y, double s_z, double s_r);
+double vectorsDotProduct_copy_call_by_value(double v1_x, double v1_y, double v1_z, double v2_x, double v2_y, double v2_z);
+double raySphereIntersectionPoint_copy_call_by_value(double ro_org_x, double ro_org_y, double ro_org_z, double ro_dir_x, double ro_dir_y, double ro_dir_z, double s_x, double s_y, double s_z, double s_r);
 
 void* func_0(void *env_0, void *var_30) {
 void** env_0c;
@@ -552,7 +552,7 @@ ret_val_9 = raySphereIntersectionPoint(hoisted_lambda_var_4, ro_org_x, ro_org_y,
 return ret_val_9;
 }
 
-double vectorsDotProduct_copy_by_value(double v1_x, double v1_y, double v1_z, double v2_x, double v2_y, double v2_z) {
+double vectorsDotProduct_copy_call_by_value(double v1_x, double v1_y, double v1_z, double v2_x, double v2_y, double v2_z) {
 double* v1_x_p;
 double* v1_y_p;
 double* v1_z_p;
@@ -582,7 +582,7 @@ ret_val_double_0 = *ret_val_cast_0;
 return ret_val_double_0;
 }
 
-double raySphereIntersectionPoint_copy_by_value(double ro_org_x, double ro_org_y, double ro_org_z, double ro_dir_x, double ro_dir_y, double ro_dir_z, double s_x, double s_y, double s_z, double s_r) {
+double raySphereIntersectionPoint_copy_call_by_value(double ro_org_x, double ro_org_y, double ro_org_z, double ro_dir_x, double ro_dir_y, double ro_dir_z, double s_x, double s_y, double s_z, double s_r) {
 double* ro_org_x_p;
 double* ro_org_y_p;
 double* ro_org_z_p;

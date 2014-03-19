@@ -15,7 +15,7 @@ object em_c_conversion {
         val ret_val = fresh("ret_val")
         val ret_val_cast = fresh("ret_val_cast")
         val ret_val_double = fresh("ret_val_double")
-        by_value_functions = by_value_functions :+ CFunction(f.name + "_by_value", f.params,
+        by_value_functions = by_value_functions :+ CFunction(f.name + "_call_by_value", f.params,
           f.params.map{p => CDeclareVar(p + "_p", CTDoublePointer)} ++ 
             (CDeclareVar(ret_val, CTVoidPointer) ::
               CDeclareVar(ret_val_cast, CTDoublePointer) ::
