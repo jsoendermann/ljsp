@@ -10,7 +10,7 @@ object code_generation_ir {
   }
 
   def ir_function_to_string(f: IFunction) : String = {
-    "function " + f.name + "(" + f.params.mkString(", ") + ")" + "\n" +
+    "function " + f.name + "(" + f.params.mkString(", ") + ") {" + "\n" +
     f.statements.map{ir_statement_to_string}.mkString("\n") + "\n" +
     "}"
   }
