@@ -19,7 +19,7 @@ OFF = '\033[0m'
 RACKET_PATH = "/Applications/Racket v5.3.6/bin/racket"
 LLI_PATH = "/Users/json/clang+llvm-3.3-x86_64-apple-darwin12/bin/lli"
 
-LJSP_TARGETS = ["parsed", "letExp", "negsRemoved", "cps", "cc", "hoist"]
+LJSP_TARGETS = ["parsed", "letExp", "reducePrimOps", "cps", "cc", "hoist"]
 
 # compile
 #print "Compiling compiler..."

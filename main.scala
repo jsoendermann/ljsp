@@ -11,7 +11,7 @@ import ljsp.code_generation_llvm_ir._
 import ljsp.parser._
 
 import ljsp.expand_let_ns._
-import ljsp.remove_negs._
+import ljsp.reduce_prim_ops._
 import ljsp.cps_translation._
 import ljsp.closure_conversion._
 import ljsp.hoisting._
@@ -32,7 +32,7 @@ object Ljsp {
         |    --parsed: Parsed, unaltered code
         |    --letExp: let expressions that define more than one var, e.g. (let ((a 1) (b 2)) <expr>), get expanded
         |              to single lets: (let ((a 1)) (let ((b 2)) <expr>))
-        |    --negsRemoved: (neg <expr>) expressions get reduced to (- 0 <expr>)
+        |    --reducePrimOps: Reduces some primitive operations to others, e.g. a >= b to !(a < b)
         |    --cps: Code in Continuation-Passing Style
         |    --cc: Closure converted code (lambdas get their environment in a parameter)
         |    --hoist: Hoisted code (lambdas get lifted to the top level an converted to normal functions)
@@ -51,7 +51,7 @@ object Ljsp {
       case "-o" :: out_file :: tail => parseOptions(parsed_options ++ Map('out_file -> out_file), tail)
       case "--parsed" :: tail => parseOptions(parsed_options ++ Map('target -> "parsed"), tail)
       case "--letExp" :: tail => parseOptions(parsed_options ++ Map('target -> "letExp"), tail)
-      case "--negsRemoved" :: tail => parseOptions(parsed_options ++ Map('target -> "negsRemoved"), tail)
+      case "--reducePrimOps" :: tail => parseOptions(parsed_options ++ Map('target -> "reducePrimOps"), tail)
       case "--cps" :: tail => parseOptions(parsed_options ++ Map('target -> "cps"), tail)
       case "--cc" :: tail => parseOptions(parsed_options ++ Map('target -> "cc"), tail)
       case "--hoist" :: tail => parseOptions(parsed_options ++ Map('target -> "hoist"), tail)
@@ -67,8 +67,8 @@ object Ljsp {
 
     def parsedProg(prog: String) : SProgram = JLispParsers.parseExpr(prog)
     def letExpandedProg(prog: String) : SProgram = expand_let_ns_prog(parsedProg(prog))
-    def negsRemovedProg(prog: String) : SProgram = remove_negs_prog(letExpandedProg(prog))
-    def cpsTranslatedProg(prog: String) : SProgram = cps_trans_prog(negsRemovedProg(prog), (x: SExp) => x)
+    def reducePrimOpsProg(prog: String) : SProgram = reduce_prim_ops_prog(letExpandedProg(prog))
+    def cpsTranslatedProg(prog: String) : SProgram = cps_trans_prog(reducePrimOpsProg(prog), (x: SExp) => x)
     def closureConvertedProg(prog: String) : SProgram = cl_conv_prog(cpsTranslatedProg(prog))
     def hoistedProg(prog: String) : SProgram = hoist_prog(closureConvertedProg(prog))
     def asmjsModule(prog: String) : AModule = convert_prog_to_asmjs(hoistedProg(prog))
@@ -102,7 +102,7 @@ object Ljsp {
       options.get('target) match {
         case Some("parsed") => ljsp_prog_to_string(parsedProg(prog))
         case Some("letExp") => ljsp_prog_to_string(letExpandedProg(prog))
-        case Some("negsRemoved") => ljsp_prog_to_string(negsRemovedProg(prog))
+        case Some("reducePrimOps") => ljsp_prog_to_string(reducePrimOpsProg(prog))
         case Some("cps") => ljsp_prog_to_string(cpsTranslatedProg(prog))
         case Some("cc") => ljsp_prog_to_string(closureConvertedProg(prog))
         case Some("hoist") => ljsp_prog_to_string(hoistedProg(prog))
@@ -119,8 +119,8 @@ object Ljsp {
           "Let expanded code:\n" +
           ljsp_prog_to_string(letExpandedProg(prog)) +
           "\n\n" +
-          "Code with negs removed:\n" +
-          ljsp_prog_to_string(negsRemovedProg(prog)) +
+          "Code with prim ops reduced:\n" +
+          ljsp_prog_to_string(reducePrimOpsProg(prog)) +
           "\n\n" +
           "CPS translated code:\n" +
           ljsp_prog_to_string(cpsTranslatedProg(prog)) +
