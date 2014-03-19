@@ -108,6 +108,7 @@ object code_generation_asmjs {
     case APrimitiveInstruction(op, as) => op match {
       case "+" | "-" | "*" | "/" => "(+(" + asmjs_exp_to_string(as(0)) + op + asmjs_exp_to_string(as(1)) + "))"
       case "<" | ">" => "(+((" + asmjs_exp_to_string(as(0)) + op + asmjs_exp_to_string(as(1)) + ")|0))"
+      case "=" => "(+((" + asmjs_exp_to_string(as(0)) + "==" + asmjs_exp_to_string(as(1)) + ")|0))"
       case "neg" => "(+(-("+asmjs_exp_to_string(as(0))+")))"
       case "min" => {
         "(+(" + asmjs_exp_to_string(as(0)) + "<" + asmjs_exp_to_string(as(1)) + "?" +

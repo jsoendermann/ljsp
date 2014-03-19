@@ -44,7 +44,10 @@ object code_generation_ir {
       if (is.size == 1) {
         op + ir_exp_to_string(is(0))
       } else {
-        ir_exp_to_string(is(0)) + " " + op + " " + ir_exp_to_string(is(1))
+        op match {
+          case "=" => ir_exp_to_string(is(0)) + " == " + ir_exp_to_string(is(1))
+          case _ => ir_exp_to_string(is(0)) + " " + op + " " + ir_exp_to_string(is(1))
+        }
       }
     }
     case IMakeEnv(idns) => "make-env(" + idns.mkString(", ") + ")"

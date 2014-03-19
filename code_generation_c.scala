@@ -108,6 +108,7 @@ object code_generation_c {
       else if (cs.size == 2) {
         op match {
           case "+" | "-" | "*" | "/" | "<" | ">" => c_exp_to_string(cs(0)) + op + c_exp_to_string(cs(1))
+          case "=" => c_exp_to_string(cs(0)) + "==" + c_exp_to_string(cs(1))
           case "max" | "min" => op + "(" + c_exp_to_string(cs(0)) + ", " + c_exp_to_string(cs(1)) + ")"
         }
       } else

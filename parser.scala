@@ -31,9 +31,7 @@ object parser {
 
     def identifier: Parser[SIdn] = """[a-zA-Z=*+/<>!\?\-][a-zA-Z0-9=*+/<>!\?\-_]*""".r ^^ (SIdn(_))
 
-    // TODO add more prim ops. ==, !=, >=, <=, !, ||, &&
-    //      implement only some, reduce the others to the existing ones, e.g. a != b <=> a < b || a > b
-    def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | "<" | ">" | "neg" | "min" | "max" | "sqrt") ^^ (SIdn(_))
+    def primitive_proc: Parser[SIdn] = ("+" | "-" | "*" | "/" | ">=" | "<=" | "=" | "not" | "<" | ">" | "and" | "or" | "neg" | "min" | "max" | "sqrt") ^^ (SIdn(_))
     
     def let_define_block: Parser[LetDefineBlock] = "("~>identifier~expression<~")" ^^ {
       case idn~e => LetDefineBlock(idn, e)

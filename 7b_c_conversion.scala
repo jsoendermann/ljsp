@@ -184,7 +184,7 @@ object c_conversion {
               sts ++ (CVarAssignment(idn, CMalloc(CTDoublePointer, CTDouble, 1)) ::
                 CDereferencedVarAssignment(idn, CPrimitiveInstruction(op, c_operands)) :: Nil))
           }
-          case "<" | ">" => {
+          case "<" | ">" | "=" => {
             (decls ++ (CDeclareVar(idn, CTIntPointer) :: Nil),
               sts ++ (CVarAssignment(idn, CMalloc(CTIntPointer, CTInt, 1)) ::
                 CDereferencedVarAssignment(idn, CPrimitiveInstruction(op, c_operands)) :: Nil))
@@ -222,10 +222,10 @@ object c_conversion {
           CVarAssignment(cast_if_var_pointer, CCast(rh_idn, CTIntPointer)) ::
           CVarAssignment(idn, CDereferenceVar(cast_if_var_pointer)) :: Nil)
       } else {
-        // TODO test if this works
+        // TODO This should determine the type of rh_i and declare lh_i of that type
         (CDeclareVar((idn), CTDoublePointer) :: Nil,
 
-          CVarAssignment(idn, CIdn(rh_idn)) :: Nil)
+          CVarAssignment(idn, CCast(rh_idn, CTDoublePointer)) :: Nil)
       }
     }
     

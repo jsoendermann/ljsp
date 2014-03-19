@@ -13,16 +13,63 @@ object remove_negs {
 
     case SIdn(_) | SDouble(_) => e
 
-    case SIf(e1, e2, e3) => SIf(remove_negs(e1), remove_negs(e2), remove_negs(e3))
+    case SIf(e1, e2, e3) => {
+      e1 match {
+        // TODO This only works if the primitive operation ("not, "and", "or") is the first expression
+        //      of an if expression, not if the result of a boolean expression is assigned to a variable.
+        //      The code in the SApplPrimitive case below throws an exception if the user tries to do that.
+
+        // reduce (if (>= a1 a2) t f) to (if (not (< a1 a2)) t f)
+        case SApplPrimitive(SIdn(">="), es) => {
+          remove_negs(SIf(SApplPrimitive(SIdn("not"), SApplPrimitive(SIdn("<"), es) :: Nil), remove_negs(e2), remove_negs(e3)))
+        }
+
+        // reduce (if (<= a1 a2) t f) to (if (not (> a1 a2)) t f)
+        case SApplPrimitive(SIdn("<="), es) => {
+          remove_negs(SIf(SApplPrimitive(SIdn("not"), SApplPrimitive(SIdn(">"), es) :: Nil), remove_negs(e2), remove_negs(e3)))
+        }
+
+        // reduce (if (not b) t f) to (if b f t)
+        case SApplPrimitive(SIdn("not"), es) => SIf(remove_negs(es(0).asInstanceOf[SApplPrimitive]), remove_negs(e3), remove_negs(e2))
+        // reduce (if (and b1 b2) t f) to (if b1 (if b2 t f) f)
+        case SApplPrimitive(SIdn("and"), es) => {
+          val b1 = remove_negs(es(0).asInstanceOf[SApplPrimitive])
+          val b2 = remove_negs(es(1).asInstanceOf[SApplPrimitive])
+
+          val true_branch = remove_negs(e2)
+          val false_branch = remove_negs(e3)
+          
+          SIf(b1, SIf(b2, true_branch, false_branch), false_branch)
+        }
+        // reduce (if (or b1 b2) t f) to (if b1 t (if b2 t f))
+        case SApplPrimitive(SIdn("or"), es) => {
+          val b1 = remove_negs(es(0).asInstanceOf[SApplPrimitive])
+          val b2 = remove_negs(es(1).asInstanceOf[SApplPrimitive])
+
+          val true_branch = remove_negs(e2)
+          val false_branch = remove_negs(e3)
+          
+          SIf(b1, true_branch, SIf(b2, true_branch, false_branch))
+        }
+        
+        case _ => SIf(remove_negs(e1), remove_negs(e2), remove_negs(e3))
+      }
+    }
     case SLambda(params, e) => SLambda(params, remove_negs(e))
     case SDefine(name, params, e) => SDefine(name, params, remove_negs(e))
     case SAppl(proc, es) => SAppl(proc, es.map{remove_negs})
     case SApplPrimitive(proc, es) => e match {
-      // TODO reduce a >= b to !(a<b) etc.
       case SApplPrimitive(SIdn("neg"), e :: Nil) => SApplPrimitive(SIdn("-"), SDouble(0) :: remove_negs(e) :: Nil)
+      case SApplPrimitive(SIdn(">="), _) => throw new IllegalArgumentException("Complex boolean expressions can not be assigned to variables")
+      case SApplPrimitive(SIdn("<="), _) => throw new IllegalArgumentException("Complex boolean expressions can not be assigned to variables")
+      case SApplPrimitive(SIdn("and"), _) => throw new IllegalArgumentException("Complex boolean expressions can not be assigned to variables")
+      case SApplPrimitive(SIdn("or"), _) => throw new IllegalArgumentException("Complex boolean expressions can not be assigned to variables")
       case SApplPrimitive(proc, es) => SApplPrimitive(proc, es.map{remove_negs})
       case _ => throw new IllegalArgumentException()
     }
     case SLet(idn, e1, e2) => SLet(idn, remove_negs(e1), remove_negs(e2))
   }
 }
+
+
+// >=    not <

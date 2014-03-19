@@ -115,13 +115,14 @@ object code_generation_llvm_ir {
 
         case "<" => "fcmp olt"
         case ">" => "fcmp ogt"
+        case "=" => "fcmp oeq"
       }
       op match {
         case "+" | "-" | "*" | "/" => {
           op_to_llvm_ir_instruction(op) + " double " + 
           ls.map{llvm_ir_expression_to_string}.mkString(", ")
         }
-        case "<" | ">" => {
+        case "<" | ">" | "=" => {
           op_to_llvm_ir_instruction(op) + " double " +
           ls.map{llvm_ir_expression_to_string}.mkString(", ")
         }

@@ -265,7 +265,7 @@ object llvm_ir_conversion {
 
         load_operands ++ 
         (op match {
-            case "<" | ">" => {
+            case "<" | ">" | "=" => {
               val res_i1 = fresh("res_i1")
               LVarAssignment(res_i1, LPrimitiveInstruction(op, loaded_operands)) ::
               LVarAssignment(res, LZext(res_i1)) :: Nil
