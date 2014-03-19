@@ -36,8 +36,8 @@ object code_generation_ir {
       f_name + "(" + params.map{ir_exp_to_string}.mkString(", ") + ")"
     }
     case IFunctionCallByVar(f_var, params) => {
-      f_var + "[0]" + 
-      "(" + f_var + "[1]" + ", " +
+      f_var + ".code" + 
+      "(" + f_var + ".env" + ", " +
       params.map{ir_exp_to_string}.mkString(", ") + ")"
     }
     case IPrimitiveInstruction(op, is) => {
