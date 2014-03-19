@@ -16,6 +16,7 @@ import ljsp.cps_translation._
 import ljsp.closure_conversion._
 import ljsp.hoisting._
 import ljsp.ir_conversion._
+import ljsp.remove_redundant_assigns_conversion._
 import ljsp.asmjs_conversion._
 import ljsp.c_conversion._
 import ljsp.em_c_conversion._
@@ -37,6 +38,8 @@ object Ljsp {
         |    --cc: Closure converted code (lambdas get their environment in a parameter)
         |    --hoist: Hoisted code (lambdas get lifted to the top level an converted to normal functions)
         |    --ir: Internal intermediate representation
+        |    --remRedundantAssignsIr: Remove all redundant assignments of the form var1 = var2 by replacing occurences
+        |                             of var1 later in the code with var2
         |    --asmjs: Asm.js code
         |    --c: C code 
         |    --emC: C code that removes any expression given in addition to the defines, includes jalloc.c and adds
@@ -56,6 +59,7 @@ object Ljsp {
       case "--cc" :: tail => parseOptions(parsed_options ++ Map('target -> "cc"), tail)
       case "--hoist" :: tail => parseOptions(parsed_options ++ Map('target -> "hoist"), tail)
       case "--ir" :: tail => parseOptions(parsed_options ++ Map('target -> "ir"), tail)
+      case "--remRedundantAssignsIr" :: tail => parseOptions(parsed_options ++ Map('target -> "remRedundantAssignsIr"), tail)
       case "--asmjs" :: tail => parseOptions(parsed_options ++ Map('target -> "asmjs"), tail)
       case "--c" :: tail => parseOptions(parsed_options ++ Map('target -> "c"), tail)
       case "--emC" :: tail => parseOptions(parsed_options ++ Map('target -> "emC"), tail)
@@ -72,8 +76,9 @@ object Ljsp {
     def closureConvertedProg(prog: String) : SProgram = cl_conv_prog(cpsTranslatedProg(prog))
     def hoistedProg(prog: String) : SProgram = hoist_prog(closureConvertedProg(prog))
     def irModule(prog: String) : IModule = convert_prog_to_ir(hoistedProg(prog))
-    def asmjsModule(prog: String) : AModule = convert_module_to_asmjs(irModule(prog))
-    def cModule(prog: String) : CModule = convert_module_to_c(irModule(prog))
+    def remRedAssignsIr(prog: String) : IModule = convert_module_to_rra_ir(irModule(prog))
+    def asmjsModule(prog: String) : AModule = convert_module_to_asmjs(remRedAssignsIr(prog))
+    def cModule(prog: String) : CModule = convert_module_to_c(remRedAssignsIr(prog))
     def emCModule(prog: String) : CModule = convert_module_to_em_c(cModule(prog))
     def llvmIrModule(prog: String) : LModule = convert_module_to_llvm_ir(cModule(prog))
     def numberedLlvmIrModule(prog: String) : LModule = convert_module_to_numbered_llvm_ir(llvmIrModule(prog))
@@ -107,6 +112,7 @@ object Ljsp {
         case Some("cc") => ljsp_prog_to_string(closureConvertedProg(prog))
         case Some("hoist") => ljsp_prog_to_string(hoistedProg(prog))
         case Some("ir") => ir_module_to_string(irModule(prog))
+        case Some("remRedundantAssignsIr") => ir_module_to_string(remRedAssignsIr(prog))
         case Some("asmjs") => asmjs_module_to_string(asmjsModule(prog))
         case Some("c") => c_module_to_string(cModule(prog), false)
         case Some("emC") => c_module_to_string(emCModule(prog), true)
@@ -133,6 +139,9 @@ object Ljsp {
           "\n\n" +
           "IR module:\n" +
           ir_module_to_string(irModule(prog)) +
+          "\n\n" +
+          "IR with redundant assignments removed:\n" +
+          ir_module_to_string(remRedAssignsIr(prog)) +
           "\n\n" +
           "asm.js module:\n" +
           asmjs_module_to_string(asmjsModule(prog)) +
