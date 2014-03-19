@@ -1,29 +1,37 @@
 \documentclass[11pt]{report}
 
 \usepackage[toc,page]{appendix}
+% CPS equations
 \usepackage{amsmath}
 \usepackage{stmaryrd}
+% Grammar
 \usepackage{syntax}
+% Stages diagram
 \usepackage{tikz}
-% Chapter number and name on one line
-\usepackage{titlesec}
-\titleformat{\chapter}[hang] 
-{\normalfont\huge\bfseries}{\thechapter}{1em}{} 
-% No new page after chapter
-\usepackage{etoolbox}
-\makeatletter
-\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
-\makeatother
-
+% Stages diagram elements
 \usetikzlibrary{shapes,arrows}
 \tikzstyle{internalStage} = [rectangle, draw, fill=blue!20, 
     text width=5em, text centered, minimum height=4em]
 \tikzstyle{conversion} = [draw, -latex']
+% Chapter number and name on one line
+%\usepackage{titlesec}
+%\titleformat{\chapter}[hang] 
+%{\normalfont\huge\bfseries}{\thechapter}{1em}{} 
+% No new page after chapter
+%\usepackage{etoolbox}
+%\makeatletter
+%\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
+%\makeatother
+% Source code listings
+\usepackage{listings}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \title{LJSP - A LISP to asm.js compiler}
 \author{Jan S\"ondermann}
 \date{1st January 1900}
 
+% Commands to make CPS equations easier to write
 \newcommand{\eqdef}{\stackrel{\text{def}}{=}}%
 \newcommand{\cpstrans}[1]{\ensuremath{\mathcal{K}\llbracket #1 \rrbracket}}
 
@@ -63,6 +71,7 @@ I would like to thank my supervisor Dr. Christian Urban for supervising my proje
 \newpage
 
 \tableofcontents
+\newpage
 
 \chapter{Introduction}
 One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to the web. This phenomenon, often @dubbed@ "Web 2.0"@ajax@ is visible in the success of web applications such as GMail and Facebook @other examples@.
@@ -71,7 +80,7 @@ This success of the web has brought with it the rise of the programming language
 
 Since JavaScript is no longer confined to being used for simple animation and input-validation tasks, the complexity of web apps has increased tremendously. Modern JavaScript frameworks, such as Ember.js@link or Meteor@link use the full register of functionality the language offers and are @just as complex as traditional web frameworks that use languages such as Ruby or Python.@
 
-Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially conceived for @cite. There is a widespread consensus@cite the language has a number of shortcomings. Brendan Eich, the creator of JavaScript, writes about its early history:
+Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially conceived for @cite. There is a widespread consensus@cite the language has a number of shortcomings. Brendan Eich, the creator of JavaScript, writes\cite{brendeich} about its early history:
 \begin{quote}
 In April 1995 I joined Netscape in order to "add Scheme to the browser." [...]
 
@@ -79,7 +88,6 @@ So in 10 days in May 1995, I prototyped "Mocha," the code name Marc Andreessen h
 
 To overcome all doubts, I needed a demo in 10 days. I worked day and night, and consequently made a few language-design mistakes (some recapitulating bad design paths in the evolution of LISP), but I met the deadline and did the demo.
 \end{quote}
-% http://chimera.labs.oreilly.com/books/1234000001808/pr02.html
 
 Criticism of JavaScript has mostly focussed on two areas:
 \begin{itemize}
@@ -94,7 +102,7 @@ The second problem has been partly remedied by a new generation of JavaScript en
 
 In early 2013, Mozilla released asm.js, a project that claims to take these two approaches to their logical conclusion. It defines an extremely limited, statically typed subset of JavaScript that can be executed very quickly. This subset is intended as compilation targets for high level languages.
 
-This project defines such a language and provides a compiler for it that outputs, among other targets, asm.js. It sets out to explore the performance @@
+This project defines such a language and provides a compiler for it that outputs, among other targets, asm.js. It sets out to explore the performance@
 
 \chapter{Background \& Existing Work}
 \section{Technologies involved}
@@ -217,42 +225,112 @@ The compiler includes five sets of class hierarchies that all have their own abs
 \subsection{Parsing}
 \subsection{CPS-Translation}
 
-% y = var, i = int, f = fresh idn
+This stage converts the program to continuation-passing style (CPS). Because it is the central stage of the compilation pipeline, we will first explain continuation-passing style in general before describing the particularities of the CPS-translation in the LJSP compiler.
+
+\subsubsection{Continuation-Passing Style}
+Code that is in Continuation-Passing Style gives explicit names to every intermediate computation and makes control flow explicit by never returning from a function call.\cite{sysftal}\cite{appel} To illustrate this, we show the transformation of a simple function \texttt{f}, given below, to CPS step-by-step.
+
+\begin{lstlisting}
+function f(a, b) {
+  return a + b + 10
+}
+\end{lstlisting}
+
+First, we give a name to the result of the additions that the function returns:
+
+\begin{lstlisting}
+function f1(a, b) {
+  t1 = a + b + 10
+  return t1
+}
+\end{lstlisting}
+
+To conform to the requirement that every intermediate result be explicitely named, we need to break up the long sum into two computations. This makes it clear that the first addition gets precedence before the second:
+
+\begin{lstlisting}
+function f2(a, b) {
+  t2 = a + b
+  t1 = t2 + 10
+  return t1
+}
+\end{lstlisting}
+
+The last step in our example is the one that gives Continuation-Passing Style its name: Functions in CPS conform programs do not return, but instead receive a function, usually called "continuation", that the caller passes in an additional parameter. This continuation can be understood as the remainder of the program that processes the result computed by the function:
+
+\begin{lstlisting}
+function f3(cont, a, b) {
+  t2 = a + b
+  t1 = t2 + 10
+  cont(t1)
+}
+\end{lstlisting}
+
+Code that is CPS conform is nearly linear: it consists of a sequence of let expressions followed by a single function call. The only expression that violates this linearity is the if-expression that branches execution flow.
+
+To further illustrate the concept of continuations, we give a short program written in Scheme below. Scheme is unique among most programming languages in that it gives the programmer access to the continuations in his program using a function called \texttt{call/cc}\footnote{call/cc stands for "call with current continuation". Unlike in most other languages, identifiers in Scheme can contain the '/' character.}. \texttt{call/cc} takes as its one parameter a function, which in term gets called with the current continuation as argument. Our example program uses \texttt{call/cc} to save and later reuse a continuation inside an arithmetic operation.
+
+We first define a variable \texttt{cont} that will later hold our saved continuation. Variables in Scheme need to be defined before they can be set! later, right now \texttt{cont} holds a dummy value of 0. We also define a function \texttt{set-cont} that takes a parameter, sets \texttt{cont} to its value and returns 1. This may seem redundant, but it simplifies the next line.
+\begin{lstlisting}
+> (define (cont) 0)
+> (define (set-cont c) (set! cont c) 1)
+\end{lstlisting}
+
+Next, we assign our continuation. \texttt{call/cc} gets called with set-cont which in turn gets called with the continuation. The return value of set-cont, which is 1, is the value that gets passed to the arithmetic operations and this line returns 3.
+\begin{lstlisting}
+> (+ 1 (* 2 (call/cc set-cont)))
+3
+\end{lstlisting}
+
+We can now call this continuation again with a different value.
+\begin{lstlisting}
+> (cont 2)
+5
+> (cont 10)
+> 21
+\end{lstlisting}
+
+One way of visualising the continuation is to write it as \texttt{(+ 1 (* 2 ...))}. This is the continuation of the code at \texttt{...} Whatever value this code computes, it passes it on to our continuation. It is worth noting that the contination is not just simply a function that multiplies its argument by 2 and adds 1, as the following code illustrates:
+\begin{lstlisting}
+> (+ 1000 (cont 2))
+5
+\end{lstlisting}
+
+Calling our saved continuation substitutes the continuation that we see in the code above, \texttt{(+ 1000 ...)}, with our saved continuation.
+
+\subsubsection{CPS-Translation in LJSP}
 \begin{figure}[ht]
 \begin{alignat*}{2}
 &\cpstrans{y} k &&\eqdef k(y) \\
 %
-&\cpstrans{i} k &&\eqdef k(i) \\
+&\cpstrans{d} k &&\eqdef k(d) \\
 %
-&\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k &&\eqdef \cpstrans{e_1} (\lambda x.(\text{if}\ x\ \cpstrans{e_2}k\ \cpstrans{e_3}k))) \\
+&\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k &&\eqdef \cpstrans{e_1} \lambda x.(\text{if}\ x\ \cpstrans{e_2}k\ \cpstrans{e_3}k) \\
 %
-&\cpstrans{(\text{lambda}\ (p_1, \dots, p_n)\ e)} k &&\eqdef k((\text{lambda}\ (cont, p_1, \dots, p_n)\ \\
-&&&\hspace{1cm}\cpstrans{e}cont)) \\
+&\cpstrans{(\text{define}\ (name, p_1, \dots, p_n)\ e)} k &&\eqdef k((\text{define}\ (name, f_{cont}, p_1, \dots, p_n)\ \\
+&&&\hspace{1cm}\cpstrans{e}f_{cont})) \\
 %
-&\cpstrans{(\text{define}\ (name, p_1, \dots, p_n)\ e)} k &&\eqdef k((\text{define}\ (name, cont, p_1, \dots, p_n)\ \\
-&&&\hspace{1cm}\cpstrans{e}cont)) \\
+&\cpstrans{(\text{lambda}\ (p_1, \dots, p_n)\ e)} k &&\eqdef k((\text{lambda}\ (f_{cont}, p_1, \dots, p_n)\ \\
+&&&\hspace{1cm}\cpstrans{e}f_{cont})) \\
 %
-&\cpstrans{(proc\ p_1, \dots, p_n)} k &&\eqdef \cpstrans{proc} \lambda x_{proc}.\cpstrans{p_1} \lambda x_1. \dots \\
-&&&\hspace{1cm}\cpstrans{p_n} \lambda x_n.\\
-&&&\hspace{1.5cm}(x_{proc}\ \lambda x_k.k(x_k), x_1, \dots, x_n) \\
-%
-&\cpstrans{(prim\ p_1, \dots, p_n)} k &&\eqdef \cpstrans{p_1} \lambda x_1. \dots  \\
+&\cpstrans{(proc\ p_1, \dots, p_n)} k &&\eqdef \cpstrans{p_1} \lambda x_1. \dots  \\
 &&&\hspace{1 cm}\cpstrans{p_n} \lambda x_n.\\
-&&&\hspace{1.5 cm}(prim\ \lambda x_k.k(x_k), x_1, \dots, x_n) \\
+&&&\hspace{1.5 cm}(proc\ \lambda x_k.k(x_k), x_1, \dots, x_n) \\
+%
+&\cpstrans{(prim\ p_1, p_2, \dots, p_n)} k &&\eqdef \cpstrans{(prim\ (prim\ (prim\ p_1, p_2)\ p_3) \dots p_n)} k\\
+%
+&\cpstrans{(prim\ p_1, p_2)} k &&\eqdef \cpstrans{p_1}\lambda x_1. \cpstrans{p_2}\lambda x_2.\\
+&&&\hspace{1cm}(\text{let}\ f=(prim\ x_1, x_2)\ \text{in}\ k(f))\\
 %
 &\cpstrans{(\text{let}\ ((idn\ e_1))\ e_2)} k &&\eqdef \cpstrans{e_1} \lambda x_1. \\
 &&&\hspace{1 cm}(\text{let}\ idn = x_1\ \text{in}\ \cpstrans{e_2} \lambda x_2.(k(x_2)))\\
 \end{alignat*}
-\caption{CPS translation}
+\caption{CPS translations of LJSP expressions}
+\label{cpstrans}
 \end{figure}
 
-This stage converts the program to continuation-passing style (CPS). Because it is the central stage of the compilation pipeline, we will first explain continuation-passing style in general before describing the particularities of the CPS-translation in the LJSP compiler.
+Figure~\ref{cpstrans} shows CPS translations for all LJSP expressions. In the equations, $y$ stands for a variable, $d$ for a double constant and $f$ for a fresh identifier. $\cpstrans{e} k$ stands for the CPS translation of expression $e$ with continuation $k$.
 
-\subsubsection{Continuation-Passing Style}
-
-\subsubsection{CPS-Translation in LJSP}
-\cite{sysftal}
-
+We will conclude this section on Continuation-Passing Style by describing some of the more complex CPS translation equations in more detail. The transformation for both the \texttt{define} and \texttt{lambda} expressions CPS translate the body of the function with a continuation passed to the function in a new parameter called $f_{cont}$ in the equations and \texttt{cont_n} in the code. This parameter has a correspondence in the translation for proc in the next equation: it is the $\lambda x_k.k(x_k)$ that gets added to the application when translating. The translation for primitive operations consists of two equations in the diagram, one equation to convert operations with more than one operands into multiple operations with two operands each and one equation to convert it to Continuation-Passing Style. Note that unlike the translation of regular function applications, the application of primitive operations does not include the additional continuation parameter just mentioned, as primitive operations are allowed to return.
 
 \subsection{Closure Conversion}
 \subsection{Hoisting}
@@ -300,11 +378,16 @@ Early on in the development of LJSP, it became necessary to test the output of e
 \subsection{Optimisations}
 \subsection{Types}
 
+\newpage
+
 \chapter{Bibliography}
 \begin{thebibliography}{1}
   \bibitem{sysftal} Morrisett, Greg and Walker, David and Crary, Karl and Glew, Neal (1999). {\em From System F to Typed Assembly Language}, ACM Trans. Program. Lang. Syst.
-
+    \bibitem{brendeich} Foreword by Brendan Eich to {\em Node: Up and Running}. Available at http://chimera.labs.oreilly.com/books/1234000001808/pr02.html
+    \bibitem{appel} Andrew Appel (1992). {\em Compiling with Continuations} Cambridge University Press
 \end{thebibliography}
+
+
 \begin{appendices}
 
 \chapter{User Guide}
