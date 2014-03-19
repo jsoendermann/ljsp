@@ -36,13 +36,13 @@ object code_generation_ir {
       f_name + "(" + params.map{ir_exp_to_string}.mkString(", ") + ")"
     }
     case IFunctionCallByVar(f_var, params) => {
-      ir_exp_to_string(f_var) + "[0]" + 
-      "(" + ir_exp_to_string(f_var) + "[1]" + ", " +
+      f_var + "[0]" + 
+      "(" + f_var + "[1]" + ", " +
       params.map{ir_exp_to_string}.mkString(", ") + ")"
     }
     case IPrimitiveInstruction(op, is) => {
       if (is.size == 1) {
-        op + ir_exp_to_string(is(0))
+        op + " " + ir_exp_to_string(is(0))
       } else {
         op match {
           case "=" => ir_exp_to_string(is(0)) + " == " + ir_exp_to_string(is(1))
@@ -52,7 +52,7 @@ object code_generation_ir {
     }
     case IMakeEnv(idns) => "make-env(" + idns.mkString(", ") + ")"
     case IHoistedLambda(f_name, env) => {
-      "make-hl(" + f_name + ", " + ir_exp_to_string(env) + ")"
+      "make-hl(" + f_name + ", " + env + ")"
     }
     case IArrayAccess(a, index) => a + "[" + index.toString + "]"
   }

@@ -75,7 +75,7 @@ object c_conversion {
 
     }
 
-    case IFunctionCallByVar(IIdn(hl_var), params) => {
+    case IFunctionCallByVar(hl_var, params) => {
       val casted_hl_var = fresh("casted_hl_var")
       val uncast_func_pointer = fresh("uncast_func_pointer")
       val func_pointer = fresh("func_pointer")
@@ -209,7 +209,7 @@ object c_conversion {
 
         CVarAssignment(hl_idn, CMalloc(CTVoidPointerPointer, CTVoidPointer, 2)) ::
         CArrayAssignment(hl_idn, 0, CFunctionPointer(f_name)) ::
-        CArrayAssignment(hl_idn, 1, CIdn(env.asInstanceOf[IIdn].idn)) ::
+        CArrayAssignment(hl_idn, 1, CIdn(env)) ::
         Nil)
     }
 

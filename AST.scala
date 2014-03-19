@@ -36,7 +36,6 @@ object AST {
 
 
   // IR AST classes
-  // TODO either remove IIdn or use it consistently
   case class IModule(name: Idn, functions: List[IFunction])
 
   case class IFunction(name: Idn, params: List[Idn], statements: List[IStatement])
@@ -49,11 +48,10 @@ object AST {
   case class IIdn(idn: Idn) extends IExp
   case class IStaticValue(d: Double) extends IExp
   case class IFunctionCallByName(f_name: Idn, params: List[IExp]) extends IExp
-  case class IFunctionCallByVar(hl_var: IExp, params: List[IExp]) extends IExp
-  // TODO add type for primitive instructions
+  case class IFunctionCallByVar(hl_var: Idn, params: List[IExp]) extends IExp
   case class IPrimitiveInstruction(op: String, is: List[IExp]) extends IExp
   case class IMakeEnv(idns: List[Idn]) extends IExp
-  case class IHoistedLambda(f_name: Idn, env: IExp) extends IExp
+  case class IHoistedLambda(f_name: Idn, env: Idn) extends IExp
   case class IArrayAccess(a: Idn, index: Int) extends IExp
 
 
@@ -164,25 +162,23 @@ object AST {
   // Asm.js AST classes
   case class AModule(name: String, functions: List[AFunction], ftables: Map[String, List[String]])  
   
-  case class AFunction(name: String, params: List[AIdn], statements: List[AStatement]) 
+  case class AFunction(name: String, params: List[Idn], statements: List[AStatement]) 
 
   abstract class AStatement
-  case class AVarAssignment(idn: AIdn, value: AExp) extends AStatement
-  case class AArrayAssignment(base: AExp, offset: AExp, value: AExp) extends AStatement
-  case class AIf(cond: AExp, block1: List[AStatement], block2: List[AStatement]) extends AStatement
+  case class AVarAssignment(idn: Idn, value: AExp) extends AStatement
+  case class AArrayAssignment(base: Idn, offset: Int, value: AExp) extends AStatement
+  case class AIf(if_var: Idn, block1: List[AStatement], block2: List[AStatement]) extends AStatement
   case class AReturn(s: AStatement) extends AStatement
 
   abstract class AExp extends AStatement
   case class AIdn(idn: Idn) extends AExp
-  case class AVarAccess(v: AIdn) extends AExp
   case class AStaticValue(d: Double) extends AExp
   case class ADoubleToInt(e: AExp) extends AExp
-  case class AFunctionCallByName(f: AIdn, params: List[AExp]) extends AExp
-  case class AFunctionCallByIndex(ftable: String, fpointer: AIdn, mask: Int, params: List[AExp]) extends AExp 
-  // as.size is either 1 or 2
+  case class AFunctionCallByName(f: Idn, params: List[AExp]) extends AExp
+  case class AFunctionCallByIndex(ftable: Idn, fpointer: Idn, mask: Int, params: List[AExp]) extends AExp 
   case class APrimitiveInstruction(op: String, as: List[AExp]) extends AExp
-  case class AHeapAccess(index: AExp) extends AExp
-  case class AArrayAccess(base: AExp, offset: AExp) extends AExp
+  case class AHeapAccess(index: Idn) extends AExp
+  case class AArrayAccess(base: Idn, offset: Int) extends AExp
   case class AAlloc(size: Int) extends AExp
 }
 

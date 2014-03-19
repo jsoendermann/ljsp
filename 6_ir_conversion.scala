@@ -28,7 +28,7 @@ object ir_conversion {
     }
 
     case SLet(i, SHoistedLambda(f, env), e2) => {
-      IVarAssignment(i.idn, IHoistedLambda(f.idn, convert_sexp_to_ir_exp(p, env))) ::
+      IVarAssignment(i.idn, IHoistedLambda(f.idn, env.asInstanceOf[SIdn].idn)) ::
       convert_sexp_to_ir_statement(p, e2)
     }
 
@@ -56,7 +56,7 @@ object ir_conversion {
       if (proc.isInstanceOf[SIdn] && p.ds.foldLeft(false) {(v, d) => v || d.name == proc}) 
         IFunctionCallByName(proc.asInstanceOf[SIdn].idn, es.map{e => convert_sexp_to_ir_exp(p, e)})
       else {
-        IFunctionCallByVar(convert_sexp_to_ir_exp(p, proc), es.map{e => convert_sexp_to_ir_exp(p, e)})
+        IFunctionCallByVar(proc.asInstanceOf[SIdn].idn, es.map{e => convert_sexp_to_ir_exp(p, e)})
       }
     }
 

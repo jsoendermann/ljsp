@@ -36,8 +36,8 @@ object Ljsp {
         |    --cps: Code in Continuation-Passing Style
         |    --cc: Closure converted code (lambdas get their environment in a parameter)
         |    --hoist: Hoisted code (lambdas get lifted to the top level an converted to normal functions)
-        |    --asmjs: Asm.js code
         |    --ir: Internal intermediate representation
+        |    --asmjs: Asm.js code
         |    --c: C code 
         |    --emC: C code that removes any expression given in addition to the defines, includes jalloc.c and adds
         |           another function for every function in the original code that takes and returns doubles instead
@@ -55,8 +55,8 @@ object Ljsp {
       case "--cps" :: tail => parseOptions(parsed_options ++ Map('target -> "cps"), tail)
       case "--cc" :: tail => parseOptions(parsed_options ++ Map('target -> "cc"), tail)
       case "--hoist" :: tail => parseOptions(parsed_options ++ Map('target -> "hoist"), tail)
-      case "--asmjs" :: tail => parseOptions(parsed_options ++ Map('target -> "asmjs"), tail)
       case "--ir" :: tail => parseOptions(parsed_options ++ Map('target -> "ir"), tail)
+      case "--asmjs" :: tail => parseOptions(parsed_options ++ Map('target -> "asmjs"), tail)
       case "--c" :: tail => parseOptions(parsed_options ++ Map('target -> "c"), tail)
       case "--emC" :: tail => parseOptions(parsed_options ++ Map('target -> "emC"), tail)
       case "--llvmIr" :: tail => parseOptions(parsed_options ++ Map('target -> "llvmIr"), tail)
@@ -71,8 +71,8 @@ object Ljsp {
     def cpsTranslatedProg(prog: String) : SProgram = cps_trans_prog(reducePrimOpsProg(prog), (x: SExp) => x)
     def closureConvertedProg(prog: String) : SProgram = cl_conv_prog(cpsTranslatedProg(prog))
     def hoistedProg(prog: String) : SProgram = hoist_prog(closureConvertedProg(prog))
-    def asmjsModule(prog: String) : AModule = convert_prog_to_asmjs(hoistedProg(prog))
     def irModule(prog: String) : IModule = convert_prog_to_ir(hoistedProg(prog))
+    def asmjsModule(prog: String) : AModule = convert_module_to_asmjs(irModule(prog))
     def cModule(prog: String) : CModule = convert_module_to_c(irModule(prog))
     def emCModule(prog: String) : CModule = convert_module_to_em_c(cModule(prog))
     def llvmIrModule(prog: String) : LModule = convert_module_to_llvm_ir(cModule(prog))
@@ -106,8 +106,8 @@ object Ljsp {
         case Some("cps") => ljsp_prog_to_string(cpsTranslatedProg(prog))
         case Some("cc") => ljsp_prog_to_string(closureConvertedProg(prog))
         case Some("hoist") => ljsp_prog_to_string(hoistedProg(prog))
-        case Some("asmjs") => asmjs_module_to_string(asmjsModule(prog))
         case Some("ir") => ir_module_to_string(irModule(prog))
+        case Some("asmjs") => asmjs_module_to_string(asmjsModule(prog))
         case Some("c") => c_module_to_string(cModule(prog), false)
         case Some("emC") => c_module_to_string(emCModule(prog), true)
         case Some("llvmIr") => llvm_ir_module_to_string(llvmIrModule(prog))
@@ -131,11 +131,11 @@ object Ljsp {
           "Hoisted code:\n" +
           ljsp_prog_to_string(hoistedProg(prog)) +
           "\n\n" +
-          "asm.js module:\n" +
-          asmjs_module_to_string(asmjsModule(prog)) +
-          "\n\n" +
           "IR module:\n" +
           ir_module_to_string(irModule(prog)) +
+          "\n\n" +
+          "asm.js module:\n" +
+          asmjs_module_to_string(asmjsModule(prog)) +
           "\n\n" +
           "C code:\n" +
           c_module_to_string(cModule(prog), false) +

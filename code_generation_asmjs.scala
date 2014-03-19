@@ -47,17 +47,17 @@ object code_generation_asmjs {
     def local_vars(statements: List[AStatement]) : Set[Idn] = statements match {
       case Nil => Set()
       case (i::is) => local_vars(is) ++ (i match {
-        case AVarAssignment(i, v) => if (i.idn == "mem_top") Set() else Set(i.idn)
-        case AIf(cond, block1, block2) => local_vars(List(cond)) ++ local_vars(block1) ++ local_vars(block2)
+        case AVarAssignment(i, v) => if (i == "mem_top") Set() else Set(i)
+        case AIf(cond, block1, block2) => local_vars(block1) ++ local_vars(block2)
         case _ => Set()
       })
     }
 
     val lv = local_vars(f.statements)
 
-    "function " + f.name + "(" + f.params.map{asmjs_exp_to_string}.mkString(", ") + ")" + 
+    "function " + f.name + "(" + f.params.mkString(", ") + ")" + 
     "{\n" + 
-    f.params.map{p => asmjs_exp_to_string(p) + " = +" + asmjs_exp_to_string(p) + ";\n"}.mkString("") + 
+    f.params.map{p => p + " = +" + p + ";\n"}.mkString("") + 
     "\n" +
     (if (lv.size > 0) 
       "var " + lv.mkString(" = 0.0, ") + " = 0.0;\n\n"; 
@@ -69,14 +69,14 @@ object code_generation_asmjs {
 
 
   def asmjs_statement_to_string(s: AStatement) : String = s match {
-    case AVarAssignment(idn, value) => asmjs_exp_to_string(idn) + " = " + asmjs_exp_to_string(value)
+    case AVarAssignment(idn, value) => idn + " = " + asmjs_exp_to_string(value)
     case AArrayAssignment(base, offset, value) => {
       "D32[" + 
-      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(base, offset)))) + 
+      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(AIdn(base), AStaticValue(offset))))) + 
       " << 2 >> 2] = " + asmjs_exp_to_string(value)
     }
     case AIf(cond, block1, block2) => {
-      "if (" + asmjs_exp_to_string(ADoubleToInt(cond)) + ")\n" +
+      "if (" + asmjs_exp_to_string(ADoubleToInt(AIdn(cond))) + ")\n" +
       "{\n" +
       block1.map{s => asmjs_statement_to_string(s) + ";\n"}.mkString("") +
       "} else {\n" +
@@ -91,18 +91,16 @@ object code_generation_asmjs {
 
   def asmjs_exp_to_string(e: AExp) : String = e match {
     case AIdn(idn) => idn
-    // TODO remove this case
-    case AVarAccess(v) => "(+" + asmjs_exp_to_string(v) + ")"
     case AStaticValue(d) => "(+" + d.toString + ")"
     case ADoubleToInt(e) => "(~~+floor(" + asmjs_exp_to_string(e) + ")|0)"
     case AFunctionCallByName(f, params) => {
-      "(+" + asmjs_exp_to_string(f) + "(" + 
+      "(+" + f + "(" + 
       params.map{asmjs_exp_to_string}.mkString(", ") + "))"
     }
     case AFunctionCallByIndex(ftable, fpointer, mask, params) => {
       "(+" + ftable + 
       "[" + asmjs_exp_to_string(ADoubleToInt(AHeapAccess(fpointer))) + " & "+mask.toString + "]" + 
-      "(" + asmjs_exp_to_string(AArrayAccess(fpointer, AStaticValue(1.0))) + ", " + 
+      "(" + asmjs_exp_to_string(AArrayAccess(fpointer, 1)) + ", " + 
       params.map{asmjs_exp_to_string}.mkString(", ") + "))"
     }
     case APrimitiveInstruction(op, as) => op match {
@@ -123,10 +121,14 @@ object code_generation_asmjs {
       case "sqrt" => "(+"+op+"("+asmjs_exp_to_string(as(0))+"))"
       case _ => throw new IllegalArgumentException("Operation " + op + " not implemented.")
     }
-    case AHeapAccess(index) => asmjs_exp_to_string(AArrayAccess(AStaticValue(0.0), index))
+    case AHeapAccess(index) => {
+      "(+D32[" + 
+      asmjs_exp_to_string(ADoubleToInt(AIdn(index))) + 
+      " << 2 >> 2])"
+    }
     case AArrayAccess(base, offset) => {
       "(+D32[" + 
-      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(base, offset)))) + 
+      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(AIdn(base), AStaticValue(offset))))) + 
       " << 2 >> 2])"
     }
     case AAlloc(size) => "(+alloc(+"+size.toString()+"))"

@@ -51,8 +51,8 @@ add(new void(picture pic, transform t) {
     cpsTrans--Arrow--cc;
     cc--Arrow--hoist;
 
-    hoist--Arrow--asmjs;
     hoist--Down--block(10cm,-3cm)--Left--Down--Arrow--ir;
+    ir--Arrow--asmjs;
     ir--Arrow--c;
     c--Right--Down--Arrow--emC;
     c--Arrow--llvmIr;
