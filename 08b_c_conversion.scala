@@ -6,7 +6,6 @@ import ljsp.util._
 object c_conversion {
   def convert_module_to_c(m: IModule) : CModule = {
     CModule(m.name, m.functions.map{convert_function_to_c})
-    // TODO add main method and function declarations
   }
 
   def convert_function_to_c(f: IFunction) : CFunction = {
