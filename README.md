@@ -11,7 +11,7 @@ To print usage:
 
 To generate ray tracer asm.js module:
 
-   scala -cp ljsp/ ljsp.Ljsp --asmjs -i ray_tracer/ljsp_code.scm -o ray_tracer/gen_code.js
+    scala -cp ljsp/ ljsp.Ljsp --asmjs -i ray_tracer/ljsp_code.scm -o ray_tracer/gen_code.js
 
 To generate ray tracer emscripten asm.js module:
 
