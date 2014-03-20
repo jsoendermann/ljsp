@@ -83,15 +83,15 @@ object code_generation_asmjs {
       block2.map{s => asmjs_statement_to_string(s) + ";\n"}.mkString("") +
       "}"
     }
-    case AReturn(s) => "return " + asmjs_statement_to_string(s)
+    case AReturn(s) => "return +(" + asmjs_statement_to_string(s) + ")"
 
     case _ => asmjs_exp_to_string(s.asInstanceOf[AExp])
   }
 
 
   def asmjs_exp_to_string(e: AExp) : String = e match {
-    case AIdn(idn) => "(+"+idn+")"
-    case AStaticValue(d) => "(+(" + d.toString + "))"
+    case AIdn(idn) => idn
+    case AStaticValue(d) => "(" + d.toString + ")"
     case ADoubleToInt(e) => "(~~+floor(" + asmjs_exp_to_string(e) + ")|0)"
     case AFunctionCallByName(f, params) => {
       "(+" + f + "(" + 
