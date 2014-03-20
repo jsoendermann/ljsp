@@ -3,6 +3,7 @@
         <meta charset="utf-8" />
         <!--script type="text/javascript" src='https://dl.dropboxusercontent.com/u/40949268/emcc/memoryprofiler/memoryprofiler.js'></script-->
         <script type="text/javascript" src="gen_code.js"></script>
+        <script type="text/javascript" src="handwritten_asm.js"></script>
         <script type="text/javascript" src="ray_tracer.js"></script>
         <script type="text/javascript" src="emcc_output.js"></script>
     </head>
@@ -13,6 +14,7 @@
             <br />
             <br />
             <button onclick="render(0)" >Render using standard JS</button>
+            <button onclick="render(3)" >Render using handwritten asm.js</button>
             <button onclick="render(1)" >Render using LJSP asm.js</button>
             <button onclick="render(2)" >Render using emscripten asm.js</button>
             <p id="timeStandard"></p>
