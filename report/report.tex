@@ -6,6 +6,8 @@
 \usepackage{stmaryrd}
 % Grammar
 \usepackage{syntax}
+% Operational semantics
+\usepackage{semantic}
 % Stages diagram
 \usepackage{tikz}
 % Stages diagram elements
@@ -169,7 +171,15 @@ The grammar for expressions used in intermediate stages is as follows:
 \end{grammar}
 
 % subset of scheme
-\section{Small/big-step semantics of LJSP}
+\section{Operational Semantics}
+\begin{gather*}
+%boolean
+%idn
+\inference[d]{}{d~\Downarrow~d} \\
+\inference[if(false)]{e_1~\Downarrow~\text{\#f}\hspace{1cm}e_3~\Downarrow~v}{(\text{if}\ e_1, e_2, e_3)~\Downarrow~v}\\
+\inference[if(true)]{e_1~\Downarrow~\text{\#t}\hspace{1cm}e_2~\Downarrow~v}{(\text{if}\ e_1, e_2, e_3)~\Downarrow~v}
+\end{gather*}
+
 \section{Backend Output}
 
 \chapter{Design}
