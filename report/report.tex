@@ -13,14 +13,14 @@
 % Stages diagram elements
 \usepackage{graphicx}
 % Chapter number and name on one line
-%\usepackage{titlesec}
-%\titleformat{\chapter}[hang] 
-%{\normalfont\huge\bfseries}{\thechapter}{1em}{} 
+\usepackage{titlesec}
+\titleformat{\chapter}[hang] 
+{\normalfont\huge\bfseries}{\thechapter}{1em}{} 
 % No new page after chapter
-%\usepackage{etoolbox}
-%\makeatletter
-%\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
-%\makeatother
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
+\makeatother
 % Source code listings
 \usepackage{listings}
 
@@ -107,11 +107,7 @@ This project defines such a language and provides a compiler for it that outputs
 \section{Technologies involved}
 \subsection{asm.js}
 \subsection{emscripten and LLVM}
-\section{Similar Languages}
-
-\chapter{Requirements}
-\section{User Requirements}
-\section{System Requirement}
+%\section{Similar Languages}
 
 \chapter{Specification}
 \section{LJSP Grammar}
@@ -145,7 +141,7 @@ The grammar of LJSP in Extended Backus-Naur Form is given below.
 <letblock> ::= `(' <ident> <expr> `)'
 
 <primOp> ::= `+' | `-' | `*' | `/' | `neg'
-\alt `<' | `>'
+\alt `>=' | `<=' | `=' | `not' | `<' | `>' | `and' | `or'
 \alt `min' | `max'
 \alt `sqrt'
 
@@ -187,9 +183,7 @@ This chapter will describe @@@, this chapter: abstract, theoretical next chapter
 \section{Overall architecture}
 The compiler is made up of two major components: A hierarchy of classes that get instantiated to create the Abstract Syntax Tree (AST) @described in detail below@ and a number of compilation stages that perform various transformation on this AST. I will first describe the AST classes before going through all the individual stages of the compiler in detail.
 % scheme is used for all internal code
-\section{AST}
-% class diagrams for all five sets of AST classes
-The compiler includes five sets of class hierarchies that all have their own abstract superclass: One that reflects LJSP code, one for an intermediate representation used at a later stage and one for each compilation target: asm.js, C and LLVM IR.
+% conversion are neutral/transparent with regards to the expression the proram evaluates to
 \section{Detailed design of compilation stages}
 
 \begin{figure}[ht]
@@ -202,8 +196,32 @@ The compiler includes five sets of class hierarchies that all have their own abs
 
 % based on from system F...
 \subsection{Parsing}
-\subsection{CPS-Translation}
+This very first stage takes the textual representation of the program and converts it to an Abstract Syntax Tree that the subsequent stages manipulate. It does so according to the grammar of LJSP described in the Specification chapter.
 
+\subsection{\texttt{letn} expansion}
+\begin{figure}[ht]
+\begin{alignat*}{2}
+&\mathcal{L}\llbracket (\text{let}\ ((idn_1\ e_1)\ (idn_2\ e_2)\dots &&\eqdef (\text{let}\ ((idn_1\ e_1))\ (\text{let}\ ((idn_2\ e_2)) \dots \\
+&\hspace{1cm} (idn_n\ e_n))\ e)\rrbracket &&\hspace{1cm}(\text{let}\ ((idn_n\ e_n))\ e)))\\
+&\mathcal{L}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{L}$ applied to all expressions in e}\\
+\end{alignat*}
+\caption{\texttt{letn} conversion}
+\label{letnconversion}
+\end{figure}
+This is a small stage that expands all \texttt{let} expressions that define $n$ @variables@ into $n$ \texttt{let} expressions that all define one variable each. Applying \texttt{letn} conversion to the expression \texttt{(let ((a 1) (b 2)) (+ a b))} would yield \texttt{(let ((a 1)) (let ((b 2)) (+ a b)))}. While not strictly necessary, this conversion greatly simplifies later stages such as CPS-translation, as they do not have to @consider the possibility@ of multiple $(idn\ e)$ blocks inside \texttt{lets}. Equations for this stage are given in figure \ref{letnconversion}.
+
+\subsection{Prim op reduction}
+\begin{figure}[ht]
+\begin{alignat*}{2}
+&\mathcal{L}\llbracket (\text{let}\ ((idn_1\ e_1)\ (idn_2\ e_2)\dots &&\eqdef (\text{let}\ ((idn_1\ e_1))\ (\text{let}\ ((idn_2\ e_2)) \dots \\
+&\hspace{1cm} (idn_n\ e_n))\ e)\rrbracket &&\hspace{1cm}(\text{let}\ ((idn_n\ e_n))\ e)))\\
+&\mathcal{P}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{P}$ applied to all expressions in e}\\
+\end{alignat*}
+\caption{Prim op reduction}
+\label{primopreduction}
+\end{figure}
+This stage reduces a number of primitive operations to a combination of other primitive operations. This reduces work in backend stages, as only as limited subset of primitive operations that are part of the LJSP grammar need to get converted to the respective language that the backend generates. One example a primitive operation that the parser recognises but that backend stages do not have to handle is the negation operator $-$ that switches the sign of a double. Prim op reduction reduces expressions of the form $-x$ to simple subtraction: $0-x$. The other primitive operations that Prim op reduction removes from the AST are given in \ref{primopreduction}
+\subsection{CPS-Translation}
 This stage converts the program to continuation-passing style (CPS). Because it is the central stage of the compilation pipeline, we will first explain continuation-passing style in general before describing the particularities of the CPS-translation in the LJSP compiler.
 
 \subsubsection{Continuation-Passing Style}
@@ -307,20 +325,50 @@ Calling \texttt{cont} substitutes the continuation that we see in the code above
 \label{cpstrans}
 \end{figure}
 
+% move this to the beginning of the chapter
 Figure~\ref{cpstrans} shows CPS translations for all LJSP expressions. In the equations, $y$ stands for a variable, $d$ for a double constant and $f$ for a fresh identifier. $\cpstrans{e} k$ stands for the CPS translation of expression $e$ with continuation $k$.
 
 We will conclude this section on Continuation-Passing Style by describing some of the more complex CPS translation equations in more detail. The transformation for both the \texttt{define} and \texttt{lambda} expressions CPS translate the body of the function with a continuation passed to the function in a new parameter called $f_{cont}$ in the equations and \texttt{cont_n} in the code. This parameter has a correspondence in the translation for proc in the next equation: it is the $\lambda x_k.k(x_k)$ that gets added to the application when translating. The translation for primitive operations consists of two equations in the diagram, one equation to convert operations with more than one operands into multiple operations with two operands each and one equation to convert it to Continuation-Passing Style. Note that unlike the translation of regular function applications, the application of primitive operations does not include the additional continuation parameter just mentioned, as primitive operations are allowed to return.
 
 \subsection{Closure Conversion}
+\begin{figure}[ht]
+\begin{alignat*}{2}
+% TODO free_vars function
+&\mathcal{C}\llbracket (\text{lambda}\ (p_1, \dots, p_n)\ e) \rrbracket &&\eqdef k((\text{lambda}\ (f_{cont}, p_1, \dots, p_n)\ \\
+&&&\hspace{1cm}\cpstrans{e}f_{cont})) \\
+%
+&\mathcal{C}\llbracket (proc\ p_1, \dots, p_n) \rrbracket &&\eqdef \cpstrans{p_1} \lambda x_1. \dots  \\
+&&&\hspace{1 cm}\cpstrans{p_n} \lambda x_n.\\
+&&&\hspace{1.5 cm}(proc\ \lambda x_k.k(x_k), x_1, \dots, x_n) \\
+&\mathcal{C}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{C}$ applied to all expressions in e}\\
+\end{alignat*}
+\caption{Closure Conversion}
+\label{cloconv}
+\end{figure}
+@@ Together with CPS-translation, closure conversion forms the core of the frontend conversions of the LJSP compiler. Closure conversion is necessary when converting from languages that allow functions as first-class objects, such as LISP, to languages that do not have that property, such as C.
+
+
+
+
 \subsection{Hoisting}
+\subsection{Conversion to IR (Intermediate Representation)}
+\subsection{Redundant Assignment Removal}
+\subsection{Conversion to C}
 \subsection{Conversion to asm.js}
-\subsection{Code emission}
+\subsection{Conversion to emscripten C}
+\subsection{Conversion to LLVM IR}
+\subsection{Conversion to Numbered LLVM IR}
 
 \chapter{Implementation}
-\section{Scala}
+% overview: structure of code, different files etc.
+% different stages (parser implemented using java lib, cps translation two functions b/c of differing types)
+% code_generation_* as opposite of parser
+%\section{Scala}
 \section{Problems encountered \& resolved}
 % variables that contain functions, ftables generated at compile time
+% memory management in asm.js and C
 \section{Experimentation \& Optimisation}
+% cps translation different optimisations
 % array index vars of type int, others of type double
 % (array index vars are all generated, user doesn't see them)
 
@@ -349,9 +397,6 @@ Early on in the development of LJSP, it became necessary to test the output of e
 \section{Evaluation against requirements}
 \section{Strengths \& Weaknesses}
 
-\chapter{Professional Issues}
-% http://www.bcs.org/category/6030
-
 \chapter{Conclusions}
 \section{Future Work}
 \subsection{Optimisations}
@@ -373,8 +418,6 @@ Early on in the development of LJSP, it became necessary to test the output of e
 \section{Compiler}
 \section{Ray Tracer}
 \section{Testing}
-
-\chapter{Class diagrams}
 
 \chapter{Programs Listings}
 
