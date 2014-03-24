@@ -17,10 +17,10 @@
 \titleformat{\chapter}[hang] 
 {\normalfont\huge\bfseries}{\thechapter}{1em}{} 
 % No new page after chapter
-\usepackage{etoolbox}
-\makeatletter
-\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
-\makeatother
+%\usepackage{etoolbox}
+%\makeatletter
+%\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
+%\makeatother
 % Source code listings
 \usepackage{listings}
 
@@ -165,6 +165,8 @@ The grammar for expressions used in intermediate stages is as follows:
 
 <idents> ::= <ident> <idents> | $\epsilon$
 \end{grammar}
+
+% grammar of intermediate representation, C?
 
 % subset of scheme
 \section{Operational Semantics}
@@ -334,7 +336,7 @@ We will conclude this section on Continuation-Passing Style by describing some o
 \begin{figure}[ht]
 \begin{alignat*}{2}
 % TODO free_vars function
-&\mathcal{C}\llbracket (\text{lambda}\ (p_1, \dots, p_n)\ e) \rrbracket &&\eqdef k((\text{lambda}\ (f_{cont}, p_1, \dots, p_n)\ \\
+&\mathcal{C}\llbracket (\text{lambda}\ (p_1, \dots, p_n)\ e) \rrbracket &&\eqdef TODO TODO TODOk((\text{lambda}\ (f_{cont}, p_1, \dots, p_n)\ \\
 &&&\hspace{1cm}\cpstrans{e}f_{cont})) \\
 %
 &\mathcal{C}\llbracket (proc\ p_1, \dots, p_n) \rrbracket &&\eqdef \cpstrans{p_1} \lambda x_1. \dots  \\
@@ -345,10 +347,63 @@ We will conclude this section on Continuation-Passing Style by describing some o
 \caption{Closure Conversion}
 \label{cloconv}
 \end{figure}
-@@ Together with CPS-translation, closure conversion forms the core of the frontend conversions of the LJSP compiler. Closure conversion is necessary when converting from languages that allow functions as first-class objects, such as LISP, to languages that do not have that property, such as C.
+Besides CPS-translation, closure conversion is the other core stage in the frontend of the LJSP compiler. The goal of closure conversion, in conjunction with the stage that follows it, is to convert anonymous function objects (often called lambdas) to named top-level functions. This is necessary when compiling languages that allow functions as first-class objects, such as LISP, to languages that do not have that property, such as C.
 
+A first naive approach to solving this problem can be illustrated by the following code snippet:
 
+\begin{lstlisting}
+def return_n_squarer():
+    return lambda x: x * x
+\end{lstlisting}
 
+When called, the function \texttt{return_n_squarer} returns another function that takes one parameter \texttt{x} and returns $x^2$. In trivial cases such as the one given, it is immediately possible to give a name to the anonymous lambda and lift it to the top level. The resulting code would look like this:
+
+\begin{lstlisting}
+def func_0(x):
+    x * x
+    
+def return_n_squarer():
+    return func_0
+\end{lstlisting}
+
+This snippet compiles and produces the same result as the original version.
+
+We will now consider a slightly more complex function that needs to be closure converted:
+
+\begin{lstlisting}
+def get_n_adder(n):
+    r = lambda x: x + n
+    return r
+\end{lstlisting}
+
+This function takes a parameter \texttt{n} and returns a function, that takes its own parameter \texttt{x} and returns $x+n$. \texttt{get_n_adder(1)} returns the successor function, \texttt{get_n_adder(7)} returns a function that adds $7$ to its parameter and returns the sum.
+
+If we try the naive approach that we used in the first example we encounter a problem that didn't arise in the example above:
+
+\begin{lstlisting}
+def func_1(x):
+    x + n   # Error: 'n' is not defined
+    
+def get_n_adder(n):
+    r = func_1
+    return r
+\end{lstlisting}
+
+This example shows that there is more to anonymous functions than just the code they define. They can also access variables of the environment they are defined inside. This combination of code and environment is commonly called "closure". Separating the function from its context without taking care of these variable accesses will not produce valid code. Instead we need to make use of an idea that gives this stage its name: Closure conversion.
+
+Before we explain closure conversion in detail, it is necessary to define two concepts that we will make use of in our explanation: free and bound variables. A variable used in a function is called free, when it is not declared inside that function but instead comes from the environment. Conversely, a variable inside a function is bound, when it is declared within the function. These ideas can be explain very concisely using the lambda-calculus. Consider the simple term $M = \lambda x.(x\ y)$. The variable $x$ is bound in $M$, because it is a parameter to the abstraction. $y$, on the other hand, is a free variable and must be defined somewhere in the term that $M$ is a part of.
+
+The goal of closure conversion is to turn all free variables in the function to be converted into bound variables. The way this is achieved is by adding an additional parameter to the lambda, usually an array or dictionary, that contains the values of all previously free variables. Before the body of the lambda is exectued, these variables are then bound by assigning them to the value that the envirionment-variable gives for them.
+
+If we bring the lambda from the earlier example into this form, we obtain the following result:
+
+\begin{lstlisting}
+lambda env_0, x: 
+    n = env_0[0]   # make n bound
+    x + n
+\end{lstlisting}
+
+From the fact that this lambda takes 2 parameters, compared to 1 before, it is obvious that the caller of this function also needs to be adjusted. The way 
 
 \subsection{Hoisting}
 \subsection{Conversion to IR (Intermediate Representation)}
