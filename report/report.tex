@@ -152,7 +152,7 @@ The grammar of LJSP in Extended Backus-Naur Form is given below.
 The grammar for expressions used in intermediate stages is as follows:
 \begin{grammar}
 <expr> ::= <env>
-\alt `(make-lambda' <lambda> <env> `)'
+\alt `(make-closure' <lambda> <env> `)'
 \alt `(nth' <int> <expr> `)'
 \alt `(get-env' <expr> `)'
 \alt `(get-proc' <expr> `)'

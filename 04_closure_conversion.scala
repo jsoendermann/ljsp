@@ -42,7 +42,7 @@ object closure_conversion {
         case ((x, n), e) => SLet(SIdn(x), SNth(n, env), e)
       }
 
-      SMakeLambda(SLambda(env :: params, e_with_fvs_bound), SMakeEnv(fvs.map{SIdn(_)}))
+      SMakeClosure(SLambda(env :: params, e_with_fvs_bound), SMakeEnv(fvs.map{SIdn(_)}))
     }
 
     case SAppl(proc, es) => {

@@ -18,7 +18,7 @@
                     (car l)
                     (nth (- n 1) (cdr l))))
 
-(define (make-lambda l e) `(,l ,e))
+(define (make-closure l e) `(,l ,e))
 
 (define (get-proc l*) (nth 0 l*))
 

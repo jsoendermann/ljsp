@@ -53,7 +53,7 @@ object hoisting {
       val hes = es.map{hoist}
       HoistedExpression(SApplPrimitive(proc, hes.map{he => he.e}), hes.flatMap{hd => hd.new_defs})
     }
-    case SMakeLambda(l, env) => {
+    case SMakeClosure(l, env) => {
       val f = SIdn(fresh("func"))
       val hl = hoist(l)
       val casted_hl_e = hl.e.asInstanceOf[SLambda]

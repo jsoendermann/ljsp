@@ -54,8 +54,8 @@ object code_generation_ljsp {
       else 
         " " + idns.map{i => i.idn}.mkString(" ") + ")")
     }
-    case SMakeLambda(lambda, env) => {
-      "(make-lambda " +
+    case SMakeClosure(lambda, env) => {
+      "(make-closure " +
       ljsp_exp_to_string(lambda) + " " +
       ljsp_exp_to_string(env) + ")"
     }

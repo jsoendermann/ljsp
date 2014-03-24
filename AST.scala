@@ -25,7 +25,7 @@ object AST {
 
   // Clases used in closure conversion
   case class SMakeEnv(idns: List[SIdn]) extends SExp
-  case class SMakeLambda(lambda: SLambda, env: SExp) extends SExp
+  case class SMakeClosure(lambda: SLambda, env: SExp) extends SExp
   case class SNth(n: Int, e: SExp) extends SExp
   case class SGetEnv(e: SExp) extends SExp
   case class SGetProc(e: SExp) extends SExp
