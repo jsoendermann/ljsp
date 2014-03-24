@@ -226,6 +226,8 @@ This stage reduces a number of primitive operations to a combination of other pr
 \subsection{CPS-Translation}
 This stage converts the program to continuation-passing style (CPS). Because it is the central stage of the compilation pipeline, we will first explain continuation-passing style in general before describing the particularities of the CPS-translation in the LJSP compiler.
 
+% TODO give names to snippets, refer to them by name
+
 \subsubsection{Continuation-Passing Style}
 Code that is in Continuation-Passing Style gives explicit names to every intermediate computation and makes control flow explicit by never returning from a function call.\cite{sysftal}\cite{appel} To illustrate this, we show the transformation of a simple function \texttt{f}, given below, to CPS step-by-step.
 
@@ -335,13 +337,27 @@ We will conclude this section on Continuation-Passing Style by describing some o
 \subsection{Closure Conversion}
 \begin{figure}[ht]
 \begin{alignat*}{2}
-% TODO free_vars function
-&\mathcal{C}\llbracket (\text{lambda}\ (p_1, \dots, p_n)\ e) \rrbracket &&\eqdef TODO TODO TODOk((\text{lambda}\ (f_{cont}, p_1, \dots, p_n)\ \\
-&&&\hspace{1cm}\cpstrans{e}f_{cont})) \\
+&\text{FV}(y) &&\eqdef \{y\}\\
+&\text{FV}(d) &&\eqdef \varnothing\\
+&\text{FV}((\text{if}\ e_1\ e_2\ e_3)) &&\eqdef \text{FV}(e_1) \cup \text{FV}(e_2) \cup \text{FV}(e_3)\\
+&\text{FV}((\text{let}\ ((idn\ e_1))\ e_2)) &&\eqdef \text{FV}(e_1) \cup (\text{FV}(e_2) - \{idn\})\\
+&\text{FV}((\text{define}\ (name, p_1, \dots, p_n)\ e)) &&\eqdef \text{FV}(e) - \{name\} - \{p_1, \dots, p_n\}\\
+&\text{FV}((\text{lambda}\ (p_1, \dots, p_n)\ e)) &&\eqdef \text{FV}(e) - \{p_1, \dots, p_n\}\\
+&\text{FV}((proc\ p_1, \dots, p_n)) &&\eqdef (\text{FV}(proc) - \{\text{defined functions}\}) \cup \\
+&&&\hspace{1cm}\{f \mid f \in \text{FV}(p)\ \text{with}\ p \in \{p_1, \dots, p_n\}\}\\
+&\text{FV}((prim\ p_1, \dots, p_n)) &&\eqdef \{f \mid f \in \text{FV}(p)\ \text{with}\ p \in \{p_1, \dots, p_n\}\}\\
 %
-&\mathcal{C}\llbracket (proc\ p_1, \dots, p_n) \rrbracket &&\eqdef \cpstrans{p_1} \lambda x_1. \dots  \\
-&&&\hspace{1 cm}\cpstrans{p_n} \lambda x_n.\\
-&&&\hspace{1.5 cm}(proc\ \lambda x_k.k(x_k), x_1, \dots, x_n) \\
+&&&\\
+%
+&\mathcal{C}\llbracket (\text{lambda}\ (p_1, \dots, p_n)\ e) \rrbracket &&\eqdef \text{make-closure}(\\
+&&&\hspace{1cm}(\text{lambda}\ (env, p_1, \dots, p_n)\ e_{new}))\\
+&&&\hspace{0.625cm}\text{with}\ e_{new} = \\
+&&&\hspace{1cm}\text{assign free vars to env elements}\ \cup \\
+&&&\hspace{1.5cm}\mathcal{C}\llbracket e \rrbracket\\
+%
+&\mathcal{C}\llbracket (func\ p_1, \dots, p_n) \rrbracket &&\eqdef (func\  \mathcal{C}\llbracket p_1 \rrbracket, \dots, \mathcal{C}\llbracket p_n \rrbracket)\\
+&\mathcal{C}\llbracket (closure\ p_1, \dots, p_n) \rrbracket &&\eqdef (\mathcal{C}\llbracket closure\rrbracket.code\ \mathcal{C}\llbracket closure\rrbracket.env\\\
+&&&\hspace{1cm}\mathcal{C}\llbracket p_1\rrbracket, \dots, \mathcal{C}\llbracket p_n\rrbracket)\\
 &\mathcal{C}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{C}$ applied to all expressions in e}\\
 \end{alignat*}
 \caption{Closure Conversion}
@@ -395,6 +411,8 @@ Before we explain closure conversion in detail, it is necessary to define two co
 
 The goal of closure conversion is to turn all free variables in the function to be converted into bound variables. The way this is achieved is by adding an additional parameter to the lambda, usually an array or dictionary, that contains the values of all previously free variables. Before the body of the lambda is exectued, these variables are then bound by assigning them to the value that the envirionment-variable gives for them.
 
+% TODO how to find free vars
+
 If we bring the lambda from the earlier example into this form, we obtain the following result:
 
 \begin{lstlisting}
@@ -403,9 +421,45 @@ lambda env_0, x:
     x + n
 \end{lstlisting}
 
-From the fact that this lambda takes 2 parameters, compared to 1 before, it is obvious that the caller of this function also needs to be adjusted. The way 
+Apart from the lambda itself, both the code that defines it and the code that calls it must be adjusted. We will first describe changes to be made to the definitions of lambdas before describing how calling them changes.
+
+After closure conversion is complete, the code no longer defines isolated lambdas. Instead it defines closures, that are made up of lambdas (the code) and an environment variable (the data). The layout and creation of this data structure is implementation dependant and will be described in detail in the implementation chapter. In the example below, we will make use of two functions called \texttt{make_closure} and \texttt{make_lambda} that hide away the creation of their respective data structure.
+
+Using these functions and free variable assignment as shown in the last example, the \texttt{get_n_adder} example from the beginning of this chapter would get converted to the following:
+
+\begin{lstlisting}
+def get_n_adder(n):
+    r = make_closure(lambda env_0, x: 
+                        n = env_0[0]
+                        x + n, 
+                     make_env(n))
+    return r
+\end{lstlisting}
+
+Whereas the return type of \texttt{get_n_adder} was a lambda that could be called directly, it is now a closure which requires slightly more work to be executed. Assuming the definition of \texttt{get_n_adder} given in the last example, the following example shows how to obtain and use the successor function:
+
+\begin{lstlisting}
+c = get_n_adder(1)
+
+# To get successor of 5:
+c.code(c.env, 5)
+\end{lstlisting}
 
 \subsection{Hoisting}
+This is again a relatively simple stage that works in conjunction with the last stage, closure conversion. Hoisting takes closure converted lambdas and turns them from anonymous functions to named, top-level functions. Because after closure conversion, all variables used in these anonymous functions are bound, this is a very simple process.
+
+The last definition of \texttt{get_n_adder} given in the previous chapter would change to the following code after hoisting:
+
+\begin{lstlisting}
+def func_0(env_0, x):
+    n = env_0[0]
+    x + n, 
+    
+def get_n_adder(n):
+    r = make_closure(func_0, make_env(n))
+    return r
+\end{lstlisting}
+
 \subsection{Conversion to IR (Intermediate Representation)}
 \subsection{Redundant Assignment Removal}
 \subsection{Conversion to C}
@@ -415,6 +469,7 @@ From the fact that this lambda takes 2 parameters, compared to 1 before, it is o
 \subsection{Conversion to Numbered LLVM IR}
 
 \chapter{Implementation}
+% closure data structure
 % overview: structure of code, different files etc.
 % different stages (parser implemented using java lib, cps translation two functions b/c of differing types)
 % code_generation_* as opposite of parser
