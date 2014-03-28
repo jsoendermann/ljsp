@@ -1,12 +1,12 @@
 package ljsp
 
 object AST {
-
+  // TODO add types for Double, possibly Int
   type Idn = String
 
 
 
-  // LJSP AST classes
+  // ################################ LJSP AST classes ################################
   abstract class SExp
 
   case class SProgram(ds: List[SDefine], e: SExp) extends SExp
@@ -35,7 +35,7 @@ object AST {
 
 
 
-  // IR AST classes
+  // ################################ IR AST classes ################################
   // TODO remove name from this and all other modules
   case class IModule(name: Idn, functions: List[IFunction])
 
@@ -56,12 +56,15 @@ object AST {
   case class IArrayAccess(a: Idn, index: Int) extends IExp
 
 
+
   // TODO actually use this
   // Type class for C and LLVM IR
   abstract class Type
   abstract class TPtrTo(t: Type) extends Type
 
-  // C AST classes
+
+
+  // ################################ C AST classes ################################
   case class CModule(name: Idn, functions: List[CFunction])
 
   case class CFunction(name: Idn, params: List[Idn], declarations: List[CDeclareVar], statements: List[CStatement])
@@ -101,7 +104,7 @@ object AST {
 
 
 
-  // LLVM IR AST classes
+  // ################################ LLVM IR AST classes ################################
   case class LModule(name: String, functions: List[LFunction])
 
   case class LFunction(name: String, params: List[Idn], statements: List[LStatement])
@@ -160,7 +163,7 @@ object AST {
 
 
 
-  // Asm.js AST classes
+  // ################################ Asm.js AST classes ################################
   case class AModule(name: String, functions: List[AFunction], ftables: Map[String, List[String]])  
   
   case class AFunction(name: String, params: List[Idn], statements: List[AStatement]) 
