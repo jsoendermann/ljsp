@@ -39,8 +39,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
-% TODO
-% why scala? why LLVM IR/C
+% TODO why scala? why LLVM IR/C
+% TODO mention that LJSP is a subset of Scheme
 
 
 
@@ -109,15 +109,25 @@ In early 2013, Mozilla released asm.js, a project that claims to take these two 
 
 This project defines such a language and provides a compiler for it that outputs, among other targets, asm.js. It sets out to explore the performance@
 
-\chapter{Background \& Existing Work}
-\section{Technologies involved}
+% TODO describe goal, history. also include ray tracer
+
+\chapter{Background}
+\section{Technology involved}
 \subsection{asm.js}
 \subsection{emscripten and LLVM}
 % paper (desktop)
+
+% TODO possibly include this at the end if not at word limit yet
 %\section{Similar Languages}
 
+\subsection{Ray tracing}
+
+
+\chapter{Requirements}
+
 \chapter{Specification}
-\section{LJSP Grammar}
+\section{Grammars}
+\subsection{LJSP Grammar}
 The grammar of LJSP in Extended Backus-Naur Form is given below.
 \begin{grammar}
 <program> ::= <defines> [ <expr> ] <defines>
@@ -156,6 +166,7 @@ The grammar of LJSP in Extended Backus-Naur Form is given below.
 <args> ::= <expr> | <expr> <args>
 \end{grammar}
 
+\subsection{Intermediate Representation (IR) Grammar}
 The grammar for expressions used in intermediate stages is as follows:
 \begin{grammar}
 <expr> ::= <env>
@@ -217,7 +228,7 @@ The grammer for the Intermediate Representation of the LJSP compiler is given be
 % grammar of intermediate representation, C?
 
 % subset of scheme
-\section{Operational Semantics}
+\section{Operational Semantics of LJSP}
 \begin{gather*}
 %boolean
 %idn
@@ -226,11 +237,11 @@ The grammer for the Intermediate Representation of the LJSP compiler is given be
 \inference[if(true)]{e_1~\Downarrow~\text{\#t}\hspace{1cm}e_2~\Downarrow~v}{(\text{if}\ e_1, e_2, e_3)~\Downarrow~v}
 \end{gather*}
 
-\section{Backend Output}
+%\section{Backend Output}
 
 \chapter{Design}
 This chapter will describe the design of the LJSP compiler. It will give an abstract, theoretical description of all the subsystems that make up the compiler. The next chapter will then describe the concrete implementation of these subsystems. Together, these two chapters will give the reader a full understanding of the inner workings of the LJSP compiler.
-\section{Overall architecture}
+\section{Overall architecture of the Compiler}
 The compiler is made up of two major components: A hierarchy of classes that get instantiated to create the Abstract Syntax Tree (AST) and a large number of compilation stages that perform various transformation on this AST and all manipulate it to @varying@ degrees to bring it into a form closer to the desired output.
 
 When compiling a program, the compiler will first create the AST of the input program given. It will then run this AST through a number of stages depending on the desired output (e.g. asm.js or C) before finally converting the resulting AST back to a textual representation.
@@ -580,19 +591,27 @@ which still evaluates to the same value as before.
 \subsection{Conversion to LLVM IR}
 \subsection{Conversion to Numbered LLVM IR}
 
+\section{Design of the Ray Tracer}
+
+
+
 \chapter{Implementation}
 This chapter will describe the implementation details of the LJSP compiler. It builds on and assumes the previous chapter which describes the parts of the compiler from a theoretical perspective.
 
-We will first give an overview of the files in the repository to enable the reader to find the subsystems described in the design chapter in the code. Following this high-level overview, we will describe the implementation details of a number of compilation stages, filling in the details left out in the last chapter. After 
+We will first give an overview of the files in the repository to enable the reader to find the subsystems described in the design chapter in the code. Following this high-level overview, we will describe the implementation details of a number of compilation stages, filling in the details left out in the last chapter. After @@
+% TODO finish this
 
 \section{Structure of the Code}
 The code of the LJSP compiler follows a clear structure that separates the code into modules and that makes it easy to find related modules. The necessity for this structure became evident quickly during the development of the compiler, as it was often necessary to edit multiple parts of the code simultaneously.
 
 The code is structured as follows:
 \begin{itemize}
+\item The entry point of the compiler can be found in \texttt{main.scala}. This files contains functionality to parse and dispatch the arguments the LJSP compiler gets called with by calling the appropriate methods to achieve the desired result.
 \item All classes that make up the Abstract Syntax tree can be found in \texttt{AST.scala}. We decided against splitting up this file into a separate file for each language used in the LJSP compiler (LJSP, IR, C, etc.) as that would have lead to unnecessary fragmentation.
 \item The compilation stages that make up the LJSP compiler can be found in files with file names starting with a number, e.g. \texttt{03_cps_translation.scala}, optionally followed by a letter that gives a hint as to which stages precede and follow it. These files all contain exactly one object with a name equal to the file name without the number (\texttt{object cps_translation} in the example of CPS-translation) which in turn contain all the methods used in conversion. 
-
+\item The functions that convert ASTs back to specific languages can be found in files that have file names starting with \texttt{code_generation_}. There are five such files in total, one each for every programming language that the LJSP compiler converts to or from: LJSP, IR, asm.js, C and LLVM IR.
+\item The file \texttt{run_tests.py} contains the testing framework described further down in the Testing chapter. All other files related to testing can be found in the \texttt{test/} folder.
+\item The ray tracer and all files related to it reside in the \texttt{ray_tracer/} folder.
 \end{itemize}
 
 %code structure, where to find what in the repo
@@ -601,9 +620,12 @@ The code is structured as follows:
 \section{Implemenation of Various Stages}
 % parsing: % uses parser combinator, scala standard lib. maybe write down parser in a mathematical way (the parser combinators
 % cps translation: two functions, different types
-\section{Structure and Detail of the Generated Code}
+\section{Structure of the Generated Code}
 % closure data structure
 
+\section{Implementation details of the Ray Tracer}
+% calls different versions of vectorDotProduct & ray... depending on button clicked
+% TODO: describe profiling that shows that raySph... is where the ray tracer spends most of its time. (maybe somewhere else)
 
 
 \section{Problems encountered \& resolved}
@@ -614,6 +636,8 @@ The code is structured as follows:
 % array index vars of type int, others of type double
 % (array index vars are all generated, user doesn't see them)
 
+% TODO describe testing
+% TODO describe ray tracer
 % TODO evaluate choice of scala, maybe not in this chapter (evaluation?)
 
 \chapter{Testing}
@@ -647,14 +671,14 @@ Early on in the development of LJSP, it became necessary to test the output of e
 
 \chapter{Conclusions}
 \section{Future Work}
-% more front ends
-% more complete LISP (scheme?)
-% more back ends
-% more optimisations
+\subsection{Implementing a more complete Subset of Scheme}
+\subsection{Additional Front Ends}
+\subsection{Additional Back Ends}
+\subsection{Additional Optimisations}
 % IR stages perfect framework for that
+\subsection{Better Test Coverage}
 % better test coverage
-\subsection{Optimisations}
-\subsection{Types}
+% TODO possibly add: move type inference from C to IR conversion, make IR typed
 
 \newpage
 
