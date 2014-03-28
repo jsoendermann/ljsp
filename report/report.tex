@@ -590,7 +590,9 @@ The code of the LJSP compiler follows a clear structure that separates the code 
 
 The code is structured as follows:
 \begin{itemize}
-\item All classes that make up the Abstract Syntax tree can be found in \texttt{AST.scala}
+\item All classes that make up the Abstract Syntax tree can be found in \texttt{AST.scala}. We decided against splitting up this file into a separate file for each language used in the LJSP compiler (LJSP, IR, C, etc.) as that would have lead to unnecessary fragmentation.
+\item The compilation stages that make up the LJSP compiler can be found in files with file names starting with a number, e.g. \texttt{03_cps_translation.scala}, optionally followed by a letter that gives a hint as to which stages precede and follow it. These files all contain exactly one object with a name equal to the file name without the number (\texttt{object cps_translation} in the example of CPS-translation) which in turn contain all the methods used in conversion. 
+
 \end{itemize}
 
 %code structure, where to find what in the repo
