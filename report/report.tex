@@ -292,10 +292,11 @@ As its name suggests, the Abstract Syntax Tree is a Tree representation of the c
 
 The AST is closely connected to the LJSP Grammar given in the Specification chapter: Every node in the tree corresponds to one @rule@ in the grammar. @in figure: rule next to node@. This relationship will become more obvious in the next chapter, when we describe the implementation of LJSP's ASTs.
 
-% scheme is used for all internal code
-% conversion are neutral/transparent with regards to the expression the proram evaluates to
+% TODO describe different AST class hierarchies
 
 \subsection{Compilation stages}
+% scheme is used for all internal code
+% conversion are neutral/transparent with regards to the expression the proram evaluates to
 Because compiling a program from one programming language to another is often a very complex transformation, it is common to @cite@ break up this transformations into a number of stages that each accomplish a small part of this overall transformation. While these stages can vary quite significantly in complexity ranging from simple expansions of specific expressions (an example would be converting expressions of the form \hbox{\texttt{1 + 2 + 3 + 4}} to \hbox{\texttt{((1 + 2) + 3) + 4}}) to more complex transformations such as CPS-Translation, they are all of managable complexity when compared to the overall goal of transforming from the input to the output language.
 
 % say something about intermediate languages what the stages input/output
@@ -602,9 +603,7 @@ def get_n_adder(n):
 \end{lstlisting}
 
 \subsection{Conversion to IR (Intermediate Representation)}
-This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates and converts it into the Intermediate Representation of the LJSP compiler.
-
-
+This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates and converts it into the Intermediate Representation of the LJSP compiler. This entails converting 
 \subsection{Redundant Assignment Removal}
 This is an optimisation stage that removes instructions from the IR Abstract Syntax Tree without affecting the meaning of the program. It is based on the observation that every variable only gets assigned to once. After being assigned a value, a variable can occur many times on the right hand sight of an assignment, but never on the left hand sight again.
 
