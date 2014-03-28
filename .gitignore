@@ -14,5 +14,6 @@ report/report.toc
 report/.texpadtmp/*
 
 report/stagesflowchart.eps
+report/astexample.eps
 
 misc/fib.s
