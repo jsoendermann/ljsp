@@ -79,13 +79,15 @@ I would like to thank my supervisor Dr. Christian Urban for supervising my proje
 \newpage
 
 \chapter{Introduction}
-One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to the web. This phenomenon, often @dubbed@ "Web 2.0"@ajax@ is visible in the success of web applications such as GMail and Facebook @other examples@.
+One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to the web. This phenomenon, often called "Web 2.0" is exemplified in the success of web applications such as GMail and Facebook.
 
-This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language that is supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, show this success: in 2013, JavaScript led this list by a substantial margin. @cite
+This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language that is supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, reflect this success: in 2013, JavaScript led this list by a substantial margin \cite{githubarchive} \cite{topgithub}.
 
-Since JavaScript is no longer confined to being used for simple animation and input-validation tasks, the complexity of web apps has increased tremendously. Modern JavaScript frameworks, such as Ember.js@link or Meteor@link use the full register of functionality the language offers and are @just as complex as traditional web frameworks that use languages such as Ruby or Python.@
+% TODO possibly add refs to ember, meteor websites
+Since JavaScript is no longer confined to being used for simple animations and input-validation tasks, the complexity of web apps has increased tremendously. Modern JavaScript frameworks, such as Ember.js link or Meteor use the full register of functionality the language offers and are just as complex as traditional web frameworks that use other languages such as Ruby or Python.
 
-Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially conceived for @cite. There is a widespread consensus@cite the language has a number of shortcomings. Brendan Eich, the creator of JavaScript, writes\cite{brendeich} about its early history:
+% TODO possibly provide citation for the consensus claim
+Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially conceived for. There is a widespread consensus that the language has a number of shortcomings. Brendan Eich, the creator of JavaScript, writes\cite{brendeich} about its early history:
 \begin{quote}
 In April 1995 I joined Netscape in order to "add Scheme to the browser." [...]
 
@@ -96,29 +98,39 @@ To overcome all doubts, I needed a demo in 10 days. I worked day and night, and 
 
 Criticism of JavaScript has mostly focussed on two areas:
 \begin{itemize}
-\item Inconsistencies and mistakes in the design of the language. Examples for this often given include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \\
-\mbox{\texttt{typeof x === 'undefined'}} to avoid comparing against a redefined \texttt{undefined}.
-\item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinary difficult task for browser @manufacturers. @why?@
+\item Inconsistencies and mistakes in the design of the language. Examples given for this often include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \\
+\mbox{\texttt{typeof x === 'undefined'}} to avoid comparing against a redefined \texttt{undefined}. For more examples, see the excellent \cite{jsgoodparts}.
+% TODO give citation/explanation for the dynamic claim
+\item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinary difficult task for browser manufacturers. This is due to the extremely dynamic nature of JavaScript.
 \end{itemize}
 
-Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular "JavaScript: The Good Parts"@cite). Another response has been to create new languages that compile to JavaScript, such as the very popular CoffeeScript @cite, Microsoft's TypeScript and Google's Dart.
+% TODO don't cite jsgoodparts twice (below and above)
+% TODO possible add links to coffeescript etc.
+Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular "JavaScript: The Good Parts" \cite{jsgoodparts}). Another response has been to create new languages that compile to JavaScript, such as the very popular CoffeeScript, Microsoft's TypeScript and Google's Dart.
 
 The second problem has been partly remedied by a new generation of JavaScript engines spearheaded by Google's V8, released in 2008 as part of Google Chrome. The other browser makers, including Mozilla soon followed by rewriting their own JavaScript engines. These new engines often brought impressive speed gains.
 
 In early 2013, Mozilla released asm.js, a project that claims to take these two approaches to their logical conclusion. It defines an extremely limited, statically typed subset of JavaScript that can be executed very quickly. This subset is intended as compilation targets for high level languages.
 
-This project defines such a language and provides a compiler for it that outputs, among other targets, asm.js. It sets out to explore the performance@
+The goal of this project is twofold:
+\begin{itemize}
+\item To design such a high level and provide a compiler for it that compiles the language to asm.js.
+\item To test the performance of this new language.
+\end{itemize}
 
-% TODO describe goal, history. also include ray tracer
+To achieve the second goal, the project includes a ray tracer in JavaScript, parts of which were rewritten in LJSP and compiled to asm.js. Rendering time of a 3D scene functioned as a benchmark.
+
+% TODO history. also include ray tracer
 
 \chapter{Background}
 \section{Technology involved}
 \subsection{asm.js}
 \subsection{emscripten and LLVM}
-% paper (desktop)
+% paper on emcc (on desktop)
 
 % TODO possibly include this at the end if not at word limit yet
-%\section{Similar Languages}
+%    \section{Similar Languages}
+% lisps that compile to js but also coffeescript, dart, etc.
 
 \subsection{Ray tracing}
 
@@ -129,6 +141,7 @@ This project defines such a language and provides a compiler for it that outputs
 \section{Grammars}
 \subsection{LJSP Grammar}
 The grammar of LJSP in Extended Backus-Naur Form is given below.
+
 \begin{grammar}
 <program> ::= <defines> [ <expr> ] <defines>
 
@@ -166,8 +179,7 @@ The grammar of LJSP in Extended Backus-Naur Form is given below.
 <args> ::= <expr> | <expr> <args>
 \end{grammar}
 
-\subsection{Intermediate Representation (IR) Grammar}
-The grammar for expressions used in intermediate stages is as follows:
+The grammar for LJSP expressions used in the front end stages is as follows:
 \begin{grammar}
 <expr> ::= <env>
 \alt `(make-closure' <lambda> <env> `)'
@@ -184,6 +196,7 @@ The grammar for expressions used in intermediate stages is as follows:
 <idents> ::= <ident> <idents> | $\epsilon$
 \end{grammar}
 
+\subsection{Grammar of the Intermediate Representation (IR)}
 The grammer for the Intermediate Representation of the LJSP compiler is given below.
 \begin{grammar}
 <iModule> ::= <iFunctions>
@@ -228,13 +241,37 @@ The grammer for the Intermediate Representation of the LJSP compiler is given be
 % grammar of intermediate representation, C?
 
 % subset of scheme
-\section{Operational Semantics of LJSP}
+\section{Small-Step Semantics of LJSP}
+In this section, we give the small-step semantics of the LJSP language. In the expressions below, $i$ stands for an identifier, $v$ stands for a generic value, $e$ stands for an expression, $c$ stands for a context that an expression is evaluated within and $\Lambda$ stands for a \texttt{(lambda...)} expression.
+% TODO explain what e, d, v, idn, etc. stand for
 \begin{gather*}
-%boolean
-%idn
-\inference[d]{}{d~\Downarrow~d} \\
-\inference[if(false)]{e_1~\Downarrow~\text{\#f}\hspace{1cm}e_3~\Downarrow~v}{(\text{if}\ e_1, e_2, e_3)~\Downarrow~v}\\
-\inference[if(true)]{e_1~\Downarrow~\text{\#t}\hspace{1cm}e_2~\Downarrow~v}{(\text{if}\ e_1, e_2, e_3)~\Downarrow~v}
+\inference[var]{}{\langle i, c \rangle~\rightarrow~\langle v, c\rangle~\text{if}~c(i) = v}\\\\
+%
+\inference[let1]{\langle e_1, c \rangle~\rightarrow~\langle e_1', c' \rangle}{\langle (\text{let}~i_1=e_1,~\dots~\text{in}~e), c \rangle~\rightarrow~\langle (\text{let}~i_1=e_1',~\dots~\text{in}~e), c' \rangle}\\
+%
+\inference[let2]{}{\langle (\text{let}~i_1=v,~\dots~\text{in}~e), c \rangle~\rightarrow~\langle (\text{let}~i_2=e_2,~\dots~\text{in}~e, c[i_1 \mapsto v] \rangle}\\
+%
+\inference[let3]{}{\langle (\text{let}~i=v~\text{in}~e), c \rangle~\rightarrow~\langle e, c[i \mapsto v] \rangle}\\\\
+%
+\inference[func_appl1]{\langle e, c \rangle~\rightarrow~\langle e', c' \rangle}{\langle (f_{name}~\dots,~e,~\dots), c \rangle~\rightarrow~\langle (f_{name} ~\dots,~e',~\dots), c' \rangle}\\
+%
+\inference[func_appl2]{}{\langle (f_{name} ~v_1,~\dots,~v_n), c \rangle~\rightarrow~\langle f_{body}, c[f_{param_1} \mapsto v_1,~\dots,~f_{param_n} \mapsto v_n] \rangle}\\\\
+%
+\inference[lambda_appl1]{\langle l, c \rangle~\rightarrow~\langle \Lambda, c' \rangle}{\langle (l~\dots,~e,~\dots), c \rangle~\rightarrow~\langle (\Lambda~\dots,~e,~\dots), c' \rangle}\\
+%
+\inference[lambda_appl2]{\langle e, c \rangle~\rightarrow~\langle e', c' \rangle}{\langle (\Lambda~\dots,~e,~\dots), c \rangle~\rightarrow~\langle (\Lambda ~\dots,~e',~\dots), c' \rangle}\\
+%
+\inference[lambda_appl3]{}{\langle (\Lambda ~v_1,~\dots,~v_n), c \rangle~\rightarrow~\langle \Lambda_{body}, c[\Lambda_{param_1} \mapsto v_1,~\dots,~\Lambda_{param_n} \mapsto v_n] \rangle}\\\\
+%
+\inference[prim_op1]{\langle e, c \rangle~\rightarrow~\langle e', c' \rangle}{\langle (prim~\dots,~e,~\dots), c \rangle~\rightarrow~\langle (prim~\dots,~e',~\dots), c' \rangle}\\
+%
+\inference[prim_op2]{}{\langle (prim~d_1,~\dots,~d_n), c \rangle~\rightarrow~\langle d, c \rangle~\text{if}~prim(d_1,~\dots,~d_n) = d}\\\\
+%
+\inference[if]{\langle e_1, c \rangle~\rightarrow~\langle e_1', c' \rangle}{\langle (\text{if}\ e_1, e_2, e_3), c \rangle~\rightarrow~\langle (\text{if}\ e_1', e_2, e_3), c' \rangle}\\
+%
+\inference[if(true)]{}{\langle (\text{if}\ \text{\#t}, e_2, e_3), c \rangle~\rightarrow~\langle e_2, c \rangle}\\
+%
+\inference[if(false)]{}{\langle (\text{if}\ \text{\#f}, e_2, e_3), c \rangle~\rightarrow ~\langle e_3, c \rangle}
 \end{gather*}
 
 %\section{Backend Output}
@@ -684,10 +721,14 @@ Early on in the development of LJSP, it became necessary to test the output of e
 
 \chapter{Bibliography}
 \begin{thebibliography}{1}
-  \bibitem{sysftal} Morrisett, Greg and Walker, David and Crary, Karl and Glew, Neal (1999). {\em From System F to Typed Assembly Language}, ACM Trans. Program. Lang. Syst.
-    \bibitem{brendeich} Foreword by Brendan Eich to {\em Node: Up and Running}. Available at http://chimera.labs.oreilly.com/books/1234000001808/pr02.html
+    \bibitem{githubarchive} {\em GitHub Archive} http://www.githubarchive.org/ accessed on 28.3.2014.
+    \bibitem{topgithub} {\em Top Github Languages for 2013 (so far)} http://adambard.com/blog/top-github-languages-for-2013-so-far/ accessed on 28.3.2014
+    \bibitem{jsgoodparts} Douglas Crockford (2008) {\em JavaScript: The Good Parts, Unearthing the Excellence in JavaScript}, pp. 101
+    \bibitem{sysftal} Morrisett, Greg and Walker, David and Crary, Karl and Glew, Neal (1999). {\em From System F to Typed Assembly Language}, ACM Trans. Program. Lang. Syst.
+    \bibitem{brendeich} Foreword by Brendan Eich to {\em Node: Up and Running}. Available at http://chimera.labs.oreilly.com/books/1234000001808/pr02.html accessed on 28.3.2014.
     \bibitem{appel} Andrew Appel (1992). {\em Compiling with Continuations} Cambridge University Press
 \end{thebibliography}
+
 
 
 \begin{appendices}
