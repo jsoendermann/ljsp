@@ -36,6 +36,7 @@ object AST {
 
 
   // IR AST classes
+  // TODO remove name from this and all other modules
   case class IModule(name: Idn, functions: List[IFunction])
 
   case class IFunction(name: Idn, params: List[Idn], statements: List[IStatement])
