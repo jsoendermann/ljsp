@@ -118,7 +118,7 @@ The goal of this project is twofold:
 \item To test the performance of this new language.
 \end{itemize}
 
-To achieve the second goal, the project includes a ray tracer in JavaScript, parts of which were rewritten in LJSP and compiled to asm.js. Rendering time of a 3D scene functioned as a benchmark.
+To achieve the second goal, the project includes a ray tracer in JavaScript, parts of which were rewritten in LJSP and compiled to asm.js. Rendering time of a 3D scene functioned as a benchmark that made it possible to evaluate the results of the project.
 
 % TODO history. also include ray tracer
 
@@ -243,7 +243,6 @@ The grammer for the Intermediate Representation of the LJSP compiler is given be
 % subset of scheme
 \section{Small-Step Semantics of LJSP}
 In this section, we give the small-step semantics of the LJSP language. In the expressions below, $i$ stands for an identifier, $v$ stands for a generic value, $e$ stands for an expression, $c$ stands for a context that an expression is evaluated within and $\Lambda$ stands for a \texttt{(lambda...)} expression.
-% TODO explain what e, d, v, idn, etc. stand for
 \begin{gather*}
 \inference[var]{}{\langle i, c \rangle~\rightarrow~\langle v, c\rangle~\text{if}~c(i) = v}\\\\
 %
@@ -603,7 +602,9 @@ def get_n_adder(n):
 \end{lstlisting}
 
 \subsection{Conversion to IR (Intermediate Representation)}
-@TODOTODO@
+This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates and converts it into the Intermediate Representation of the LJSP compiler.
+
+
 \subsection{Redundant Assignment Removal}
 This is an optimisation stage that removes instructions from the IR Abstract Syntax Tree without affecting the meaning of the program. It is based on the observation that every variable only gets assigned to once. After being assigned a value, a variable can occur many times on the right hand sight of an assignment, but never on the left hand sight again.
 
