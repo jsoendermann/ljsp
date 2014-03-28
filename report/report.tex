@@ -23,8 +23,10 @@
 %\makeatother
 % Source code listings
 \usepackage{listings}
+% Line spacing
+\usepackage{setspace}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \title{LJSP - A LISP to asm.js compiler}
 \author{Jan S\"ondermann}
@@ -34,6 +36,8 @@
 \newcommand{\eqdef}{\stackrel{\text{def}}{=}}%
 \newcommand{\cpstrans}[1]{\ensuremath{\mathcal{K}\llbracket #1 \rrbracket}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{document}
 % TODO
 % why scala? why LLVM IR/C
@@ -41,6 +45,8 @@
 
 
 \maketitle
+
+\onehalfspacing
 
 \begin{center}
 \textbf{Originality avowal}
@@ -107,6 +113,7 @@ This project defines such a language and provides a compiler for it that outputs
 \section{Technologies involved}
 \subsection{asm.js}
 \subsection{emscripten and LLVM}
+% paper (desktop)
 %\section{Similar Languages}
 
 \chapter{Specification}
@@ -199,6 +206,7 @@ The compiler is made up of two major components: A hierarchy of classes that get
 % based on from system F...
 \subsection{Parsing}
 This very first stage takes the textual representation of the program and converts it to an Abstract Syntax Tree that the subsequent stages manipulate. It does so according to the grammar of LJSP described in the Specification chapter.
+% uses parser combinator
 
 \subsection{\texttt{letn} expansion}
 \begin{figure}[ht]
@@ -338,7 +346,7 @@ We will conclude this section on Continuation-Passing Style by describing some o
 \begin{figure}[ht]
 \begin{alignat*}{2}
 &\text{FV}(y) &&\eqdef \{y\}\\
-&\text{FV}(d) &&\eqdef \varnothing\\
+&\text{FV}(d) &&\eqdef \emptyset\\
 &\text{FV}((\text{if}\ e_1\ e_2\ e_3)) &&\eqdef \text{FV}(e_1) \cup \text{FV}(e_2) \cup \text{FV}(e_3)\\
 &\text{FV}((\text{let}\ ((idn\ e_1))\ e_2)) &&\eqdef \text{FV}(e_1) \cup (\text{FV}(e_2) - \{idn\})\\
 &\text{FV}((\text{define}\ (name, p_1, \dots, p_n)\ e)) &&\eqdef \text{FV}(e) - \{name\} - \{p_1, \dots, p_n\}\\
@@ -405,9 +413,9 @@ def get_n_adder(n):
     return r
 \end{lstlisting}
 
-This example shows that there is more to anonymous functions than just the code they define. They can also access variables of the environment they are defined inside. This combination of code and environment is commonly called "closure". Separating the function from its context without taking care of these variable accesses will not produce valid code. Instead we need to make use of an idea that gives this stage its name: Closure conversion.
+This example shows that there is more to anonymous functions than just the code they define. They can also access variables of the environment they are defined inside. This combination of code and environment is commonly called a "closure". Separating the function from its context without taking care of these variable accesses will not produce valid code. Instead we need to make use of an idea that gives this stage its name: Closure conversion.
 
-Before we explain closure conversion in detail, it is necessary to define two concepts that we will make use of in our explanation: free and bound variables. A variable used in a function is called free, when it is not declared inside that function but instead comes from the environment. Conversely, a variable inside a function is bound, when it is declared within the function. These ideas can be explain very concisely using the lambda-calculus. Consider the simple term $M = \lambda x.(x\ y)$. The variable $x$ is bound in $M$, because it is a parameter to the abstraction. $y$, on the other hand, is a free variable and must be defined somewhere in the term that $M$ is a part of.
+Before we explain closure conversion in detail, it is necessary to define two concepts that we will make use of in our explanation: free and bound variables. A variable used in a function is called free, when it is not declared inside that function but instead comes from the environment. Conversely, a variable inside a function is bound, when it is declared within the function. These ideas can be explain very concisely using the lambda-calculus. Consider the simple term $M = \lambda x.(x\ y)$. The variable $x$ is bound in $M$, because it is a parameter to the abstraction. $y$, on the other hand, is a free variable and will likely be defined somewhere in the term that $M$ is a part of.
 
 The goal of closure conversion is to turn all free variables in the function to be converted into bound variables. The way this is achieved is by adding an additional parameter to the lambda, usually an array or dictionary, that contains the values of all previously free variables. Before the body of the lambda is exectued, these variables are then bound by assigning them to the value that the envirionment-variable gives for them.
 
