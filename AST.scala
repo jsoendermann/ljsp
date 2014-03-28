@@ -57,19 +57,12 @@ object AST {
 
 
 
-  // TODO actually use this
-  // Type class for C and LLVM IR
-  abstract class Type
-  abstract class TPtrTo(t: Type) extends Type
-
-
-
   // ################################ C AST classes ################################
   case class CModule(name: Idn, functions: List[CFunction])
 
   case class CFunction(name: Idn, params: List[Idn], declarations: List[CDeclareVar], statements: List[CStatement])
 
-  abstract class CType extends Type
+  abstract class CType
   case object CTInt extends CType
   case object CTIntPointer extends CType
   case object CTDouble extends CType
@@ -110,7 +103,7 @@ object AST {
   case class LFunction(name: String, params: List[Idn], statements: List[LStatement])
 
   // TODO tidy this up, make it possible to go up and down pointer levels, use LTFunctionPointer for everything
-  abstract class LType extends Type
+  abstract class LType
   case object LTI8 extends LType
   case object LTInt extends LType
   case object LTDouble extends LType
@@ -185,4 +178,3 @@ object AST {
   case class AArrayAccess(base: Idn, offset: Int) extends AExp
   case class AAlloc(size: Int) extends AExp
 }
-
