@@ -23,6 +23,7 @@
 %\makeatother
 % Source code listings
 \usepackage{listings}
+\lstset{frame=single, numbers=left, basicstyle=\ttfamily}
 % Line spacing
 \usepackage{setspace}
 % AST example
@@ -43,7 +44,7 @@
 \begin{document}
 % TODO why scala? why LLVM IR/C
 % TODO mention that LJSP is a subset of Scheme
-
+% TODO consistent spelling of "JavaScript"
 
 
 \maketitle
@@ -114,7 +115,7 @@ The second problem has been partly remedied by a new generation of JavaScript en
 
 In early 2013, Mozilla released asm.js, a project that claims to take these two approaches to their logical conclusion. It defines an extremely limited, statically typed subset of JavaScript that can be executed very quickly. This subset is intended as compilation targets for high level languages.
 
-The goal of this project is twofold:
+The goal of this project is twofold
 \begin{itemize}
 \item To design such a high level and provide a compiler for it that compiles the language to asm.js.
 \item To test the performance of this new language that we called LJSP and compare it to plain JavaScript.
@@ -128,26 +129,105 @@ To achieve the second goal, the project includes a ray tracer in JavaScript, par
 This chapter will describe the background and context of the LJSP project. It will give an appropriate level of technical details of the technologies involved in the compiler and justify the motivation for starting this project.
 
 \section{asm.js}
+% TODO add reference to asm.js spec
+
+Asm.js is a small subset of JavaScript that can be compiled to very fast machine code. Benchmarks show \cite{asmjsbenchmark} running times around twice the speed of native code. To showcase the speed of asm.js, researches at Mozilla compiled the Unreal gaming engine to asm.js, producing smooth and stutter free rendering inside the browser \cite{unreal}.
+
+The development and release of asm.js is the main motivation of the LJSP project. The goal of LJSP is to evaluate the performance achievable with a language that compiles to asm.js. This section will describe the concepts behind asm.js and give a technical description of its specification. The Implementation chapter below will build on this description to explain the asm.js code that the LJSP compiler outputs.
+
+Asm.js is designed as a very limited subset of JavaScript that includes information typically not included in JavaScript code. If the author of a function written as asm.js compatible code adds a statement that makes the function as compatible, and the browser of the user viewing a website that includes this code supports asm.js, the JavaScript engine of the browser can use that additional information to compile the code to very efficient Assembly.
+
+The way to opt-in to this optimisation is to add a \texttt{"use asm";} statement to the top of the function\footnote{The syntax for this opt-in is copied from the popular and widespread \texttt{"use strict";} that makes JavaScript engines less lenient when parsing JavaScript code.}. Supporting browsers (currently only Firefox) will then compile the code and output a notice such as "\texttt{successfully compiled asm.js code (total compilation time 25ms)}" in the case of successful compilation to the console when encountering this function.
+
+Most of the additional information that asm.js forces the programmer to include in his programs that would typically not be part of idiomatic JavaScript is type information. Unlike JavaScript, asm.js is statically typed, meaning every variable has a type inferable at compile time. The following examples will illustrate this difference. We start with a small function in standard Javascript).
+
+% TODO enclose all listings in figures
+\begin{lstlisting}
+function add(a, b) {
+    return a + b;
+}
+\end{lstlisting}
+
+The name of this function suggests that it was probably conceived to add two numbers. It could, however, be called with \texttt{add("hello ", "world");} and would yield the string \texttt{"hello world"}. Neither is it restricted in the type of numbers it accepts: it can be called with an arbitrary combination of integers and floating point numbers.
+
+The same function restricted to integers in asm.js would look as follows:
+
+\begin{lstlisting}
+function add_ints(a, b) {
+    a = a|0;
+    b = b|0;
+    
+    return (a + b)|0;
+}
+\end{lstlisting}
+
+The additional lines 2 and 3 are the abovementioned type information. They declare both parameters \texttt{a} and \texttt{b} to be of type int. In other languages such as C, this would be written as \texttt{int a, int b}. In valid asm.js, all parameters to every function get a type assigned in this way.
+
+The other change from the original JavaScript version to the asm.js version of the add function is the addition of a bitwise or with 0 to the result of the addition in line 5. This is necessary because of the other main feature of asm.js besides the possibility of compiling it efficiently. 
+
+% TODO add link to the js spec
+The asm.js specification guarantees that valid asm.js code evaluates to the same result regardless of whether or not the browser has asm.js support. If we consider the situation where the browser does have asm.js support and the function \texttt{add_ints} defined in the example above is called with two very large integers, the compiled, native code would add these two large ints and cause an integer overflow. If, however, the browser does not support asm.js and treats the code as normal JavaScript, adding two integers large enough that normally an overflow would occur causes the result to be cast to a floating point number according to the JavaScript specification.
+
+% TODO "not defined" is probably not correct. better: make no sense
+The bitwise or in the line \texttt{return (a + b)|0;} ensures that even in the case of missing asm.js support, the result returned by the function would still be an overflowed integer. The reason for this is that the bitwise or with 0 coerces the result to be of type int, because bitwise operations on floating point numbers are not defined. These expressions are therefore known as "type coercions" and asm.js makes heavy use of them.
+
+To illustrate type coercions with an example, consider the following interactive JavaScript session:
+
+\begin{lstlisting}
+> 2147483647 + 1
+2147483648
+> (2147483647 + 1) |0
+-2147483648
+\end{lstlisting}
+
+$2147483647$ is equal to $2^{31}-1$, the largest value that can be saved in a 32 bit signed integer variable. If we add one to this value without any coercion, the result is transparently cast to a double and returned. If, however, we include a type coercion, the result overflows to $-2^{31}$.
+
+To conclude this section, we will give an overview of the asm.js specification with a restriction on the parts that are relevant to the LJSP compiler. For reasons of length, this overview will leave out information that is unimportant for the project and is not meant as a general introduction to asm.js.
+
+Asm.js code is organised in asm.js modules which consist of a function that includes the \texttt{"use asm";} statement mentioned at the beginning of this section. As parameters, it can take a stdlib object that makes it possible to import certain functions from the JavaScript standard library into the asm.js module and an ArrayBuffer\footnote{In JavaScript, ArrayBuffer objects represent blocks of memory. These blocks can be used with views, such as Int32Array, that declare the content of the memory to be of a specific type.} object often called "heap". Besides this, it can also include:
 \begin{itemize}
-\item history, conception
-\item general idea
-\item idea of static typing/type coercion
-\item specification, parts that are used in the module
+\item Global variables
+\item Functions
+\item Function tables
+\item A return statement
 \end{itemize}
 
-\section{LLVM and emscripten}
-% paper on emcc (on desktop)
+Valid asm.js functions include enough type information to be statically typable as explained above. They can declare variables, perform arithmetic operations on these variables, branch using \texttt{if} statements, read from and write to the heap and call functions either by name or by looking them up in a function table.
+
+Function tables in asm.js are arrays of functions. These arrays must be of a length equal to a power of two. When using a function table to call a function, the variable that is used as index must be masked bitwise to ensure that function table lookup never failes with an out of bounds error. This is a complex idea best illustrated with an example. Assume our code includes a function table \texttt{ftable} that contains $8$ functions, and a variable \texttt{x} that holds the index to a function in \texttt{ftable} that we would like to call. This call could be achieved with the statement \texttt{ftable[x \& 7](param1, param2, ...);}. The bitwise AND with $7$ (equal to \texttt{ftable.length - 1}) ensures that regardless of the value \texttt{x} holds, no out of bounds error can occur. The reason asm.js allows multiple function tables is because all functions in a table must have the exact same type signature in parameters and return types.
+
+The return statement at the end can make functions defined inside the module visible to the outside.
+
+\section{LLVM and Emscripten}
+% TODO cite LLVM paper
+% TODO mention some of the more obscure uses of LLVM
+LLVM is a compiler project that includes and has spawned a large number of tools and programs related to the compilation of programs. At its core, it defines an intermediate representation called LLVM IR and an optimizer for this language. This intermediate representation aims to be a shared interface for front ends that parse programming languages and compile them to LLVM IR and back ends that take LLVM IR code and produce native code for a specific architecture such as x86 or arm. 
+
+% TODO cite paper on emcc (on desktop)
+While a large number of these front and back ends for various languages and architectures have been written, only one is relevant to the LJSP project: a LLVM IR to JavaScript compiler called Emscripten. Emscripten was written by the same people that invented asm.js, in fact, asm.js was created to fill a need the Emscripten developers had for a better compilation target.
+
+The LJSP compiler emits both C and LLVM IR code. This generated code can be compiled with Emscripten to asm.js. The Evaluation chapter will compare the running time of this code that Emscripten emits with the asm.js code that LJSP generates directly.
+
+\section{Ray tracing}
+Ever since the first computer were built, programmers have sought ways to generate pictures with programs. Especially with the rise of computer games, this has become a heavily researched area. Ray tracing is one such technique to generate images from description of 3D scenes.
+
+Before we describe the details of ray tracing, we have introduce two terms that we will refer to in our explanation: A \textbf{3D Scene} is an arrangement of objects at specific coordinates in 3D space. Object can include shapes such as spheres, cubes or planes, lights and a camera. The \textbf{camera} is not a visible object, but instead gives the perspective an angle from which the scene will be rendered. This is also commonly referred to as "eye". \textbf{Rendering} denotes the process of generating an image from a 3D scene and the program that does this is called a renderer.
+
+Ray tracing produces relatively impressive results with simple techniques. It works by shooting rays from the eye into the scene. The ray tracer then traces these rays and determines whether they hit an object in the scene. If they do, the process of shooting rays into the scene is repeated recursively with the intersection point as the origin of the rays to achieve photorealistic effects such as reflection. If they don't, black or some other background colour is displayed.
+
+This idea is illustrated by figure \ref{raytracingexplanation}.
+
+% TODO make a diagram that explains ray tracing
+\begin{figure}[ht]
+%\includegraphics{asdf.eps}
+\caption{Tracing rays}
+\label{raytracingexplanation}
+\end{figure}
 
 % TODO possibly include this at the end if not at word limit yet
 %    \section{Similar Languages}
 % lisps that compile to js but also coffeescript, dart, etc.
 
-\section{Ray tracing}
-\begin{itemize}
-\item what a renderer is
-\item the idea behind ray tracing
-\item how to do reflection
-\end{itemize}
 
 \chapter{Requirements}
 
@@ -808,12 +888,17 @@ Early on in the development of LJSP, it became necessary to test the output of e
 
 \chapter{Bibliography}
 \begin{thebibliography}{1}
+% TODO make links clickable
     \bibitem{githubarchive} {\em GitHub Archive} http://www.githubarchive.org/ accessed on 28.3.2014.
     \bibitem{topgithub} {\em Top Github Languages for 2013 (so far)} http://adambard.com/blog/top-github-languages-for-2013-so-far/ accessed on 28.3.2014
     \bibitem{jsgoodparts} Douglas Crockford (2008) {\em JavaScript: The Good Parts, Unearthing the Excellence in JavaScript}, pp. 101
     \bibitem{sysftal} Morrisett, Greg and Walker, David and Crary, Karl and Glew, Neal (1999). {\em From System F to Typed Assembly Language}, ACM Trans. Program. Lang. Syst.
     \bibitem{brendeich} Foreword by Brendan Eich to {\em Node: Up and Running}. Available at http://chimera.labs.oreilly.com/books/1234000001808/pr02.html accessed on 28.3.2014.
     \bibitem{appel} Andrew Appel (1992). {\em Compiling with Continuations} Cambridge University Press
+    % TODO add date and conference name to this reference
+    \bibitem{asmjsbenchmark} Alon Zakai, {\em Big Web App? Compile it!} http://kripken.github.com/mloc_emscripten_talk/\#/28 accessed on 30.3.2014
+    % TODO google "mozilla is unlocking the power of the web as a platform for gaming" and properly cite
+    \bibitem{unreal} TODOTODOTOD
 \end{thebibliography}
 
 
