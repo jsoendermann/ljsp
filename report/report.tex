@@ -201,6 +201,7 @@ The return statement at the end can make functions defined inside the module vis
 \section{LLVM and Emscripten}
 % TODO cite LLVM paper
 % TODO mention some of the more obscure uses of LLVM
+% TODO give examples of LLVM IR code
 LLVM is a compiler project that includes and has spawned a large number of tools and programs related to the compilation of programs. At its core, it defines an intermediate representation called LLVM IR and an optimizer for this language. This intermediate representation aims to be a shared interface for front ends that parse programming languages and compile them to LLVM IR and back ends that take LLVM IR code and produce native code for a specific architecture such as x86 or arm. 
 
 % TODO cite paper on emcc (on desktop)
@@ -337,6 +338,7 @@ The grammer for the Intermediate Representation of the LJSP compiler is given be
 % subset of scheme
 \section{Small-Step Semantics of LJSP}
 In this section, we give the small-step semantics of the LJSP language. In the expressions below, $i$ stands for an identifier, $v$ stands for a generic value, $e$ stands for an expression, $c$ stands for a context that an expression is evaluated within and $\Lambda$ stands for a \texttt{(lambda...)} expression.
+% TODO maybe change names from func_appl1 to "func appl 1"
 \begin{gather*}
 \inference[var]{}{\langle i, c \rangle~\rightarrow~\langle v, c\rangle~\text{if}~c(i) = v}\\\\
 %
@@ -425,6 +427,7 @@ Like many other compilers, the LJSP compiler is made up of compilation stages. T
 \end{figure}
 
 % TODO the name underneath the figure and the one in the text don't match
+% TODO mention special forms that front end stages use and how that's handled in testing
 Figure \ref{stagesflowchart} shows all the compilation stages that the LJSP compiler is made up of. These stages  can be grouped into three sections:
 \begin{itemize}
 \item \textbf{Front end stages}: These first six stages make up the first part of the transformations the code passes through. Their structure is that of a simple list as there is no branching of stages in the front end. These stages all operate on LJSP code, but they all reduce the complexity of the code. Letn expansion and prim op reduction reduce the number of distinct instructions in the code, CPS-translation makes control flow explicit while the latter two stages remove anonymous function objects by turning them into named functions. This reduction of complexity is necessary to bridge the gap between LJSP, a very high-level language that includes such concepts as functions as first class variables, and low-level output languages such as LLVM IR that do not include these concepts. In the diagram, they are depicted as boxes with a green background.
@@ -584,7 +587,26 @@ Calling \texttt{cont} substitutes the continuation that we see in the code above
 % move this to the beginning of the chapter
 Figure~\ref{cpstrans} shows CPS translations for all LJSP expressions. In the equations, $\cpstrans{e} k$ stands for the CPS translation of expression $e$ with continuation $k$.
 
-We will conclude this section on Continuation-Passing Style by describing some of the more complex CPS translation equations in more detail. The transformation for both the \texttt{define} and \texttt{lambda} expressions CPS translate the body of the function with a continuation passed to the function in a new parameter called $f_{cont}$ in the equations and \texttt{cont_n} in the code. This parameter has a correspondence in the translation for proc in the next equation: it is the $\lambda x_k.k(x_k)$ that gets added to the application when translating. The translation for primitive operations consists of two equations in the diagram, one equation to convert operations with more than one operands into multiple operations with two operands each and one equation to convert it to Continuation-Passing Style. Note that unlike the translation of regular function applications, the application of primitive operations does not include the additional continuation parameter just mentioned, as primitive operations are allowed to return.
+The transformation for both the \texttt{define} and \texttt{lambda} expressions CPS translate the body of the function with a continuation passed to the function in a new parameter called $f_{cont}$ in the equations and \texttt{cont_n} in the code. This parameter has a correspondence in the translation for proc in the next equation: it is the $\lambda x_k.k(x_k)$ that gets added to the application when translating. The translation for primitive operations consists of two equations in the diagram, one equation to convert operations with more than one operands into multiple operations with two operands each and one equation to convert it to Continuation-Passing Style. Note that unlike the translation of regular function applications, the application of primitive operations does not include the additional continuation parameter just mentioned, as primitive operations are allowed to return.
+
+This stage makes one additional change to the code that solves a problem that arises when other code wants to call a CPS-translated function: The function requires a continuation that it can call with its result, but the calling code is not necessarily in Continuation-Passing Style and requires the function it calls to return an ordinary return value. Therefore, after CPS-Translating the program, the LJSP compiler makes a copy of each function in the program with the suffix \texttt{_copy} added to its name. These new functions take the same number of arguments as the original version they copied minus one (the new continuation parameter added to the functions in the program). The body of the copied functions, however, is replaced by a call to the original function plus the identity function as continuation. The example below illustrates this for a simple function. First, the original function before CPS translating:
+\begin{lstlisting}
+function add(a, b):
+    return a + b
+\end{lstlisting}
+
+Now after completing this stage:
+\begin{lstlisting}
+function add(cont, a, b):
+   cont(a + b)
+   
+function add_copy(a, b):
+    return add(lambda x: x, 
+               a, b)
+\end{lstlisting}
+
+% TODO explain this
+These copied functions later function as entry points to the code.
 
 \subsection{Closure Conversion}
 % TODO properly position this figure
@@ -714,7 +736,7 @@ def get_n_adder(n):
 \end{lstlisting}
 
 \subsection{Conversion to IR (Intermediate Representation)}
-This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates and converts it into the Intermediate Representation of the LJSP compiler. While not simple, this is a rather uninteresting stage, as its work mainly consists of converting AST objects from LJSP AST classes to IR AST classes.
+This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates and converts it into the Intermediate Representation of the LJSP compiler. While not simple, this is a rather uninteresting stage, as its work mainly consists of converting AST objects from LJSP AST classes to IR AST classes. One significant change this stage does make to the code is that it wraps the expression that LJSP programs can have besides function definitions in its own function called \texttt{expression}.
 
 After passing through this stage, the code is in a sequential style consisting of a list of statements. This is opposed to the style of LJSP, where expressions are arranged as a tree.
 
@@ -738,6 +760,11 @@ z = x * x
 \end{lstlisting}
 which still evaluates to the same value as before.
 
+\subsection{Conversion to asm.js}
+This stage converts the IR code obtained after the intermediate stages to asm.js code. Because the Intermediate Representation (IR) of the LJSP compiler was designed to be similar enough to asm.js to be easily compilable, most of the work that used to be done in this stage could be moved to "Conversion to IR".
+
+The main difference between IR and asm.js code is memory management, which is necessary in asm.js. The memory model of the asm.js code that the compiler generates will be described in detail below.
+
 \subsection{Conversion to C}
 Like "Conversion to IR", this is again a stage that changes the types of the objects in the Abstract Syntax Tree. Unlike the previous stage, this is one of the most complex stages of the entire compiler. This is due to the fact that C is a statically typed language with explicit memory management, whereas the Intermediate Representation includes no type or memory information. This, in turn, means that the "Conversion to C" stage needs to derive the type of every variable that appears in the code.
 
@@ -757,25 +784,52 @@ function f(a) {
 
 The types used in the C code that the LJSP compiler outputs will be described in adequate detail in the Implementation chapter.
 
-\subsection{Conversion to asm.js}
-This stage converts the IR code obtained after the intermediate stages to asm.js code. Because the Intermediate Representation (IR) of the LJSP compiler was designed to be similar enough to asm.js to be easily compilable, most of the work that used to be done in this stage could be moved to "Conversion to IR".
+\subsection{Conversion to Emscripten C}
+This stage makes a number of manipulations to the C code generated by the previous stage to make it suitable to be processed and compiled by Emscripten. These changes include:
+\begin{itemize}
+\item Remove the \texttt{expression} function introduced by "Conversion to IR"
+\item For all functions that end in \texttt{_copy}\footnote{These are the ones created after CPS-Translation}, this stage adds another copy with an additional suffix of \texttt{_call_by_value}. This change is due to the type of the function's parameters and will be explained in detail when covering types in the Implementation chapter
+\item It changes memory allocation to use a custom memory manager. This topic will also be dealt with extensively in the next chapter.
+\end{itemize}
 
-The main difference between IR and asm.js code is memory management, which is necessary in asm.js. The memory model of the asm.js code that the compiler generates will be described in detail below.
-
-\subsection{Conversion to emscripten C}
-% TODO
 \subsection{Conversion to LLVM IR}
-This stage takes as its input the C AST generated by the "Conversion to C" stage. The reason for this is that 
-% TODO mention SSA, maybe in the background chapter?
+% TODO talk about how LLVM IR is SSA code and C variables are accessed via pointer, how this language adds another layer of pointers that are saved in registers
+This stage takes as its input the C AST generated by the "Conversion to C" stage. The reason for this is that LLVM IR code is very close to C. This stage makes use of the typing information derived in the last stage.
+
+As LLVM IR is a low level language, this stage consists of expanding each C statement to multiple LLVM IR statements. It makes no structural change to the code, but introduces a large number of new, temporary variables.
+
+The reason these temporary variables are necessary is because LLVM IR adds another layer of pointers to the code: Local variables in LLVM IR are mapped to registers and what were local variables in C become addresses in memory that need to be loaded when needed. Because the C code generated by the LJSP compiler already uses pointers extensively, this sometimes leads to triple pointers (\texttt{void***}) in the resulting LLVM IR.
+
+The following small example illustrates this. Consider the following line of C code:
+\begin{lstlisting}
+a = (void**)b;   // b is of type void*
+\end{lstlisting}
+
+This stage converts this line of C to the following three line of LLVM IR. In LLVM IR, local variables start with a \texttt{\%} sign. 
+
+\begin{lstlisting}
+%t1 = load i8** %b
+%t2 = bitcast i8* %t1 to i8**
+store i8** %t2, i8*** %a
+\end{lstlisting}
+
+Line 1 loads a pointer to b into variable \texttt{\%t1}. Note that \texttt{\%b} is of type \texttt{i8**} which is the equivalent of \texttt{void**} while in the C code it was of type \texttt{void*}. The reason for this is that the variable \texttt{\%b} holds a pointer to the value of what, in C code, was simple \texttt{b}. This value is saved to \texttt{\%t1} This illustrates the additional layer of pointers mentioned above.
+
+Line 2 casts \texttt{\%t1} and saves the result in \texttt{\%t2}. Typecasts in LLVM IR are accomplished with the \texttt{bitcast} instruction.
+
+Line 3 stores the result of the typecast in the memory that variable \texttt{\%a} points to. Again, compare \texttt{i8***} in LLVM IR to \texttt{void**} in C.
+
 \subsection{Conversion to Numbered LLVM IR}
-% TODO maybe mention in background chapter
+This last stage modifies the LLVM IR code generated by the previous stage so that variables introduced when converting to LLVM IR get renamed to sequential numbers, i.e. \texttt{\%0}, \texttt{\%1}, \texttt{\%2}, \dots This is the syntax that LLVM IR requires for unnamed values that do not get stored in memory.
 
 \section{Design of the Ray Tracer}
-% TODO describe idea behind ray tracer in bg chapter
 % TODO talk about why using a ray tracer and why adding the features below
-After giving a brief sketch of the idea behind ray tracing in the Background chapter, this section will describe the capabilities of the ray tracer included in the project. It will also explain the mathematical theory behind the calculations necessary for ray tracing.
+After giving a brief sketch of the idea behind ray tracing in the Background chapter, this section will explain in detail the capabilities of the ray tracer included in LJSP and the mathematical theory behind the calculations necessary for ray tracing.
 
-\begin{figure}[ht]
+\subsection{Features}
+
+% TODO maybe move this to the background or implementation chpater
+\begin{figure}%[ht]
 \begin{center}
 \includegraphics[scale=0.7]{raytracerscreenshot.eps}
 \caption{Ray traced 3D scene}
@@ -790,15 +844,52 @@ The ray tracer used to test the LJSP compiler includes the following features:
 \item Objects can be made reflective or diffuse
 \item Adjustable number of times a light ray gets reflected by reflective objects
 \item Both ambient and spot lights
-\item Shading \footnote{Varying intensities of light. Visible on the floor of the room in the example screen shot in Figure \ref{raytracerscreenshot}.} based on the angle from the surface normal to the light source
+\item Shading \footnote{Varying intensities of light. Visible for example on the floor of the room in the example screen shot in Figure \ref{raytracerscreenshot}.} based on the angle from the surface normal to the light source
 \item Antialiasing by downsampling \footnote{This refers to smoothing rugged edges in the scene by first rendering at four times the size of the desired image (width*2 x height*2) before downsizing the result by a factor of four.} 
 \end{itemize}
 
 Figure \ref{raytracerscreenshot} shows a rendering of a 3D scene that showcases these features.
 
+% TODO replace underpinning by a better word
+\subsection{Mathematical Underpinnings}
+The main objects of operation of the ray tracer are rays given by a position and a normalised direction vector: $r = \langle \vec{p}, \vec{d} \rangle$. It is important to note that rays are unlike lines in that they start at position $\vec{p}$ and only extend in the direction given by $\vec{d}$ whereas lines extend to infinity in both directions.
 
+The ray tracer further includes spheres given by a position and a radius: $s = \langle \vec{p}, r \rangle$. It also includes planes given by its normal and the distance from the origin $p = \langle \vec{n}, d \rangle$ and spotlights simply given by a position vector $l = \vec{p}$.
 
+When tracing a ray $r$, the first step is to find the closest object that intersects the path or $r$ if such an object exists. For this, it is necessary to compute both the intersection point and of a ray with both spheres and planes and also obtain the distance to the object, if there is such an intersection point. We will first describe this computations for a ray and a plane before explaining the more complex computation for a ray and a sphere.
 
+% TODO subscripts for all variables
+Given the ray $r = \langle \vec{p}, \vec{d_r} \rangle$ and the plane $p = \langle \vec{n}, d_p \rangle$. If the dot product $a$ of the direction vector of the ray and the normal of the plane $\vec{d_r} \cdot \vec{n}$ is equal to $0$, the ray runs parallel to the plane and does not intersect the plane\footnote{Experimental results proved that it is not necessary for successful rendering to consider the case where $r$ lies on the plane.}. If $a \neq 0$ , we treat the ray as a line and calculate $t$, a scalar with the property that $\vec{p} + t*\vec{d_r}$ gives the intersection point of ray and plane. This scalar is given by $-d_p-(\vec{p} \cdot \vec{n}) / (\vec{d_r} \cdot \vec{n})$. If $t < 0$, the plane lies behind the origin of the ray and there is no intersection point of $r$ and $p$.
+
+Calculating the intersection point and $t$ of a ray $r = \langle \vec{p_r}, \vec{d_r} \rangle$ and a sphere $s = \langle \vec{p_s}, r_s \rangle$ is somewhat more complex. The calculation used in the LJSP ray tracer described in the following is mostly based on \cite{physrendering}.
+
+Because the calculations will be made in the object space of $s$, which is the 3D space where the origin lies at $\vec{p_s}$, it is necessary to first translate both $r$ and $s$ to this space. This is very simple in the case of the sphere: Its position is simply set to $(0,0,0)$ as that is how the object space of $s$ is defined. To translate $r$ to the object space of $s$, it is necessary to subtract $\vec{p_s}$ from $\vec{p_r}$. The direction vector of the ray is independent of the position of the ray and does not need to be changed. To make the computation efficient, three temporary variables are now computed that are used repeatedly in the remaining computation:
+\begin{equation*}
+\begin{aligned}
+A &= d_r \cdot d_r\\
+B &= 2 \cdot (d_r \cdot p_r)\\
+C &= p_r \cdot p_r - r_s \cdot r_s\\
+D &= B \cdot B - 4 \cdot A \cdot C
+\end{aligned}
+\end{equation*}
+
+Calculating the intersection point means solving a quadratic equation that the variable $D$ is the discriminant of. If $D < 0$, the equation has no solution and $r$ and $s$ do not intersect. If $D \geq 0$, two more variables are computed:
+\begin{equation*}
+\begin{aligned}
+t_0 &= \frac{-B-\sqrt{D}}{2 A}\hspace{1.5cm}
+t_1 &= \frac{-B+\sqrt{D}}{2 A}
+\end{aligned}
+\end{equation*}
+
+If both $t_0$ and $t_1$ are less than $0$, there is no intersection point. If one of these two values is less than $0$, the other is returned as $t$. Otherwise the smaller one is returned.
+
+Returning to the process of tracing a ray $r$, after calculating the closest intersection point of the ray with the objects in the scene, the tracing function determines if this intersection point is illuminated by the spot light or if the light is obscured by some other object. It does so by constructing a new ray $r_n = \langle \vec{i}, \vec{d_l} \rangle$ with its position vector $\vec{i}$ being the intersection point and its direction vector $\vec{d_l}$ being a vector going from the intersection point to the light. Again, the closest intersection point of this ray with the objects in the scene is calculated. If there is none, or if it lies behind the light as seen from the ray, the original intersection point is visible from the light, otherwise it is not.
+
+If the point is illumnated by the light, the tracing function next calculates proper shading. If the light from the spot light hights the object that the $r$ intersects with at an angle, the intensity of the light is less than when it hits the object head-on. The intensity of the light hitting the intersection point is calculated by forming the dot product of the objects normal at the intersection point and the direction to the light calculated earlier as $\vec{d_l}$. To imitate ambient light, this value is set to $0.2$, if it is less than that.
+
+If the object hit by the ray $r$ is reflective, the tracing function recurses by tracing the reflection ray before returning a combination of the result of the recursion with the colour of the object. Otherwise it returns the objects colour illuminated with the light calculated in the last section.
+
+% TODO mention test lib and internal forms
 \chapter{Implementation}
 This chapter will describe the implementation details of the LJSP compiler. It builds on and assumes the previous chapter which describes the parts of the compiler from a theoretical perspective.
 
@@ -884,6 +975,11 @@ Early on in the development of LJSP, it became necessary to test the output of e
 % better test coverage
 % TODO possibly add: move type inference from C to IR conversion, make IR typed
 
+\chapter{User Guide}
+\section{Compiler}
+\section{Ray Tracer}
+\section{Testing}
+
 \newpage
 
 \chapter{Bibliography}
@@ -899,16 +995,14 @@ Early on in the development of LJSP, it became necessary to test the output of e
     \bibitem{asmjsbenchmark} Alon Zakai, {\em Big Web App? Compile it!} http://kripken.github.com/mloc_emscripten_talk/\#/28 accessed on 30.3.2014
     % TODO google "mozilla is unlocking the power of the web as a platform for gaming" and properly cite
     \bibitem{unreal} TODOTODOTOD
+    \bibitem{physrendering} Matt Pharr, Greg Humphreys (2010) {\em Physically Based Rendering, 2nd edition} pp. 116
 \end{thebibliography}
 
 
 
 \begin{appendices}
 
-\chapter{User Guide}
-\section{Compiler}
-\section{Ray Tracer}
-\section{Testing}
+
 
 \chapter{Programs Listings}
 
