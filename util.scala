@@ -33,12 +33,10 @@ object util {
     return r
   }
   
-  // TODO remove this function
   def rename_var(var_name: Idn, old_name: Idn, new_name: Idn) : Idn = {
     if (var_name == old_name)
       new_name
     else
       var_name
   }
-
 }
