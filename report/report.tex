@@ -45,6 +45,7 @@
 % TODO why scala? why LLVM IR/C
 % TODO mention that LJSP is a subset of Scheme
 % TODO consistent spelling of "JavaScript"
+% TODO add syntax highlighting
 
 
 \maketitle
@@ -257,9 +258,11 @@ The grammar of LJSP in Extended Backus-Naur Form is given below.
 
 <ident> ::= \texttt{[a-zA-Z=*+/\textless\textgreater!?-][a-zA-Z0-9=*+/\textless\textgreater!?-_]*}
 
-<lambda> ::= `(lambda (' <params> `)' <expr> `)'
+<lambda> ::= `(lambda (' <paramsPlus> `)' <expr> `)'
 
-<params> ::= <ident> | <ident> <params>
+<params> ::= <ident> <params> | $\epsilon$
+
+<paramsPlus> ::= <ident> <params>
 
 <letblocks> ::= <letblock> | <letblock> <letblocks>
 
@@ -891,6 +894,8 @@ If the object hit by the ray $r$ is reflective, the tracing function recurses by
 
 % TODO mention test lib and internal forms
 \chapter{Implementation}
+% TODO explain test_lib somewhere
+
 This chapter will describe the implementation details of the LJSP compiler. It builds on and assumes the previous chapter which describes the parts of the compiler from a theoretical perspective.
 
 We will first give an overview of the files in the repository to enable the reader to find the subsystems described in the design chapter in the code. Following this high-level overview, we will describe the implementation details of a number of compilation stages, filling in the details left out in the last chapter. After @@
@@ -907,21 +912,78 @@ The code is structured as follows:
 \item The functions that convert ASTs back to specific languages can be found in files that have file names starting with \texttt{code_generation_}. There are five such files in total, one each for every programming language that the LJSP compiler converts to or from: LJSP, IR, asm.js, C and LLVM IR.
 \item The file \texttt{run_tests.py} contains the testing framework described further down in the Testing chapter. All other files related to testing can be found in the \texttt{test/} folder.
 \item The ray tracer and all files related to it reside in the \texttt{ray_tracer/} folder.
+\item \texttt{jalloc.c} contains a custom memory mananger that will be explain in the next section.
+\item The file \texttt{util.scala} contains a small number of utility functions used throughout the rest of the code.
 \end{itemize}
 
 %code structure, where to find what in the repo
 % code_generation_* as opposite of parser
 
 \section{Implemenation of Various Stages}
-% parsing: % uses parser combinator, scala standard lib. maybe write down parser in a mathematical way (the parser combinators
-% cps translation: two functions, different types
-\section{Structure of the Generated Code}
-% closure data structure
+% TODO short intro, say that not all stages will be described
+\subsection{Parsing}
+Parsing is implemented using the parser combinator classes of the Scala standard library. This makes the code terse and readable. It also clearly reflects the grammar of LJSP in code form. The grammar rule for a \texttt{define} is given in the Specification chapter as follows:
+
+\begin{grammar}
+<define> ::= `(define (' <ident> <params> `)' <expr> `)'
+
+<params> ::= <ident> <params> | $\epsilon$
+\end{grammar}
+
+This rule is still visible in the Scala. Note that for the Scala parser combinators, \texttt{rep} has the meaning of "Zero or more", which made the additional \textit{params} rule unnecessary in the code.
+
+\begin{lstlisting}
+def define: Parser[SDefine] = 
+"(" ~> "define" ~> "(" ~> 
+    identifier ~ rep(identifier) ~ ")" ~ 
+    expression <~ ")" ^^ {
+        case name~params~")"~e => 
+            SDefine(name, params, e)
+}
+\end{lstlisting}
+
+
+% TODO explain why not custom parser
+
+\subsection{Prim op reduction}
+After the completion of this stage, the following primitive operations will have been removed: 
+\begin{itemize}
+\item The arithmetic negation operator \texttt{neg}. In most other languages, \texttt{-} is used for this. This operator is reduced to a subtraction from zero; the expression \texttt{(neg x)} gets converted to \texttt{(- 0 x)}.
+\item The boolean negation operator \texttt{not}. This is often written as \texttt{!} in computer science or $\neg$ in mathematics. If expressions of the form \texttt{(if (not $e_1$) $e_2$ $e_3$)} have their true and false branch swapped and get reduced to \texttt{(if $e_1$ $e_3$ $e_2$)}.
+\item The boolean \texttt{and}. Expressions of the form \texttt{(if (and $e_1$ $e_2$) $e_3$ $e_4$)} are converted to two nested if expressions: \texttt{(if $e_1$ (if $e_2$ $e_3$ $e_4$) $e_4$)}
+\item The boolean \texttt{or}: If expressions of the form \texttt{(if (or $e_1$ $e_2$) $e_3$ $e_4$)} get converted to two nested if expressions: \texttt{(if $e_1$ $e_3$ (if $e_2$ $e_3$ $e_4$))}, analoguously to \texttt{and} conversion
+\item \texttt{>=}. Expressions of the form \texttt{(>= $e_1$ $e_2$)} are reduced to the expression \texttt{(not (< $e_1$ $e_2$))} which then gets reduced recursively according to the rule to remove \texttt{not}s explained above.
+\item \texttt{<=}, equivalent to \texttt{>=} above.
+\end{itemize}
+
+\subsection{CPS-Translation}
+% TODO cps translation: two functions, different types
+
+\subsection{Hoisting}
+% TODO explain tuples that accumulate hoisted functions
+\subsection{Conversion to asm.js}
+% TODO explain how ftables are generated
+\subsection{Conversion to C}
+% TODO explain type derivation
+
+
+\section{Code generation}
+% TODO used to be implemented as toString methods in AST classes. incredibly messy, now separate, still recursive
+
+
+\section{Details of the Generated Code}
+% TODO closure data structure
+\subsection{Asm.js modules}
+% TODO explain memory model, stack reset
+\subsection{C code}
+% TODO explain types
+% TODO explain memory model, free_all (jalloc)
+
 
 \section{Implementation details of the Ray Tracer}
+% TODO HTML file, four buttons four running times
 % calls different versions of vectorDotProduct & ray... depending on button clicked
 % TODO: describe profiling that shows that raySph... is where the ray tracer spends most of its time. (maybe somewhere else)
-
 
 \section{Problems encountered \& resolved}
 % variables that contain functions, ftables generated at compile time
