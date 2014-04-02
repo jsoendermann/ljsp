@@ -1,5 +1,8 @@
 \documentclass[11pt]{report}
 
+% to make < and > work
+\usepackage[T1]{fontenc}
+% for appendices
 \usepackage[toc,page]{appendix}
 % CPS equations
 \usepackage{amsmath}
@@ -46,6 +49,7 @@
 % TODO mention that LJSP is a subset of Scheme
 % TODO consistent spelling of "JavaScript"
 % TODO add syntax highlighting
+% TODO "I' instead of "we"
 
 
 \maketitle
@@ -83,6 +87,7 @@ I would like to thank my supervisor Dr. Christian Urban for supervising my proje
 \newpage
 
 \chapter{Introduction}
+% ubiquity
 One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to the web. This phenomenon, often called "Web 2.0" is exemplified in the success of web applications such as GMail and Facebook.
 
 This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language that is supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, reflect this success: in 2013, JavaScript led this list by a substantial margin \cite{githubarchive} \cite{topgithub}.
@@ -100,6 +105,7 @@ So in 10 days in May 1995, I prototyped "Mocha," the code name Marc Andreessen h
 To overcome all doubts, I needed a demo in 10 days. I worked day and night, and consequently made a few language-design mistakes (some recapitulating bad design paths in the evolution of LISP), but I met the deadline and did the demo.
 \end{quote}
 
+% TODO problem with js: scope
 Criticism of JavaScript has mostly focussed on two areas:
 \begin{itemize}
 \item Inconsistencies and mistakes in the design of the language. Examples given for this often include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \\
@@ -131,6 +137,7 @@ This chapter will describe the background and context of the LJSP project. It wi
 
 \section{asm.js}
 % TODO add reference to asm.js spec
+% TODO cite asm.js pdf
 
 Asm.js is a small subset of JavaScript that can be compiled to very fast machine code. Benchmarks show \cite{asmjsbenchmark} running times around twice the speed of native code. To showcase the speed of asm.js, researches at Mozilla compiled the Unreal gaming engine to asm.js, producing smooth and stutter free rendering inside the browser \cite{unreal}.
 
@@ -185,7 +192,7 @@ $2147483647$ is equal to $2^{31}-1$, the largest value that can be saved in a 32
 
 To conclude this section, we will give an overview of the asm.js specification with a restriction on the parts that are relevant to the LJSP compiler. For reasons of length, this overview will leave out information that is unimportant for the project and is not meant as a general introduction to asm.js.
 
-Asm.js code is organised in asm.js modules which consist of a function that includes the \texttt{"use asm";} statement mentioned at the beginning of this section. As parameters, it can take a stdlib object that makes it possible to import certain functions from the JavaScript standard library into the asm.js module and an ArrayBuffer\footnote{In JavaScript, ArrayBuffer objects represent blocks of memory. These blocks can be used with views, such as Int32Array, that declare the content of the memory to be of a specific type.} object often called "heap". Besides this, it can also include:
+Asm.js code is organised in asm.js modules which consist of a function that includes the \texttt{"use asm";} statement mentioned at the beginning of this section. As parameters, it can take a stdlib object that makes it possible to import certain functions from the JavaScript standard library into the asm.js module and an ArrayBuffer\footnote{In JavaScript, ArrayBuffer objects represent blocks of memory.} object often called "heap". Besides this, it can also include:
 \begin{itemize}
 \item Global variables
 \item Functions
@@ -198,6 +205,39 @@ Valid asm.js functions include enough type information to be statically typable 
 Function tables in asm.js are arrays of functions. These arrays must be of a length equal to a power of two. When using a function table to call a function, the variable that is used as index must be masked bitwise to ensure that function table lookup never failes with an out of bounds error. This is a complex idea best illustrated with an example. Assume our code includes a function table \texttt{ftable} that contains $8$ functions, and a variable \texttt{x} that holds the index to a function in \texttt{ftable} that we would like to call. This call could be achieved with the statement \texttt{ftable[x \& 7](param1, param2, ...);}. The bitwise AND with $7$ (equal to \texttt{ftable.length - 1}) ensures that regardless of the value \texttt{x} holds, no out of bounds error can occur. The reason asm.js allows multiple function tables is because all functions in a table must have the exact same type signature in parameters and return types.
 
 The return statement at the end can make functions defined inside the module visible to the outside.
+
+% TODO ArrayBuffer should be written in monospace
+Concluding this section, I will explain the ArrayBuffer object mentioned above and the way that asm.js modules interact with it. In JavaScript, ArrayBuffer objects represet a block of memory that can hold any kind of data. It is, however, not possible to access this memory directly using the ArrayBuffer object. Instead, a subclass of another class, ArrayBufferView is created as a view on the ArrayBuffer. These views all interpret the memory held in the ArrayBuffer to be of a specific type. The example below, created with the Chrome JavaScript console, illustrates these classes and their usage:
+
+\begin{lstlisting}
+> var buf = new ArrayBuffer(12);
+> var i16view = new Int16Array(buf);
+> var i32view = new Int32Array(buf);
+
+> i16view;
+[0, 0, 0, 0, 0, 0]
+
+> i32view;
+[0, 0, 0]
+
+> i32view[0] = 42; i32view[1] = 65536;
+
+> i32view;
+[42, 65536, 0]
+> i16view;
+[42, 0, 0, 1, 0, 0]
+
+> new Float32Array(buf)
+[5.885453550164232e-44, 9.183549615799121e-41, 0]
+\end{lstlisting}
+
+In line 1 of this example, an ArrayBuffer that holds 12 bytes of memory gets created. In lines 2 and 3, we create two views to this ArrayBuffer. Both are of type integer, but \texttt{i16view} interprets the memory to be made up of ints with 2 bytes (16 bits), whereas \texttt{i32view} is a view that interprets the buffer as ints with length 4 (32 bits). This explains the result of the next two statements in lines 5 and 8: i16view is an array of length 6, because the 12 bytes of the ArrayBuffer get grouped into 6 ints of length 2 each. Equivalently i32view: its length is $12/4 = 3$.
+
+In line 11, the four byte view is used to write two numbers to the array. The result of this is confirmed in lines 13 and 14 which reflect that change. Line 15 proves that the views do not hold any data by themselves but are all views to the underlying ArrayBuffer. Note how the value $65536 = 2^{16}$ overflows from the less significant two bytes at \texttt{i16view[2]} to the next two bytes.
+
+The fact that views interpret the underlying bits to be of a specific type is again exemplified by line 19 which does not, as one might expect, return \texttt{[42.0, 65536.0, 0]}, but instead interprets the bits of the two integers as 32 bit floats.
+
+Similarly to function table calles explained above, accessing the values in an ArrayBuffer requires addtional safeguards to make sure the result is not undefined. According to the asm.js spec, array dereference expressions must be of the form $x[(e~\text{\&}~mask)~\text{>}\text{>}~i]$ with $mask$ being equal to the number of bytes in the ArrayBuffer\footnote{Which must be a multiple of $4096$} and $i$ being equal to the number of bytes the data type of the view used for the access is based on (e.g. $4$ in the case of \texttt{Int32View}). In combination, they prevent out-of-bounds accesses by discarding bits larger than the length of the array and shifting the index to the right size for the view.
 
 \section{LLVM and Emscripten}
 % TODO cite LLVM paper
@@ -739,6 +779,7 @@ def get_n_adder(n):
 \end{lstlisting}
 
 \subsection{Conversion to IR (Intermediate Representation)}
+% TODO mention that lets get converted to variable assignments
 This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates and converts it into the Intermediate Representation of the LJSP compiler. While not simple, this is a rather uninteresting stage, as its work mainly consists of converting AST objects from LJSP AST classes to IR AST classes. One significant change this stage does make to the code is that it wraps the expression that LJSP programs can have besides function definitions in its own function called \texttt{expression}.
 
 After passing through this stage, the code is in a sequential style consisting of a list of statements. This is opposed to the style of LJSP, where expressions are arranged as a tree.
@@ -900,6 +941,166 @@ This chapter will describe the implementation details of the LJSP compiler. It b
 
 We will first give an overview of the files in the repository to enable the reader to find the subsystems described in the design chapter in the code. Following this high-level overview, we will describe the implementation details of a number of compilation stages, filling in the details left out in the last chapter. After @@
 % TODO finish this
+% TODO explain why first generated code then compiler itself: b/c many of the internals of the compiler are a result of generated code
+
+\section{Details of the Generated Code}
+This section will give a detailed description of the code that the LJSP compiler outputs. It will first describe the asm.js modules generated by the compiler before explaining the C and LLVM code it generates.
+% TODO closure data structure
+\subsection{Asm.js modules}
+\subsubsection{Memory model}
+% TODO mention somewhere that all variables are of type double
+Asm.js offers three ways of saving values to memory: local variables, global variables and a heap in the form of an ArrayBuffer. In the modules generated by the compiler, all these variables are of type double and get casted to integers only inside expressions when necessary.
+
+Local variables are variables local to the function they are declared in. All local variables in a function have to be declared at the top of the function. When the compiler converts an asm.js AST to code, it scans through all functions to find local variables that are used inside the function to create the appropriate declarations. Because all local variables are of type double, all these declarations are of the form \texttt{var n = 0.0;}, because the way to declare a variable as double in asm.js is to initialise it with a floating point value.
+
+Every asm.js module generated by the LJSP compiler has exactly four global variables, shown by the code snipped below. 
+\begin{lstlisting}
+var sqrt = stdlib.Math.sqrt;
+var floor = stdlib.Math.floor;
+var D32 = new stdlib.Float32Array(heap);
+var mem_top = 0.0;
+\end{lstlisting}
+
+The first two global variables import two functions to the module: The square root function, which is used to implement the \texttt{sqrt} operator that LJSP includes as to its specification, and the floor function, which rounds a floating point number down to the previous integer. This function is used in the code to convert variables from float to integer.
+
+Global variable \texttt{D32} holds a Float32 View to the heap as explained in the Background chapter. Because all variables in LJSP are of type double, only this one view to the heap is necessary.
+
+The last global variable, \texttt{mem_top} is used for memory management. This leads to the next section, the memory model used for managing the heap.
+
+After Closure Conversion, the code includes calls to the \texttt{make-env} and \texttt{make-hl} functions that, in conjunction, are used to create closures.  The IR function in the example below is taken from a program that computes fibonacci numbers (the code was rearranged slightly to make it more readable). Note how the closure created in lines 6 and 7 is not called right away, but instead given as parameters to a recursive call to fib in line 8.
+
+\begin{lstlisting}
+function fib(cont, n) {
+    if (n < 2.0) {
+        cont.code(cont.env, 1.0)
+    } else {
+        var_3 = n - 1.0
+        env = make-env(n, cont)
+        closure = make-hl(func_0, env)
+        fib(closure, var_3)
+    }
+}
+\end{lstlisting}
+
+In asm.js code, this data structure is implemented with arrays that are saved in the ArrayBuffer object. Every asm.js module generated by the LJSP compiler includes a function called alloc given below. This function is used to allocate memory for new arrays.
+
+\begin{lstlisting}
+function alloc(size) {
+    size = +size;
+    var current_mem_top = 0.0;
+
+    current_mem_top = mem_top;
+    mem_top = +(mem_top + size);
+
+    return +current_mem_top;
+}
+\end{lstlisting}
+
+This function takes the number of needed elements and returns the index to the first element of a subarray of the heap of the required size. The variable \texttt{mem_top} always holds the next element of unallocated memory.
+
+The closure data structure is built by the compiler out of array as follows: It consists of a pointer to an array with two elements. The first element gives the index to the function in one of the function tables that contains the code of the closure. The second element contains a pointer to another array with a variable number of elements that contains the closure's environment. Figure \ref{asmjsclosure} shows this structure.
+
+\begin{figure}[ht]
+%\includegraphics{asdf.eps}
+\caption{The closure data structure in asm.js code}
+\label{asmjsclosure}
+\end{figure}
+
+% TODO make diagram
+
+% TODO mention that no state is shared between calls
+Because this variable gets increased by every memory allocation, it is necessary to free memory somewhere in the code, if we want to avoid memory overflows. The place where this happens are the functions that end in \texttt{_copy}, introduced by the CPS-Translation phase. Because the functions are the entry points to the module, they reset \texttt{mem_top} to $0$ before calling the function they were copied from.
+
+The next example shows the asm.js code of the \texttt{_copy} function for the \texttt{fib} function from the example above. Detailed explanations of all statements will be given in the next section.
+
+\begin{lstlisting}
+function fib_copy(n){
+// Parameter n is of type double
+n = +n;
+
+// Declare vars
+var closure = 0.0, env = 0.0;
+
+// Reset memory
+mem_top = 0.0;
+
+// Create continuation closure
+env = +alloc(+0);
+closure = +alloc(+2);
+D32[(~~+floor(+(closure + 0.0))|0) << 2 >> 2] = 2.0;
+D32[(~~+floor(+(closure + 1.0))|0) << 2 >> 2] = env;
+
+// Call original function
+return +fib(closure, n);
+}
+\end{lstlisting}
+
+This example also illustrates why \texttt{_copy} functions are necessary. Memory management is internal to the module and can not be accessed by the code calling functions inside the module. It would therefore be impossible for the caller to create the continuation that the \texttt{fib} function takes as it first argument and that \texttt{fib_copy} creates in lines 11 to 14.
+
+\subsubsection{Structure of the Module}
+
+Asm.js modules generated by the LJSP compiler are made up of the following elements:
+\begin{itemize}
+\item The four global variables and the \texttt{alloc} function that were described in the previous section
+\item A number of functions
+\item A number of function tables
+\item A return statement
+\end{itemize}
+
+An example return statement from the gen_code.js file included in the repository is given below. Only the \texttt{_copy} functions are exported from the module to ensure that only these functions are used as entry points and the heap gets properly reset before every computation. They are, however, exported under their original name (without the suffix), which makes the copying completely transparent to the user.
+
+\begin{lstlisting}
+return {vectorsDotProduct: vectorsDotProduct_copy, 
+    raySphereIntersectionPoint: 
+    raySphereIntersectionPoint_copy};
+\end{lstlisting}
+
+The function tables of the same program are shown in the next example. All functions in the module can be found in one of the function tables, even if they are always called by name. The name assigned to every table consists of \texttt{ftable} followed by the number of parameters the functions in that table take. This is visible in the fact that \texttt{_copy} functions can always be found in a function table with a parameter count one less than the table that contains the original function. In the example below, \texttt{vectorsDotProduct_copy} is in \texttt{ftable6} and \texttt{vectorsDotProduct} is in \texttt{ftable7}.
+
+As mentioned in the Background chapter, every function table has to have a size equal to a power of two. Because it is not always the case that this matches with the number of functions in the module, function tables with a length not equal to $2^x$ have their size increased to the next higher power of two by appending the first function in the table as many times as necessary. An example of this is \texttt{ftable2} in the code, which had its first element copied three times to reach a size of $2^3$. These copied functions are not used and only necessary to create valid asm.js code.
+
+\begin{lstlisting}
+var ftable6 = [vectorsDotProduct_copy];
+var ftable7 = [vectorsDotProduct];
+var ftable2 = [func_0, func_1, func_2, func_3, func_4,
+               func_0, func_0, func_0];
+var ftable10 = [raySphereIntersectionPoint_copy];
+var ftable11 = [raySphereIntersectionPoint];
+\end{lstlisting}
+
+To conclude this section, we will describe some of the more complex statements that the compiler outputs.
+
+While heap assignments work in principle as described above, in practise they require a number of casts and type coercions that makes them quite hard to read. The short example below shows the creation of a closure. Except for line breaks, variable renaming and the removal of redundant parentheses, this is unedited asm.js code as generated by the compiler.
+
+\begin{lstlisting}
+env = +alloc(+4);
+D32[(~~+floor(+(env+0.0))|0) << 2 >> 2] = A;
+D32[(~~+floor(+(env+(1.0))|0) << 2 >> 2] = cont_1;
+D32[(~~+floor(+(env+2.0))|0) << 2 >> 2] = s_r;
+D32[(~~+floor(+(env+(3.0))|0) << 2 >> 2] = var_28;
+closure = +alloc(+2);
+D32[(~~+floor(+(closure+0.0))|0) << 2 >> 2] = 2.0;
+D32[(~~+floor(+(closure+1.0))|0) << 2 >> 2] = env;
+\end{lstlisting}
+
+Creating a closure entails first creating the environment and then creating the closure itself. In the code above, the environment is created in lines 1 to 5. Because it is made up of four variables, the first line allocates an array with four elements. The \texttt{+} signs in front of the call to \texttt{alloc} and many other expressions in the code are type coercions. These are explained in detail in the Background chapter.
+
+After allocating memory in line 1, the four variables that make up the environment (\texttt{A}, \texttt{cont_1}, \texttt{s_r} and \texttt{var_28}) are assigned to the four spaces in the array in lines 2 to 5. The computation of the index to \texttt{D32} consists of many different parts that we will now go through in detail.
+
+The expression \texttt{... {<}< 2 {>}> 2} on the very outside does not change the result of what comes before it, but is necessary because the asm.js spec requires a right shift by $log_2~4$ when accessing the heap through a view with a datatype of length four bytes such as Float32Array. Because this right shift on its own would change the value of the index we compute, we add a left shift by the same number of bits in front of the right shift. This problem could also be solved by changing array index computation so that the right shift alone computes the correct result, but in practise, this back and forth shifting turned out to have a small impact on performance.
+
+The remaining expression is a call to the floor function of the following, somewhat odd looking, form: \texttt{\textasciitilde\textasciitilde+floor(...)|0}. This is the asm.js way of casting a double to an integer. This is necessary, because all variables in the module are of type double, but array indices have to be of type int. Inside that cast, the variable holding the base of the environment (\texttt{env}) is added to an offset going from $0$ to $3$.
+
+After the environment variable has been constructed, the rest of the example creates the closure itself. As mentioned above, closure variables are arrays of length two. In line 7, the index to the function in its function table is assigned to the element at offset 0. Line 8 assignes the environment variable to the element at offset 1.
+
+While the number assigned in line 7 seems, at first sight, to give insufficient information to identify the function to be called as there is more than one function table in the program, it does, in fact, suffice to uniquely determine the correct function table the index belongs to. The reason for this is that later in the code when this closure is called, the number of parameters it is called with, is known at compile time. The name of the function table is then given by the expression \texttt{"ftable" + (params.size + 1).toString}.
+% TODO explain why
+
+\subsection{C code}
+\subsubsection{Memory model}
+\subsubsection{Structure of the Module}
+% TODO explain types
+% TODO explain memory model, free_all (jalloc)
 
 \section{Structure of the Code}
 The code of the LJSP compiler follows a clear structure that separates the code into modules and that makes it easy to find related modules. The necessity for this structure became evident quickly during the development of the compiler, as it was often necessary to edit multiple parts of the code simultaneously.
@@ -966,18 +1167,8 @@ After the completion of this stage, the following primitive operations will have
 \subsection{Conversion to C}
 % TODO explain type derivation
 
-
 \section{Code generation}
 % TODO used to be implemented as toString methods in AST classes. incredibly messy, now separate, still recursive
-
-
-\section{Details of the Generated Code}
-% TODO closure data structure
-\subsection{Asm.js modules}
-% TODO explain memory model, stack reset
-\subsection{C code}
-% TODO explain types
-% TODO explain memory model, free_all (jalloc)
 
 
 \section{Implementation details of the Ray Tracer}
@@ -1059,15 +1250,5 @@ Early on in the development of LJSP, it became necessary to test the output of e
     \bibitem{unreal} TODOTODOTOD
     \bibitem{physrendering} Matt Pharr, Greg Humphreys (2010) {\em Physically Based Rendering, 2nd edition} pp. 116
 \end{thebibliography}
-
-
-
-\begin{appendices}
-
-
-
-\chapter{Programs Listings}
-
-\end{appendices}
 
 \end{document}
