@@ -1257,6 +1257,17 @@ After the completion of this stage, the following primitive operations will have
 \end{itemize}
 
 \subsection{CPS-Translation}
+The code for CPS-Translation closely resembles the equations given in the Design chapter. One peculiarity of the CPS-Translation function is that it comes in two versions taking two different types of continuations. The first line of the definitions of both functions are shown below:
+
+\begin{lstlisting}
+def cps_trans(e: SExp, k: SExp => SExp) : SExp
+def cps_tail_trans(e: SExp, c: SExp) : SExp
+\end{lstlisting}
+
+While both function take the expression to be CPS translated as their first parameter, the first function takes a function that maps an \texttt{SExp} to an \texttt{SExp} as its second parameter while the second function takes the continuation in a simple \texttt{SExp}. In effect, the first function takes a part of the Abstract syntax tree that the result of CPS-Translating \texttt{e} is to be inserted into, while the second function takes an expression that contains the continuation in the context of the program to be compiled.
+
+To further illustrate this concept, consider this translation of 
+
 % TODO cps translation: two functions, different types
 
 \subsection{Hoisting}
