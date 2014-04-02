@@ -16,10 +16,7 @@ object cps_translation {
   def cps_trans(e: SExp, k: SExp => SExp) : SExp = e match {
     // CPS-translate all function definitions and the expression
     case SProgram(ds, e) => {
-      SProgram(ds.map{d => 
-        val c = SIdn(fresh("cont"))
-        SDefine(d.name, c :: d.params, cps_tail_trans(d.e, c))
-      }, cps_trans(e, k))
+      SProgram(ds.map{cps_trans(_, (e: SExp) => e).asInstanceOf[SDefine]}, cps_trans(e, k))
     }
 
     // For SDefine case see further down, as its CPS translation is very similar to that
@@ -85,17 +82,12 @@ object cps_translation {
 
 
     case SLet(idn, e1, e2) => {
-      // c is a simple continuation lambda
       val f = SIdn(fresh("var"))
-      //val c = SLambda(List(f), k(f))
 
       // TODO can this be simplified to   => k(ce2) ?
       val ce2 = cps_trans(e2, (ce2: SExp) => SLet(f, ce2, k(f)))
 
       cps_trans(e1, (ce1: SExp) => SLet(idn, ce1, ce2))
-      // This creates a lambda with a parameter of the same name as the identifier in the let
-      // e1 is CPS translated and applied to this new lambda
-      //cps_tail_trans(e1, SLambda(List(idn), ce2))
     }
   }
 
