@@ -1266,9 +1266,43 @@ def cps_tail_trans(e: SExp, c: SExp) : SExp
 
 While both function take the expression to be CPS translated as their first parameter, the first function takes a function that maps an \texttt{SExp} to an \texttt{SExp} as its second parameter while the second function takes the continuation in a simple \texttt{SExp}. In effect, the first function takes a part of the Abstract syntax tree that the result of CPS-Translating \texttt{e} is to be inserted into, while the second function takes an expression that contains the continuation in the context of the program to be compiled.
 
-To further illustrate this concept, consider this translation of 
+To further illustrate this concept, consider this translation of \texttt{SIf} statements used in earlier versions of the compiler:
 
-% TODO cps translation: two functions, different types
+\begin{lstlisting}
+case SIf(e1, e2, e3) => {
+    val c = SIdn(fresh("var"))
+    val p = SIdn(fresh("var"))
+    
+    cps_trans(e1, (ce1: SExp) =>
+        SLet(c, SLambda(List(p), k(p)),
+            SIf(ce1, cps_tail_trans(e2, c), 
+                     cps_tail_trans(e3, c))))}
+\end{lstlisting}
+
+In mathematical notation, this can be expressed as
+
+\begin{alignat*}{2}
+&\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k &&\eqdef \cpstrans{e_1} \lambda x.(\text{let}~c~=~\lambda p.k(p)~\text{in}~(\text{if}\ x\ \cpstrans{e_2}c\ \cpstrans{e_3}c) \\
+\end{alignat*}
+
+This version of the CPS-translation of if expressions creates a lambda ($\lambda p.k(p)$ in the equation above) and CPS-translates $e_2$ and $e_3$ with this lambda as their continuation. Because this is a lambda in the context of the program, not in the context of the compiler, it requires the additional \texttt{cps_tail_trans} function.
+
+In contrast, this is the CPS-translation of if expressions in the current version of the compiler:
+
+\begin{lstlisting}
+case SIf(e1, e2, e3) => {
+    cps_trans(e1, (ce1: SExp) => 
+        SIf(ce1, cps_trans(e2, k), 
+                 cps_trans(e3, k)))}
+\end{lstlisting}
+
+Or expressed in mathematical notation\footnote{This is equal to the equation given in the Design chpater.}
+\begin{alignat*}{2}
+&\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k &&\eqdef \cpstrans{e_1} \lambda x.(\text{if}\ x\ \cpstrans{e_2}k\ \cpstrans{e_3}k) \\
+\end{alignat*}
+
+This version applies the continuation function k twice. This avoids the introduction of the \texttt{lambda} necessary in the previous version, but comes at the cost of code duplication: The AST subtree saved in k will be used in both branches of the if expression. We will return to this trade off in the Evaluation chapter where the reasoning behind the choice for the second version will be explained. It is, however, important to mention here that \texttt{cps_tail_trans} can not be avoided completely: When CPS-translating \texttt{SDefine} and \texttt{SLambda} expressions that receive their continuations in a parameter, it is necessary to use \texttt{cps_tail_trans}, as these parameters are again on the level of the program, not on the one of the compiler.
+
 
 \subsection{Hoisting}
 % TODO explain tuples that accumulate hoisted functions
@@ -1282,6 +1316,15 @@ To further illustrate this concept, consider this translation of
 
 
 \section{Implementation details of the Ray Tracer}
+This section will describe the implementation details of the ray tracer. All files related to it can be found in the \texttt{ray_tracer/} directory. They are:
+\begin{itemize}
+\item \texttt{ray_tracer.html}, this is the html file that loads all the JavaScript files and shows a canvas for them to draw on together with four buttons that let the user decide how to render the scene
+\item \texttt{ray_tracer.js}, this file contains the ray tracer itself
+\item \texttt{handwritten_asm.js}, this file contains handwritten asm.js code for two functions that the ray tracer uses.
+\item \texttt{gen_code.js}, this file contains the same two functions as \texttt{handwritten_asm.js} compiled by the LJSP compiler from \texttt{ljsp_code.scm} which contains the LJSP source of these two functions
+\item \texttt{emcc_output.js}, this file contains the result of first compiling \texttt{ljsp_code.scm} to C using the LJSP compiler and then compiling that C code to asm.js using Emscripten
+\end{itemize}
+
 % TODO HTML file, four buttons four running times
 % calls different versions of vectorDotProduct & ray... depending on button clicked
 % TODO: describe profiling that shows that raySph... is where the ray tracer spends most of its time. (maybe somewhere else)
@@ -1322,6 +1365,8 @@ Early on in the development of LJSP, it became necessary to test the output of e
 % ray tracer to test performance
 
 \chapter{Evaluation}
+% TODO show profiler image in evaluation chapter
+% TODO explain in the evaluation chapter why avoiding cps_tail_trans is better
 % TODO mistake: making all params in c of same type. did this b/c it has to be like this in asm.js code but it would make all the pointer stuff unnecessary in C
 % TODO ast transformations would be nicer if the compiler generated the subtrees from short code snippets instead of creating the objects manually
 \section{Evaluation against requirements}
