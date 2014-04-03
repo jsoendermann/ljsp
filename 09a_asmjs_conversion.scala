@@ -24,7 +24,7 @@ object asmjs_conversion {
     AModule("AsmModule", functions_without_expression.map{f => convert_function_to_asmjs(fnames_map_pow_2, f)}, fnames_map_pow_2)
   }
 
-  def ftable_name_and_index_for_fname(ftables: Map[String, List[Idn]], f: String): Tuple2[String, Int] = {
+  def fname_to_ftable_index(ftables: Map[String, List[Idn]], f: String): Tuple2[String, Int] = {
     ftables.foreach{ case (ftable, fnames) => {
       fnames.zipWithIndex.foreach{ case(fname, index) => {
         if (fname == f) 
@@ -65,15 +65,13 @@ object asmjs_conversion {
     }
 
     case IVarAssignment(hl_idn, IHoistedLambda(f_name, env)) => {
-      val hl_var = AIdn(hl_idn)
-
       // Make array with
       // 1. The ftable index (the correct ftable will be determined once the 
       //    hoisted lambda is being called by looking at the number of params 
       //    it's being called with)
       // 2. A pointer (array index) to the environment array
       AVarAssignment(hl_idn, AAlloc(2)) ::
-      AArrayAssignment(hl_idn, 0, AStaticValue(ftable_name_and_index_for_fname(ftables, f_name)._2)) ::
+      AArrayAssignment(hl_idn, 0, AStaticValue(fname_to_ftable_index(ftables, f_name)._2)) ::
       AArrayAssignment(hl_idn, 1, AIdn(env)) ::
       Nil
     }
