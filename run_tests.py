@@ -19,7 +19,8 @@ OFF = '\033[0m'
 RACKET_PATH = "/Applications/Racket v5.3.6/bin/racket"
 LLI_PATH = "/Users/json/clang+llvm-3.3-x86_64-apple-darwin12/bin/lli"
 
-LJSP_TARGETS = ["parsed", "letExp", "reducePrimOps", "cps", "cc", "hoist"]
+FRONT_END_STAGES = ["parsed", "letExp", "reducePrimOps", "cps", "cc", "hoist"]
+BACK_END_STAGES = ["c", "llvmIr", "numLlvmIr"]
 
 # compile
 #print "Compiling compiler..."
@@ -43,6 +44,26 @@ def floats_equal(a, b):
         return True
     return False
 
+def test_back_end(back_end, source, res):
+    source_file_name = path.join(temp_dir_name, back_end + "_output.c")
+    output_file_name = path.join(temp_dir_name, back_end + "_output")
+
+    compile_to_file(source_file_name, back_end, source)
+
+    if back_end == "c":
+        subprocess.call(["cc", source_file_name, "-o", output_file_name])
+        output = float(subprocess.check_output([output_file_name]))
+
+    if back_end == "llvmIr" or back_end == "numLlvmIr":
+        output = float(subprocess.check_output([LLI_PATH, source_file_name]))
+
+    if floats_equal(res, output):
+        print GREEN + " " + back_end + " success" + OFF
+    else:
+        print RED + " " + back_end + " failure, " + str(res) + " != " + str(output) + OFF
+        exit(1)
+
+
 for source_file_path in glob.glob("./test/test_cases/*.scm"):
     print "Testing "+os.path.basename(source_file_path)
 
@@ -52,7 +73,7 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
 
 
     
-    for target in LJSP_TARGETS:
+    for target in FRONT_END_STAGES:
         target_res = scheme_eval(test_lib + run_compiler(["--" + target], source))
 
         if floats_equal(res, target_res):
@@ -66,43 +87,8 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
     temp_dir_name = "tmp_files_" + ''.join(random.choice(string.ascii_lowercase) for _ in range(5))
     mkdir(temp_dir_name)
 
-    # compile to C
-    c_source_file_name = path.join(temp_dir_name, "c_output.c")
-    c_exe_file_name = path.join(temp_dir_name, "c_output")
-    compile_to_file(c_source_file_name, "c", source)
-
-    subprocess.call(["cc", c_source_file_name, "-o", c_exe_file_name])
-
-    c_output = float(subprocess.check_output([c_exe_file_name]))
-
-    if floats_equal(res, c_output):
-        print GREEN + " C success" + OFF
-    else:
-        print RED + " C failure, " + str(res) + " != " + str(c_output) + OFF
-        exit(1)
-
-    # compile to LLVM IR
-    llvm_ir_source_file_name = path.join(temp_dir_name, "llvm_ir_output.s")
-    compile_to_file(llvm_ir_source_file_name, "llvmIr", source)
-
-    llvm_ir_output = float(subprocess.check_output([LLI_PATH, llvm_ir_source_file_name]))
-
-    if floats_equal(res, llvm_ir_output):
-        print GREEN + " LLVM IR success" + OFF
-    else:
-        print RED + " LLVM IR failure, " + str(res) + " != " + str(llvm_ir_output) + OFF
-        exit(1)
-
-    # compile to numbered LLVM IR
-    num_llvm_ir_source_file_name = path.join(temp_dir_name, "num_llvm_ir_output.s")
-    compile_to_file(num_llvm_ir_source_file_name, "numLlvmIr", source)
-
-    num_llvm_ir_output = float(subprocess.check_output([LLI_PATH, num_llvm_ir_source_file_name]))
-
-    if floats_equal(res, num_llvm_ir_output):
-        print GREEN + " numbered LLVM IR success" + OFF
-    else:
-        print RED + " numbered LLVM IR failure, " + str(res) + " != " + str(num_llvm_ir_output) + OFF
-        exit(1)
-
+    # test back end stages
+    for back_end in BACK_END_STAGES:
+        test_back_end(back_end, source, res)
+    
     shutil.rmtree(temp_dir_name)
