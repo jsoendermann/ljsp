@@ -232,7 +232,7 @@ object c_conversion {
     case IStaticValue(d) => (Nil, CStaticValue(d) :: Nil)
 
 
-    case _ => (Nil, CIdn("###" + s.getClass.getSimpleName + " " + s.toString) :: Nil)
+    case _ => throw new IllegalArgumentException(s.getClass.getSimpleName + " " + s.toString)
   }
 
   def rename_env_var_in_c_statement_list(sts: List[CStatement], env_name: Idn) : List[CStatement] = {
