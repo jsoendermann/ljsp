@@ -371,13 +371,13 @@ function render(renderType) {
     var elapsed = new Date().getTime() - start;
     var resultText;
     if (renderType === 0) {
-        resultText = "Rendered using standard JavaScript in " + (elapsed/1000.0) + " seconds.";
+        resultText = "Rendered in " + (elapsed/1000.0) + " seconds using standard JavaScript.";
     } else if (renderType === 1) {
-        resultText = "Rendered using LJSP asm.js in " + (elapsed/1000.0) + " seconds.";
+        resultText = "Rendered in " + (elapsed/1000.0) + " seconds using LJSP asm.js.";
     } else if (renderType === 2) {
-        resultText = "Rendered using emscripten asm.js in " + (elapsed/1000.0) + " seconds.";
+        resultText = "Rendered in " + (elapsed/1000.0) + " seconds using emscripten asm.js.";
     } else if (renderType === 3) {
-        resultText = "Rendered using handwritten asm.js in " + (elapsed/1000.0) + " seconds.";
+        resultText = "Rendered in " + (elapsed/1000.0) + " seconds using handwritten asm.js.";
     }
     
     document.getElementById("timeAsmJs").innerHTML = resultText;
