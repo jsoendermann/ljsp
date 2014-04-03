@@ -1384,15 +1384,17 @@ Finally, this stage introduces return statements to all functions. If the last s
 \subsection{Conversion to C}
 This is one of the most complex stages in the LJSP compiler. This is reflected in its implementation, which is long and complex compared to the other stages.
 
-Unlike the other stages, which convert statements of one kind to statements of another kind, this stage converts IR statements to tuples of declarations and C statemnets. Deriving the correct type of the variables to be declared is one part of the work of this stage.
+Unlike the other stages, which convert statements of one kind to statements of another kind, this stage converts IR statements to tuples of declarations and C statemnets. This is reflected in the type of the conversion function which returns a result of type \texttt{(List[CDeclareVar], List[CStatement])}. Deriving the correct type of the variables to be declared is one part of the work of this stage.
 
-In the Intermediate Representation, it is not necessary to declare any variables. Consider an IR statement such as \texttt{a = 3.0;}. In C, this statement gets expanded to
+In the Intermediate Representation, it is not necessary to declare any variables before using them. Consider an IR statement such as \texttt{a = 3.0;}. In C, this statement gets expanded to
 \begin{lstlisting}
 double* a;
 ...
 a = (double*)malloc(sizeof(double) * 1);
 *a = 3.0;
 \end{lstlisting}
+
+The implementation of the part of the code that accomplishes this transformation is shows below.
 
 \begin{lstlisting}
 case IVarAssignment(idn, IStaticValue(d)) => {
@@ -1405,9 +1407,20 @@ case IVarAssignment(idn, IStaticValue(d)) => {
 }
 \end{lstlisting}
 
+Line 2 of this example creates the first list in the tuple: a list with one element which contains the declaration of the variable assigned to to be of type \texttt{CTDoublePointer} which is the compiler's representation of \texttt{double*}.
 
-% TODO explain type derivation
+Lines 4 to 7 create the second list of the tuple consisting of the two statements that allocate memory and assign the static value \texttt{d} to the newly allocated memory by dereferencing the variable.
+
+
+% TODO list types for all expressions
+
 \subsection{Conversion to LLVM IR}
+
+Although the file containing this stage is the largest of all the files containing the compilation stages, this is is a simple stage in terms of the its transformation. Its main function expands every CStatement into a number of LLVM IR statements but it makes no structural changes to the Abstract Syntax Tree.
+
+% TODO give expansions for all C statements
+
+% TODO Explain somewhere why C was added as a compilation target, why LLVM IR after compilation to asm.js, maybe in evaluation?
 
 % TODO in design section, explain why LLVM IR code gets renumbered, does this have any effect on the running time?
 
@@ -1456,15 +1469,53 @@ There are four different rendering methods in total which correspond to the four
 The \texttt{ray_tracer.js} file contains a complete implementation of the ray tracer. Two functions in that file, \texttt{raySphereIntersectionPoint} and \texttt{vectorsDotProduct}, 
 
 \subsection{Internals}
+\subsubsection{The \texttt{ray_tracer.js} file}
 The internals of the ray tracer can be found in \texttt{ray_tracer.js}. This file consists of one function called \texttt{render}. The \texttt{render} function gets called with an integer value that determines which rendering method will be used and it writes the result of the rendering process to the canvas.
 
-The \texttt{render} function is split into a number of sections. It starts with declarations of global variables 
+The \texttt{render} function is split into a number of sections. It starts with declarations of global variables that hold the objects making up the scene (\texttt{spheres}, \texttt{planes} and \texttt{lights}). The global variables section further contains the definition of two variables that are used for floating point math (\texttt{hugeValue} and \texttt{tinyValue}). The next section contains definitions for all the classes used in the ray tracer. It is followed by a number of sections that define functions on these classes, such as the dot product for the \texttt{Vector} class or colour mixing for the \texttt{Colour} class. None of these functions are particularly noteworthy, except for the \texttt{vectorsDotProduct} which will be described below.
+
+Following these small functions are the two intersection functions that calculate intersection points of rays with spheres and planes. These functions follow the mathematical description of the design chapter very closely. This section also contains the \texttt{closestIntersectionPoint} function that takes a ray as its parameter and loops over all objects in the scene, calling the two other functions that make up this section, depending on whether the current object is a sphere or a plane. An implementation detail not mentioned in the Design chapter is that this function contains a safeguard inside the loop that loops over all the objects of the following form:
+
+\begin{lstlisting}
+if (k < tinyValue) {
+    continue;
+}
+\end{lstlisting}
+
+\texttt{k} is the distance from the origin to the ray to the found intersection pont. When this value is very slow, it usually means that a reflected ray originating from the surface of an object was found to intersect that same object due to rounding errors. Because this is not the result we are looking for, the function skips this object and \texttt{continue}s.
+
+The last function that makes up the main part of the ray tracer is the \texttt{trace} function. This function follows the description given in the Design chapter very closely.
+
+The render function adds with a list of statements that make up the main method of the renderer. They create the objects that make up the scene, initialise the canvas that the result is drawn on, call trace for every pixel and stop the time it takes to render. To achieve the antialiasing effect described above, the render function creates two canvas objects, one that belongs to the canvas that the user sees and one, four times the size of the first one, that is hidden to the user. The renderer then renders the image on the second, large canvas and draws it to the first canvas at half scale. 
+
+\subsubsection{Implementation of different rendering methods}
+
+The \texttt{render} function takes one parameter that determines the rendering method. The implementation of this is shown in the code snippet below, which shows an abridged version of the \texttt{raySphereIntersectionPoint} function.
+
+\begin{lstlisting}
+function raySphereIntersectionPoint(r_original, s) {
+  if (renderType === 1) {
+    // Render using LJSP asm.js
+    return jModule.raySphereIntersectionPoint(...);
+  } else if (renderType === 2) {
+    // Render using Emscripten asm.js
+    ...
+  } else if (renderType === 3) {
+    // Render using handwritten asm.js
+    ...
+  } else if (renderType === 0) {
+    // Render using standard JavaScript
+    ...
+  }
+}
+\end{lstlisting}
+
+Depending on the value of renderType, one of the four rendering methods is used.
 
 
 
 
-% TODO mention oversampling
-
+% TODO for evaluation: ray tracer includes shading but not based on distance from light, only based on angle
 
 
 
