@@ -177,7 +177,7 @@ object AST {
   case class AStaticValue(d: Double) extends AExp
   case class ADoubleToInt(e: AExp) extends AExp
   case class AFunctionCallByName(f: Idn, params: List[AExp]) extends AExp
-  case class AFunctionCallByIndex(ftable: Idn, fpointer: Idn, mask: Int, params: List[AExp]) extends AExp 
+  case class AFunctionCallByIndex(ftable: Idn, fpointer: Idn, params: List[AExp]) extends AExp 
   case class APrimitiveInstruction(op: String, as: List[AExp]) extends AExp
   case class AHeapAccess(index: Idn) extends AExp
   case class AArrayAccess(base: Idn, offset: Int) extends AExp

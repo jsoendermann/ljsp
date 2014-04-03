@@ -30,7 +30,7 @@ object code_generation_asmjs {
     }
     
     """ +
-    m.functions.map{asmjs_function_to_string}.mkString("\n") + 
+    m.functions.map{asmjs_function_to_string(_, m)}.mkString("\n") + 
     "\n\n" + 
     m.ftables.map{case (ftable, fnames) => "var "+ftable+ " = [" + fnames.mkString(",") + "];"}.mkString("\n") +
     "\n\n" +
@@ -43,7 +43,7 @@ object code_generation_asmjs {
     "({ Math: Math, Float32Array: Float32Array}, {}, new ArrayBuffer(10*4096));"
   }
 
-  def asmjs_function_to_string(f: AFunction) : String = {
+  def asmjs_function_to_string(f: AFunction, m: AModule) : String = {
     def local_vars(statements: List[AStatement]) : Set[Idn] = statements match {
       case Nil => Set()
       case (i::is) => local_vars(is) ++ (i match {
@@ -63,72 +63,74 @@ object code_generation_asmjs {
       "var " + lv.mkString(" = 0.0, ") + " = 0.0;\n\n"; 
     else 
       "") +
-    f.statements.map{i => asmjs_statement_to_string(i) + ";\n"}.mkString("") + 
+    f.statements.map{i => asmjs_statement_to_string(i, m) + ";\n"}.mkString("") + 
     "\n}"
   }
 
 
-  def asmjs_statement_to_string(s: AStatement) : String = s match {
-    case AVarAssignment(idn, value) => idn + " = " + asmjs_exp_to_string(value)
+  def asmjs_statement_to_string(s: AStatement, m: AModule) : String = s match {
+    case AVarAssignment(idn, value) => idn + " = " + asmjs_exp_to_string(value, m)
     case AArrayAssignment(base, offset, value) => {
       "D32[" + 
-      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(AIdn(base), AStaticValue(offset))))) + 
-      " << 2 >> 2] = " + asmjs_exp_to_string(value)
+      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(AIdn(base), AStaticValue(offset)))), m) + 
+      " << 2 >> 2] = " + asmjs_exp_to_string(value, m)
     }
     case AIf(cond, block1, block2) => {
-      "if (" + asmjs_exp_to_string(ADoubleToInt(AIdn(cond))) + ")\n" +
+      "if (" + asmjs_exp_to_string(ADoubleToInt(AIdn(cond)), m) + ")\n" +
       "{\n" +
-      block1.map{s => asmjs_statement_to_string(s) + ";\n"}.mkString("") +
+      block1.map{s => asmjs_statement_to_string(s, m) + ";\n"}.mkString("") +
       "} else {\n" +
-      block2.map{s => asmjs_statement_to_string(s) + ";\n"}.mkString("") +
+      block2.map{s => asmjs_statement_to_string(s, m) + ";\n"}.mkString("") +
       "}"
     }
-    case AReturn(s) => "return +(" + asmjs_statement_to_string(s) + ")"
+    case AReturn(s) => "return +(" + asmjs_statement_to_string(s, m) + ")"
 
-    case _ => asmjs_exp_to_string(s.asInstanceOf[AExp])
+    case _ => asmjs_exp_to_string(s.asInstanceOf[AExp], m)
   }
 
 
-  def asmjs_exp_to_string(e: AExp) : String = e match {
+  def asmjs_exp_to_string(e: AExp, m: AModule) : String = e match {
     case AIdn(idn) => idn
     case AStaticValue(d) => "(" + d.toString + ")"
-    case ADoubleToInt(e) => "(~~+floor(" + asmjs_exp_to_string(e) + ")|0)"
+    case ADoubleToInt(e) => "(~~+floor(" + asmjs_exp_to_string(e, m) + ")|0)"
     case AFunctionCallByName(f, params) => {
       "(+" + f + "(" + 
-      params.map{asmjs_exp_to_string}.mkString(", ") + "))"
+      params.map{asmjs_exp_to_string(_, m)}.mkString(", ") + "))"
     }
-    case AFunctionCallByIndex(ftable, fpointer, mask, params) => {
+    case AFunctionCallByIndex(ftable, fpointer, params) => {
+      val mask = m.ftables(ftable).size-1
+
       "(+" + ftable + 
-      "[" + asmjs_exp_to_string(ADoubleToInt(AHeapAccess(fpointer))) + " & "+mask.toString + "]" + 
-      "(" + asmjs_exp_to_string(AArrayAccess(fpointer, 1)) + ", " + 
-      params.map{asmjs_exp_to_string}.mkString(", ") + "))"
+      "[" + asmjs_exp_to_string(ADoubleToInt(AHeapAccess(fpointer)), m) + " & "+mask.toString + "]" + 
+      "(" + asmjs_exp_to_string(AArrayAccess(fpointer, 1), m) + ", " + 
+      params.map{asmjs_exp_to_string(_, m)}.mkString(", ") + "))"
     }
     case APrimitiveInstruction(op, as) => op match {
-      case "+" | "-" | "*" | "/" => "(+(" + asmjs_exp_to_string(as(0)) + op + asmjs_exp_to_string(as(1)) + "))"
-      case "<" | ">" => "(+((" + asmjs_exp_to_string(as(0)) + op + asmjs_exp_to_string(as(1)) + ")|0))"
-      case "=" => "(+((" + asmjs_exp_to_string(as(0)) + "==" + asmjs_exp_to_string(as(1)) + ")|0))"
-      case "neg" => "(+(-("+asmjs_exp_to_string(as(0))+")))"
+      case "+" | "-" | "*" | "/" => "(+(" + asmjs_exp_to_string(as(0), m) + op + asmjs_exp_to_string(as(1), m) + "))"
+      case "<" | ">" => "(+((" + asmjs_exp_to_string(as(0), m) + op + asmjs_exp_to_string(as(1), m) + ")|0))"
+      case "=" => "(+((" + asmjs_exp_to_string(as(0), m) + "==" + asmjs_exp_to_string(as(1), m) + ")|0))"
+      case "neg" => "(+(-("+asmjs_exp_to_string(as(0), m)+")))"
       case "min" => {
-        "(+(" + asmjs_exp_to_string(as(0)) + "<" + asmjs_exp_to_string(as(1)) + "?" +
-        asmjs_exp_to_string(as(0)) + ":" + asmjs_exp_to_string(as(1)) +
+        "(+(" + asmjs_exp_to_string(as(0), m) + "<" + asmjs_exp_to_string(as(1), m) + "?" +
+        asmjs_exp_to_string(as(0), m) + ":" + asmjs_exp_to_string(as(1), m) +
         "))"
       }
       case "max" => {
-        "(+(" + asmjs_exp_to_string(as(0)) + ">" + asmjs_exp_to_string(as(1)) + "?" +
-        asmjs_exp_to_string(as(0)) + ":" + asmjs_exp_to_string(as(1)) +
+        "(+(" + asmjs_exp_to_string(as(0), m) + ">" + asmjs_exp_to_string(as(1), m) + "?" +
+        asmjs_exp_to_string(as(0), m) + ":" + asmjs_exp_to_string(as(1), m) +
         "))"
       }
-      case "sqrt" => "(+"+op+"("+asmjs_exp_to_string(as(0))+"))"
+      case "sqrt" => "(+"+op+"("+asmjs_exp_to_string(as(0), m)+"))"
       case _ => throw new IllegalArgumentException("Operation " + op + " not implemented.")
     }
     case AHeapAccess(index) => {
       "(+D32[" + 
-      asmjs_exp_to_string(ADoubleToInt(AIdn(index))) + 
+      asmjs_exp_to_string(ADoubleToInt(AIdn(index)), m) + 
       " << 2 >> 2])"
     }
     case AArrayAccess(base, offset) => {
       "(+D32[" + 
-      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(AIdn(base), AStaticValue(offset))))) + 
+      asmjs_exp_to_string(ADoubleToInt(APrimitiveInstruction("+", List(AIdn(base), AStaticValue(offset)))), m) + 
       " << 2 >> 2])"
     }
     case AAlloc(size) => "(+alloc(+"+size.toString()+"))"

@@ -14,7 +14,12 @@ object asmjs_conversion {
     // every ftable needs to be equal in size to a power of two. this is achieved by appending the first
     // element to the end of the table as many times as necessary to reach the next higher power of two. these elements
     // of the table won't be used by the program and are just there to produce valid asm.js
-    val fnames_map_pow_2 = fnames_map.map{ case (ftable, fnames) => (ftable, fnames ++ List.fill(find_next_power_of_2(fnames.size)-fnames.size)(fnames(0)))}
+    val fnames_map_pow_2 = fnames_map.map{ 
+      case (ftable, fnames) => {
+        val size_difference = find_next_power_of_2(fnames.size)-fnames.size
+        (ftable, fnames ++ List.fill(size_difference)(fnames(0)))
+      }
+    }
 
     AModule("AsmModule", functions_without_expression.map{f => convert_function_to_asmjs(fnames_map_pow_2, f)}, fnames_map_pow_2)
   }
@@ -90,8 +95,7 @@ object asmjs_conversion {
     case IFunctionCallByVar(hl_var, params) => {
       val converted_params = params.map{convert_expression_to_asmjs(ftables, _)}
       val ftable_name = "ftable" + (params.size + 1).toString
-      val mask = ftables(ftable_name).size-1
-      AFunctionCallByIndex(ftable_name, hl_var, mask, converted_params)
+      AFunctionCallByIndex(ftable_name, hl_var, converted_params)
     }
     case IPrimitiveInstruction(op, is) => {
       APrimitiveInstruction(op, is.map{convert_expression_to_asmjs(ftables, _)})
