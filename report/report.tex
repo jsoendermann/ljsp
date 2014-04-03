@@ -1549,7 +1549,24 @@ The following two sections will describe both systems in detail.
 \section{Testing using \texttt{run_tests.py}}
 The \texttt{run_tests.py} file contains a custom testing framework that compares the results of different compilation stages with each other. It is based on the fact that no transformation should change the result of the compiler.
 
-\texttt{run_tests.py} was added to the project very early in the development of the compiler.
+\texttt{run_tests.py} was added to the project very early in the development of the compiler. It was initially used to test the front end stages of the LJSP compiler while they were developed and it still fulfills that purpose. Additionally, it covers every back end stage except asm.js conversion.
+
+The framework contained in the \texttt{run_tests.py} comes bundled with a number of test cases which can be found in the \texttt{test/test_cases/} directory. These test cases are small LJSP programs that are designed for maximum coverage by all testing different aspects of the LJSP language such as primitive operations, lambdas and recursion.
+
+\subsection{Implementation of the testing framework}
+Unlike the compiler itself, which was written in Scala, the testing framework was written in Python. 
+
+% TODO why python for testing framework
+
+\subsection{Testing front end stages}
+\subsection{Testing back end stages}
+
+
+
+- implementation: uses racket, cc, lli
+
+
+
 
 % TODO one section on implementation details of testing
 % based on the fact described in the design chapter that stages should not affect the result that the program evaluates to
