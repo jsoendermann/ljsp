@@ -231,7 +231,7 @@ function render(renderType) {
             k = raySphereIntersectionPoint(r, sphere);
 
             // This happens when the ray starts on the sphere, ignore that intersection
-            if (k < 0.1) {
+            if (k < tinyValue) {
                 continue;
             }
             if (k < smallestK) {
@@ -246,7 +246,7 @@ function render(renderType) {
             k = rayPlaneIntersectionPoint(r, plane);
 
             // This happens when the ray starts on the plane, ignore that intersection
-            if (k < 0.1) {
+            if (k < tinyValue) {
                 continue;
             }
 
