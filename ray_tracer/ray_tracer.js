@@ -4,7 +4,6 @@ function render(renderType) {
     // ######## Global variables #########
 
     var spheres, planes, light;
-    var bgColour;
 
     var hugeValue = 1000000.0, tinyValue = 0.1;
 
@@ -273,7 +272,7 @@ function render(renderType) {
 
 
         if (Math.abs(k - hugeValue) < tinyValue) {
-            return bgColour;
+            return new Colour(0, 0, 0);
         } else {
             //intersectionPoint = new Vector3(r.org.x + k * r.dir.x, r.org.y + k * r.dir.y, r.org.z + k * r.dir.z);
             normal = computeNormal(intersectionPoint, closestObject);
@@ -326,8 +325,6 @@ function render(renderType) {
            new Plane(new Vector3(0, 1, 0), 110, new Colour(200, 200, 200), false),
            new Plane(new Vector3(0, 0, 1), 5, new Colour(200, 200, 200), false)];
     light = new Light(new Vector3(0, 0, 180));
-
-    bgColour = new Colour(0, 0, 0);
 
     var canvas_result = document.getElementById("result");
     var canvas_twice = document.getElementById("result_twice");
