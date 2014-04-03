@@ -67,12 +67,13 @@ def test_back_end(back_end, source, res):
 for source_file_path in glob.glob("./test/test_cases/*.scm"):
     print "Testing "+os.path.basename(source_file_path)
 
+    # evaluate source
     with open(source_file_path, "r") as source_file:
         source = source_file.read()
     res = scheme_eval(source)
 
 
-    
+    # test front end stages 
     for target in FRONT_END_STAGES:
         target_res = scheme_eval(test_lib + run_compiler(["--" + target], source))
 
