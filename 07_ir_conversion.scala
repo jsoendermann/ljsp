@@ -20,8 +20,6 @@ object ir_conversion {
       convert_sexp_to_ir_statement(p, SLet(env, SMakeEnv(idns), SLet(hl, SHoistedLambda(f, env), SAppl(hl, es))))
     }
 
-    case SIdn(_) | SAppl(_, _) => List(convert_sexp_to_ir_exp(p, e))
-
     case SLet(i, SMakeEnv(idns), e2) => {
       IVarAssignment(i.idn, IMakeEnv(idns.map{i => i.idn})) :: 
       convert_sexp_to_ir_statement(p, e2)
