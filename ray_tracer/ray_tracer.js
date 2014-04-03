@@ -274,7 +274,6 @@ function render(renderType) {
         if (Math.abs(k - hugeValue) < tinyValue) {
             return new Colour(0, 0, 0);
         } else {
-            //intersectionPoint = new Vector3(r.org.x + k * r.dir.x, r.org.y + k * r.dir.y, r.org.z + k * r.dir.z);
             normal = computeNormal(intersectionPoint, closestObject);
 
             dirToLight = vectorsDifference(light.pos, intersectionPoint);
@@ -285,7 +284,8 @@ function render(renderType) {
             closestPointInDirOfLight = closestIntersectionPoint(shadowRay);
 
             // If shadow ray intersects nothing or the closest intersection is behind the light
-            if (Math.abs(closestPointInDirOfLight[0] - hugeValue) < tinyValue || vectorsDistance(intersectionPoint, light.pos) < vectorsDistance(intersectionPoint, closestPointInDirOfLight[1])) {
+            if (Math.abs(closestPointInDirOfLight[0] - hugeValue) < tinyValue || 
+                    vectorsDistance(intersectionPoint, light.pos) < closestPointInDirOfLight[0]) {
                 intensity = vectorsDotProduct(normal, dirToLight);
             } else {
                 intensity = 0;
