@@ -22,33 +22,30 @@ LLI_PATH = "/Users/json/clang+llvm-3.3-x86_64-apple-darwin12/bin/lli"
 FRONT_END_STAGES = ["parsed", "letExp", "reducePrimOps", "cps", "cc", "hoist"]
 BACK_END_STAGES = ["c", "llvmIr", "numLlvmIr"]
 
-# compile
-#print "Compiling compiler..."
-#subprocess.call(["scalac"] + glob.glob("./*.scala"))
-#print "Done compiling"
 
-def scheme_eval(source):
-	return float(subprocess.check_output([RACKET_PATH, "--eval", source]))
-
-def run_compiler(arguments, source):
-    return subprocess.check_output(["scala", "-cp", "ljsp/", "ljsp.Ljsp"] + arguments + [source])
-
-def compile_to_file(file_name, target, source):
-    subprocess.call(["scala", "-cp", "ljsp/", "ljsp.Ljsp", "--" + target, source, "-o", file_name])
-
-with open("test/test_lib.scm", "r") as test_lib_file:
-	test_lib = test_lib_file.read()
-
+# Tests two floating point numbers for equality
 def floats_equal(a, b):
     if abs(a-b) < 0.01:
         return True
     return False
 
+# This uses Racket to evaluate the code and returns the result
+def evaluate_scheme_code(source):
+	return float(subprocess.check_output([RACKET_PATH, "--eval", source]))
+
+# This runs the ljsp compiler on the code and returns the result
+def run_ljsp_compiler(arguments, source):
+    return subprocess.check_output(["scala", "-cp", "ljsp/", "ljsp.Ljsp"] + arguments + [source])
+
+# This runs the ljsp compiler on the code and writes the result to file_name
+def compile_ljsp_code_to_file(file_name, target, source):
+    subprocess.call(["scala", "-cp", "ljsp/", "ljsp.Ljsp", "--" + target, source, "-o", file_name])
+
 def test_back_end(back_end, source, res):
     source_file_name = path.join(temp_dir_name, back_end + "_output.c")
     output_file_name = path.join(temp_dir_name, back_end + "_output")
 
-    compile_to_file(source_file_name, back_end, source)
+    compile_ljsp_code_to_file(source_file_name, back_end, source)
 
     if back_end == "c":
         subprocess.call(["cc", source_file_name, "-o", output_file_name])
@@ -63,19 +60,21 @@ def test_back_end(back_end, source, res):
         print RED + " " + back_end + " failure, " + str(res) + " != " + str(output) + OFF
         exit(1)
 
+with open("test/test_lib.scm", "r") as test_lib_file:
+	test_lib = test_lib_file.read()
 
 for source_file_path in glob.glob("./test/test_cases/*.scm"):
     print "Testing "+os.path.basename(source_file_path)
 
-    # evaluate source
+    # evaluate orginal ljsp code
     with open(source_file_path, "r") as source_file:
         source = source_file.read()
-    res = scheme_eval(source)
+    res = evaluate_scheme_code(source)
 
 
     # test front end stages 
     for target in FRONT_END_STAGES:
-        target_res = scheme_eval(test_lib + run_compiler(["--" + target], source))
+        target_res = evaluate_scheme_code(test_lib + run_ljsp_compiler(["--" + target], source))
 
         if floats_equal(res, target_res):
             print GREEN + " " + target + " success" + OFF
@@ -92,4 +91,5 @@ for source_file_path in glob.glob("./test/test_cases/*.scm"):
     for back_end in BACK_END_STAGES:
         test_back_end(back_end, source, res)
     
+    # remove temp dir
     shutil.rmtree(temp_dir_name)
