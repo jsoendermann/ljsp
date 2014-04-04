@@ -36,7 +36,7 @@
 
 \title{LJSP - A LISP to asm.js compiler}
 \author{Jan S\"ondermann}
-\date{1st January 1900}
+\date{\today}
 
 % Commands to make CPS equations easier to write
 \newcommand{\eqdef}{\stackrel{\text{def}}{=}}%
@@ -54,7 +54,7 @@
 
 \maketitle
 
-\onehalfspacing
+%\onehalfspacing
 
 \begin{center}
 \textbf{Originality avowal}
@@ -270,8 +270,8 @@ This idea is illustrated by figure \ref{raytracingexplanation}.
 %    \section{Similar Languages}
 % lisps that compile to js but also coffeescript, dart, etc.
 
-
-\chapter{Requirements}
+% TODO maybe include this
+%\chapter{Requirements}
 
 \chapter{Specification}
 \section{Grammars}
@@ -473,7 +473,7 @@ Like many other compilers, the LJSP compiler is made up of compilation stages. T
 % TODO mention special forms that front end stages use and how that's handled in testing
 Figure \ref{stagesflowchart} shows all the compilation stages that the LJSP compiler is made up of. These stages  can be grouped into three sections:
 \begin{itemize}
-\item \textbf{Front end stages}: These first six stages make up the first part of the transformations the code passes through. Their structure is that of a simple list as there is no branching of stages in the front end. These stages all operate on LJSP code, but they all reduce the complexity of the code. Letn expansion and prim op reduction reduce the number of distinct instructions in the code, CPS-translation makes control flow explicit while the latter two stages remove anonymous function objects by turning them into named functions. This reduction of complexity is necessary to bridge the gap between LJSP, a very high-level language that includes such concepts as functions as first class variables, and low-level output languages such as LLVM IR that do not include these concepts. In the diagram, they are depicted as boxes with a green background.
+\item \textbf{Front end stages}: These first six stages make up the first part of the transformations the code passes through. Their structure is that of a simple list as there is no branching of stages in the front end. These stages all operate on LJSP code, but they all reduce the complexity of the code. The decision to not use a separate language for as long as possible was made early in the development of the compiler, because it simplified testing these stages. Letn expansion and prim op reduction reduce the number of distinct instructions in the code, CPS-translation makes control flow explicit while the latter two stages remove anonymous function objects by turning them into named functions. This reduction of complexity is necessary to bridge the gap between LJSP, a very high-level language that includes such concepts as functions as first class variables, and low-level output languages such as LLVM IR that do not include these concepts. In the diagram, they are depicted as boxes with a green background.
 
 \item \textbf{Intermediate stages}: These stages convert the LJSP AST obtained after passing through the front end stages into a different language called the Intermediate Representation (IR) of the LJSP compiler before performing various optimisations on this IR code. IR is an imperative, untyped language, that is general enough to be converted to both asm.js and C but close enough to these languages to avoid code duplication. This part of the compiler currently consists of two stages, one that converts LJSP to IR and a simple optimisation that removes redundant assignments. It offers a suitable framework for adding additional optimisations that automatically get shared between all output languages. In the diagram, intermediate stages are shown as boxes with a red background.
 
@@ -1411,8 +1411,29 @@ Line 2 of this example creates the first list in the tuple: a list with one elem
 
 Lines 4 to 7 create the second list of the tuple consisting of the two statements that allocate memory and assign the static value \texttt{d} to the newly allocated memory by dereferencing the variable.
 
+% TODO list types for all expressions:
+%iif
 
-% TODO list types for all expressions
+%v = a[i]
+
+%fname(p1, p2)
+
+%var(p1, p2)
+
+%v = 3
+
+%v = a + b
+
+%env = make-env
+
+%hl = make-hl
+
+%v1 = v2
+
+%idn
+
+%3
+
 
 \subsection{Conversion to LLVM IR}
 
@@ -1551,32 +1572,60 @@ The \texttt{run_tests.py} file contains a custom testing framework that compares
 
 \texttt{run_tests.py} was added to the project very early in the development of the compiler. It was initially used to test the front end stages of the LJSP compiler while they were developed and it still fulfills that purpose. Additionally, it covers every back end stage except asm.js conversion.
 
-The framework contained in the \texttt{run_tests.py} comes bundled with a number of test cases which can be found in the \texttt{test/test_cases/} directory. These test cases are small LJSP programs that are designed for maximum coverage by all testing different aspects of the LJSP language such as primitive operations, lambdas and recursion.
+The framework contained in the \texttt{run_tests.py} comes bundled with a number of test cases which can be found in the \texttt{test/test_cases/} directory. These test cases are small LJSP programs that are designed for maximum coverage by all testing different aspects of the LJSP language such as primitive operations, lambdas and recursion. It further uses the LJSP code contained in \texttt{test/test_lib.scm}, whose purpose and content will be described in the next section.
 
 \subsection{Implementation of the testing framework}
-Unlike the compiler itself, which was written in Scala, the testing framework was written in Python. 
-
-% TODO why python for testing framework
+Unlike the compiler itself, which was written in Scala, the testing framework was written in Python, because Python seemed a more adequate choice for writing the kind of glue code that the testing famework consists of.
+% TODO describe structure of the code
+% TODO testing process: first evaluate source file, then front then back ends
 
 \subsection{Testing front end stages}
+As mentioned in the Design chapter, all front end stages operate on LJSP code. Because the grammar of LJSP is almost a subset of the grammar of Scheme\footnote{The only difference is the \texttt{neg} operator that LJSP uses for arithmetic negation. Scheme uses \texttt{-} for that.}, this makes it possible to test these stages using a Scheme interpreter. The testing framework uses the "Racket" Scheme interpreter to evaluate LJSP code, but in priciple, every Scheme interpreter could be used.
+% TODO link to racket website 
+
+One thing to note is that while later front end stages still produce valid Scheme code, they make use of functions that are not part of plain Scheme. These functions are:
+
+\begin{itemize}
+\item \texttt{make-env} and \texttt{make-closure}, these functions are introduced in the closure conversion stage and are used to construct the closure data structure
+\item \texttt{get-env} and \texttt{get-proc}, these functions are also added during closure conversion and are the reverse of the two functions above, they are used to retrieve the environment and the code saved in a closure
+\item \texttt{nth}, this function, also used by the closure conversion stage, is used to access the values saved in environment variables
+\item \texttt{hoisted-lambda}, this function is used by the hoisting stage to construct closures that have a named, hoisted, function as their code section
+\end{itemize}
+
+To still be able to test the LJSP code produced by all front end stages of the compiler, these functions, in addition to the \texttt{neg} operator, are implemented in Scheme in the \texttt{test/test_lib.scm} file. This file makes use of some more advanced features of Scheme, but it is heavily commented. To illustrate and explain the test library, the implementation of the \texttt{hoisted-lambda} function used by the hoisting stage is given below:
+
+\begin{lstlisting}
+(define (hoisted-lambda f env) 
+  (lambda args (apply f (cons env args))))
+\end{lstlisting}
+
+This function takes as arguments a function \texttt{f} and an expression \texttt{env} and returns a lambda. Calling the lambda returned by the function with a number of arguments causes function \texttt{f} to be called with \texttt{env} as its first argument and the arguments that the lambda is called with as its second to last arguments.
+
+This is implemented using variable number of arguments, which is expressed in Scheme by leaving out the parentheses around the \texttt{args} following the \texttt{lambda} and the \texttt{apply} function which takes a function and a list and calls the function with the elements of the list as its parameters. Using \texttt{apply} is necessary here because the number of arguments the function takes is not known in advance.
+
+The content of the testing library is added in front of every piece of LJSP code generated by the front end stages that the testing framework evaluates.
+
 \subsection{Testing back end stages}
 
+Besides the front end stages of the compiler, the testing framework also tests three of its back end stages: C, LLVM IR and Numbered LLVM IR.
 
+These stages are tested by creating temporary files in a directory that is temporarily created and deleted after all back end stages succeed.
 
-- implementation: uses racket, cc, lli
+C code is the first back end stage the testing framework tests. Testing it requires three steps: First the LJSP compiler has to compile the original source file to a .c file that gets saved in the temporary directory. Then, a C-compiler is used to compile this .c file to an executable. Finally, the executable is run and the result compared to the result of the original version of the program.
 
+Testing LLVM IR code in both forms is somewhat simpler: The .s file generated by the LJSP compiler is interpreted using the \texttt{lli} command that comes as part of the LLVM distribution. \texttt{lli} is an interpreter for the LLVM Intermediate Representation. The result of this interpretation is again compared with what the original program evaluates to.
 
+Should any of these tests fail, the temporary directory does not get deleted, so that the generated files can be inspected and searched for bugs.
 
+% TODO make sure you mention that based on the fact described in the design chapter that stages should not affect the result that the program evaluates to
+% TODO mention: early on in the development of LJSP, it became necessary to test the output of every front end stage 
 
-% TODO one section on implementation details of testing
-% based on the fact described in the design chapter that stages should not affect the result that the program evaluates to
-Early on in the development of LJSP, it became necessary to test the output of every front end stage 
 \section{Testing using the ray tracer}
-% because asm.js evaluates to the same result regardless of
-% whether or not it's compiled according to asm.js specification,
-% it's possible to add invalid statements and still test the module
 
-% ray tracer to test performance
+The ray tracer included in the project was mostly used for benchmarking, but it was also a useful asset when testing the asm.js code generated by the compiler. Testing asm.js proved to be very difficult. The reason for this is that the only publicly available validator for asm.js is part of Firefox and can not be used separately from it. This meant that programmatically testing the output of the compiler, as was done for the other stages, was not practical. Testing of asm.js was therefore accomplished compiling the complex function included with the ray tracer and validating it by manually opening it in Firefox.
+% TODO check if no other validator is available
+
+One advantageous feature that made testing asm.js code possible is that, as mentioned in the Background chapter, asm.js code evaluates to the same result, regardless of whether it gets compiled to machine code or whether it is interpreted as normal JavaScript. This made it possible during debugging to add statements such as \texttt{console.log}, that violate the specification of asm.js. While this would cause Firefox to reject the module as valid asm.js, the rest of the code still produced the same result as it would have, had it been compiled and could be output to the console or manipulated in other ways.
 
 \chapter{Evaluation}
 % TODO show profiler image in evaluation chapter
@@ -1588,6 +1637,8 @@ Early on in the development of LJSP, it became necessary to test the output of e
 
 \chapter{Conclusions}
 \section{Future Work}
+% first: test ir code by implementing an interpreter
+% second: extends LJSP to be able to write entire raytracer in it
 \subsection{Implementing a more complete Subset of Scheme}
 \subsection{Additional Front Ends}
 \subsection{Additional Back Ends}
@@ -1599,8 +1650,11 @@ Early on in the development of LJSP, it became necessary to test the output of e
 
 \chapter{User Guide}
 \section{Compiler}
+% TODO mention usage, switches
 \section{Ray Tracer}
+
 \section{Testing}
+% TODO mention programs required (racket, cc, lli) and setting paths
 
 \newpage
 
