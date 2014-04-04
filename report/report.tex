@@ -52,6 +52,7 @@
 % TODO consistent spelling of "JavaScript"
 % TODO add syntax highlighting
 % TODO "I' instead of "we"
+% TODO explain why both C and LLVM IR as targets. initially: LLVM IR to emscripten, for LLVM IR it turned to be easier to go via C, then: going from C was easier and equivalent to going from LLVM IR
 
 
 \maketitle
@@ -1631,8 +1632,11 @@ The ray tracer included in the project was mostly used for benchmarking, but it 
 One advantageous feature that made testing asm.js code possible is that, as mentioned in the Background chapter, asm.js code evaluates to the same result, regardless of whether it gets compiled to machine code or whether it is interpreted as normal JavaScript. This made it possible during debugging to add statements such as \texttt{console.log}, that violate the specification of asm.js. While this would cause Firefox to reject the module as valid asm.js, the rest of the code still produced the same result as it would have, had it been compiled and could be output to the console or manipulated in other ways.
 
 \chapter{Evaluation}
+% TODO evaluate the use of scala. slow!!
 This chapter will evaluate the results and findings of the project and put them into the context of what we set out to examine.
 \section{Benchmarks}
+% TODO show profiler image in evaluation chapter to prove that much time is spent in raySPhere...
+
 The overall goal of this project was to evaluate asm.js and the promises about performance that were made during its launch. To achieve this, we compare four different implementations of the same function used in a ray tracer, one in plain JavaScript and three in asm.js. The results of this benchmark are given in table \ref{benchmarks}. It gives the amount of time in seconds it took to render a 3D scene using the four different implementations of \texttt{raySphereIntersectionPoint}.
 % TODO in seconds
 \begin{figure}[ht]
@@ -1673,24 +1677,20 @@ While originally only conceived to compile LJSP to asm.js, the compiler was late
 
 Projects that grow beyond their initial scope on often turn into an unorganised patchwork. We are generally happy with how the compiler turned out after all extensions. It was, however, necessary to rewrite and refactor significant parts of the program at various points during the project to accomodate for new requirements. An example of this is the Intermediate Representation and the related stages that were not part of the first version of the compiler. They only became necessary after C was implemented as an additional compilation target, to remove code duplication among asm.js and C conversion and combine the shared changes that both stages made to the AST into one parent stage.
 
+The biggest design mistake made during the development of the LJSP compiler was to make all parameters to C functions to be of type \texttt{void*} instead of deriving their types from the way they are used inside the function body. Doing so would have made the C code easier to generate, less complex and faster. It would have avoided the need for much of the complex pointer handling and some memory management. It also would not have been difficult to implement, because type derivation is already done for all local variables and could easily have been extended to include parameters as well. The reason we decided to make all parameters of the same type was because that is how the asm.js conversion stage, that had been implemented earlier, was designed. It worked well for asm.js, but it was not an optimal choice for C.
 
+% TODO ast transformations would be nicer if the compiler generated the subtrees from short code snippets instead of creating the objects manually. maybe some other people have done work on this
+% TODO many stages only make changes to one particular expression but need to recurse over all expressions. it would be nice if a recursive caller could be implemented for this
 
+Another mistake that was made in the beginning and was later corrected was the unnecessary introduction of \texttt{lambda}s to the code during CPS-translation. This seemed to be a good idea from a theoretical perspective looking at the CPS-translation equations, but in practise, it turned out to be very slow. Specifically in the case of \texttt{if} expressions, described in detail in the CPS-translation section of the Implementation chapter, it turned out that the trade-off between speed and code duplication did not exist in reality. Introducing additional \texttt{lambda}s made the code not just slower, but eventually also longer, because calling them requires lengthy construction of closures.
 
-% TODO: introducing lambdas in cps translation is slow and in the end generated more code than using k more than once
-% TODO: making all params of type void* was a design mistake, made because it was done that way in asm.js and worked so chose same implementation (what problems does it cause)
-% TODO: difficulties of the project: bad asm.js spec, llvm ir documentation also not readily available
-% TODO: timeline of the project, where was time wasted (maybe much time in front end stages)
-% TODO: meets requirement of evaluating asm.js for the restricted case of our needs
+Much of the initial difficulty in developing the compiler was in understanding the concept of Continuation-Passing Style and a lot of time was spent on finishing the three main front end stages: CPS-translation, closure conversion and hoisting. After that part of the project was completed, reading and understanding the asm.js specification turned out to be another challenge as the material on asm.js is limited and quite terse.
+% TODO maybe say that LLVM IR was also hard to figure out
 
-
-% TODO show profiler image in evaluation chapter
-% TODO explain in the evaluation chapter why avoiding cps_tail_trans is better
-% TODO mistake: making all params in c of same type. did this b/c it has to be like this in asm.js code but it would make all the pointer stuff unnecessary in C
-% TODO ast transformations would be nicer if the compiler generated the subtrees from short code snippets instead of creating the objects manually
-
-
+In conclusion, we are satisfied with the results that the project has achieved. Our initial requirements were met and the question we set out with was answered. The results the project generated could be developed further in ways that we will describe in the next chapter.
 
 \chapter{Conclusions}
+
 % TODO What have I done
 % TODO future work
 
@@ -1702,8 +1702,14 @@ Projects that grow beyond their initial scope on often turn into an unorganised 
 % TODO possibly add: move type inference from C to IR conversion, make IR typed
 
 \chapter{User Guide}
+% TODO mention versions of programs used for all 
+
+This chapter will describe the commands necessary to achieve the result presented in the Evaluation and other earlier chapters.
 \section{Compiler}
-% TODO mention usage, switches
+The first step before the compiler can be used is to compile the compiler. This is done by calling \texttt{scalac -deprecation ./*.scala} from the root directory of the repository. We have included an executable version that was compiled with Scala version 2.9.1-1. Compiling the compiler will take some time (around 37 seconds on a 1.6 GHz MacBook Air).
+
+After it has been compiled, the LJSP compiler can be called by entering \texttt{scala -cp ljsp/ ljsp.Ljsp} on the command line. Executing that command, without any switches, prints the usage of the compiler that shows all switches that are available.
+
 \section{Ray Tracer}
 
 \section{Testing}
