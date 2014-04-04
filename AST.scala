@@ -65,6 +65,7 @@ object AST {
 
   case class CFunction(name: Idn, params: List[Idn], declarations: List[CDeclareVar], statements: List[CStatement])
 
+  // TODO use the same method to implement C types as was used for LLVM IR types below
   abstract class CType
   case object CTInt extends CType
   case object CTIntPointer extends CType
@@ -106,7 +107,7 @@ object AST {
 
   case class LFunction(name: String, params: List[Idn], statements: List[LStatement])
 
-  // TODO tidy this up, make it possible to go up and down pointer levels, use LTFunctionPointer for everything
+  // TODO tidy this up, make it possible to go up and down pointer levels
   abstract class LType
   case object LTI8 extends LType
   case object LTInt extends LType
@@ -114,6 +115,7 @@ object AST {
   case class LTFunctionPointer(num_params: Int) extends LType
 
   case class LTPointerTo(t: LType) extends LType
+  // TODO this should probably be a function
   case class LTUnderlyingType(p: LType) extends LType
 
   val LTI8Pointer = LTPointerTo(LTI8)
@@ -173,6 +175,7 @@ object AST {
   case class AReturn(s: AStatement) extends AStatement
 
   abstract class AExp extends AStatement
+  // TODO add AVarAccess for when type coercion is necessary
   case class AIdn(idn: Idn) extends AExp
   case class AStaticValue(d: Double) extends AExp
   case class ADoubleToInt(e: AExp) extends AExp
