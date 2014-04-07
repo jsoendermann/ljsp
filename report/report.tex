@@ -51,10 +51,8 @@
 \begin{document}
 % TODO why scala
 % TODO add syntax highlighting
-% TODO use "we" instead of "i"
 % TODO explain why both C and LLVM IR as targets. initially: LLVM IR to emscripten, for LLVM IR it turned to be easier to go via C, then: going from C was easier and equivalent to going from LLVM IR
-% TODO ~~floor conversion is slow, but not actually that slow. mention it
-% TODO ray tracer implementation: features like antialiasing were added until the computations were complex enough to take some time
+% TODO consistent names for stages
 
 \maketitle
 
@@ -900,15 +898,6 @@ After giving a brief sketch of the idea behind ray tracing in the Background cha
 
 \subsection{Features}
 
-% TODO maybe move this to the background or implementation chpater
-\begin{figure}%[ht]
-\begin{center}
-\includegraphics[scale=0.7]{raytracerscreenshot.eps}
-\caption{Ray traced 3D scene}
-\end{center}
-\label{raytracerscreenshot}
-\end{figure}
-
 The ray tracer used to test the LJSP compiler includes the following features:
 \begin{itemize}
 \item An arbitrary number of objects (planes and spheres) can be added to the 3D scene
@@ -920,7 +909,17 @@ The ray tracer used to test the LJSP compiler includes the following features:
 \item Antialiasing by downsampling \footnote{This refers to smoothing rugged edges in the scene by first rendering at four times the size of the desired image (width*2 x height*2) before downsizing the result by a factor of four.} 
 \end{itemize}
 
+These features were chosen so that the ray tracer was complex enough so that rendering an image would take a substantial amount of time. This was important to get reliable data when using the renderer as benchmark.
+
 Figure \ref{raytracerscreenshot} shows a rendering of a 3D scene that showcases these features.
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[scale=0.5]{raytracerscreenshot.eps}
+\caption{Ray traced 3D scene}
+\end{center}
+\label{raytracerscreenshot}
+\end{figure}
 
 % TODO replace underpinning by a better word
 \subsection{Mathematical Underpinnings}
@@ -1119,7 +1118,7 @@ After allocating memory in line 1, the four variables that make up the environme
 
 The expression \texttt{... {<}< 2 {>}> 2} on the very outside does not change the result of what comes before it, but is necessary because the asm.js spec requires a right shift by $log_2~4$ when accessing the heap through a view with a datatype of length four bytes such as Float32Array. Because this right shift on its own would change the value of the index we compute, we add a left shift by the same number of bits in front of the right shift. This problem could also be solved by changing array index computation so that the right shift alone computes the correct result, but in practise, this back and forth shifting turned out to have a small impact on performance.
 
-The remaining expression is a call to the floor function of the following, somewhat odd looking, form: \texttt{\textasciitilde\textasciitilde+floor(...)|0}. This is the asm.js way of casting a double to an integer. This is necessary, because all variables in the module are of type double, but array indices have to be of type int. Inside that cast, the variable holding the base of the environment (\texttt{env}) is added to an offset going from $0$ to $3$.
+The remaining expression is a call to the floor function of the following, somewhat odd looking, form: \texttt{\textasciitilde\textasciitilde+floor(...)|0}. This is the asm.js way of casting a double to an integer. This is necessary, because all variables in the module are of type double, but array indices have to be of type int. This typecasting could be avoided by making parameters and variables that are used as indices to access the heap of type int instead of double. Because all functions in one function table have to have the same type signature, however, this would require complex changes to the compiler and is left as future work. Inside that cast, the variable holding the base of the environment (\texttt{env}) is added to an offset going from $0$ to $3$. 
 
 After the environment variable has been constructed, the rest of the example creates the closure itself. As mentioned above, closure variables are arrays of length two. In line 7, the index to the function in its function table is assigned to the element at offset 0. Line 8 assignes the environment variable to the element at offset 1.
 
@@ -1180,8 +1179,6 @@ ret_val_3 = func_pointer_0(env_param_0, const_0);
 
 Lines 11 to 15 are casts and assignments to obtain the function pointer and the environment variable from the closure. Line 16 and 17 were described in the first example of this section. Line 18 is the function call itself.
 
-% TODO concerning this structure: clarify that it is made up of allocated memory and that there is no structs anywhere in the code
-
 Figure \ref{cclosure} shows the closure data structure used in C code. It is quite similar to the asm.js data structure shown in Figure \ref{asmjsclosure}. The first difference between the two is that in the generated C code, the first element of the closure data structure points directly to a function as opposed to giving an index for a function table. The second difference is that in the environment array in C code is made up of pointers to double values, whereas in asm.js the environment array contains the values themselves.
 
 \begin{figure}[ht]
@@ -1191,6 +1188,8 @@ Figure \ref{cclosure} shows the closure data structure used in C code. It is qui
 \caption{The closure data structure in C code}
 \label{cclosure}
 \end{figure}
+
+Although this structure is equal for all closures used in the generated C code, it always constructed ad-hoc with calls to \texttt{malloc}, casts and array accesses instead of using a C-style \texttt{struct}. While this could change in the future, readability of the code that the LJSP compiler generates was not a design goal during its development.
 
 Before concluding this section, there is one remaining aspect of memory management in C worth mentioning. The C code genreated by the "Conversion to C" stage is designed to run as an executable and terminate after computing and outputting the result of the expression given together with the \texttt{define}s. C code generated by "Conversion to Emscripten C" however does not terminate but instead keeps running and has its functions called many times. This makes it necessary to free memory allocated by the functions if an overflow is to be avoided. The way this is achieved is by implementing a custom memory manager. This memory manager can be found in the file \texttt{jalloc.c} and includes two functions: \texttt{jalloc}, which replaced \texttt{malloc} and \texttt{free_all}, which frees all the memory allocated with \texttt{jalloc}. Like in the asm.js modules, the entry point functions ending in \texttt{_copy} reset the memory before calling the function they were copied from.
 
@@ -1671,16 +1670,15 @@ One advantageous feature that made testing asm.js code possible is that, as ment
 
 \chapter{Evaluation}
 % TODO evaluate the use of scala. slow!!
+% TODO mention early on that scala was used to write the compiler
 This chapter will evaluate the results and findings of the project and put them into the context of what we set out to examine.
 \section{Benchmarks}
 % TODO show profiler image in evaluation chapter to prove that much time is spent in raySPhere...
 
 The overall goal of this project was to evaluate asm.js and the promises about performance that were made during its launch. To achieve this, we compare four different implementations of the same function used in a ray tracer, one in plain JavaScript and three in asm.js. The results of this benchmark are given in table \ref{benchmarks}. It gives the amount of time in seconds it took to render a 3D scene using the four different implementations of \texttt{raySphereIntersectionPoint}.
-% TODO in seconds
 \begin{figure}[ht]
 \begin{center}
   \begin{tabular}{ l | l | l | l | l }
-    %\hline
     & JavaScript & Handwritten & LJSP asm.js & Emscripten \\ \hline
     & 17.248 & 22.04 & 28.657 & 121.927 \\
     & 17.505 & 21.753 & 29.243 & 121.737 \\
@@ -1688,9 +1686,6 @@ The overall goal of this project was to evaluate asm.js and the promises about p
     & 17.358 & 21.699 & 29.354 & 122.357 \\
     & 17.514 & 21.748 & 28.879 & 120.782 \\ \hline
     $\varnothing$ & 17.4396 & 21.7814 & 29.0714 & 121.9204 \\
-    %4 & 5 & 6 \\ \hline
-    %7 & 8 & 9 \\
-    %\hline
   \end{tabular}
 \end{center}
 \caption{Rendering times for different versions of the ray tracer}
@@ -1716,6 +1711,9 @@ While originally only conceived to compile LJSP to asm.js, the compiler was late
 Projects that grow beyond their initial scope on often turn into an unorganised patchwork. We are generally happy with how the compiler turned out after all extensions. It was, however, necessary to rewrite and refactor significant parts of the program at various points during the project to accomodate for new requirements. An example of this is the Intermediate Representation and the related stages that were not part of the first version of the compiler. They only became necessary after C was implemented as an additional compilation target, to remove code duplication among asm.js and C conversion and combine the shared changes that both stages made to the AST into one parent stage.
 
 The biggest design mistake made during the development of the LJSP compiler was to make all parameters to C functions to be of type \texttt{void*} instead of deriving their types from the way they are used inside the function body. Doing so would have made the C code easier to generate, less complex and faster. It would have avoided the need for much of the complex pointer handling and some memory management. It also would not have been difficult to implement, because type derivation is already done for all local variables and could easily have been extended to include parameters as well. The reason we decided to make all parameters of the same type was because that is how the asm.js conversion stage, that had been implemented earlier, was designed. It worked well for asm.js, but it was not an optimal choice for C.
+
+% TODO maybe find an example where this was done right. nano stage compiler?
+Another aspect of the compiler that could be improved is related to the fact that there is a substantial number of stages that only change expressions of a small number of types while leaving the remaining expressions unaltered: "Reduction of Primitive Operations" only touches prim ops, "Closure Conversion" only changes lambas and applications. To traverse the entire Abstract Syntax Tree, these stages need to handle every kind of expression, however, so that subexpressions can be examined. Closure converting the expression \texttt{(if $e_1$ $e_2$ $e_3$)}, for example, leaves the if untouched but gets called recursively for all three subexpressions $e_1$, $e_2$ and $e_3$. Separating the AST-traversing algorithm from the changes that every stage early on would have made the code much more concise.
 
 % TODO ast transformations would be nicer if the compiler generated the subtrees from short code snippets instead of creating the objects manually. maybe some other people have done work on this
 % TODO many stages only make changes to one particular expression but need to recurse over all expressions. it would be nice if a recursive caller could be implemented for this
@@ -1762,7 +1760,6 @@ Finally, more intermediate stages could be added that optimise the generated cod
 
 
 \chapter{User Guide}
-% TODO mention versions of programs used for all 
 
 This chapter will describe the commands necessary to achieve the result presented in the Evaluation and other earlier chapters.
 \section{Compiler}
@@ -1779,7 +1776,7 @@ These available command line arguments comprise:
 
 \section{Ray Tracer}
 
-The ray tracer can be used by opening the \texttt{ray_tracer/ray_tracer.html} file in a recent version of Firefox. Clicking on one of the four buttons will render a 3D scene with the rendering method selected. Please note that the renderer will not show anything until the renderer has finished. 
+The ray tracer can be used by opening the \texttt{ray_tracer/ray_tracer.html} file in a recent version of Firefox\footnote{During the development of the ray tracer, Firefox 27 was used.}. Clicking on one of the four buttons will render a 3D scene with the rendering method selected. Please note that the renderer will not show anything until the renderer has finished. 
 
 The HTML file depends on a number of JavaScript files, all of which are included in the repository. Two of these files can, however, be generated by compiling the \texttt{ray_tracer/ljsp_code.scm} file.
 
@@ -1789,7 +1786,6 @@ The second file contains the asm.js code generated by Emscripten (the forth of t
 % TODO link to Emscripten tutorial
 
 \section{Testing}
-% TODO mention programs required (racket, cc, lli) and setting paths
 Running tests can be achieved by executing \texttt{python run_tests.py} on the command line. This requires Python 2 to be installed. The testing framework further depends on Racket and LLVM to be installed on the machine. \texttt{run_tests.py} contains two constants \texttt{RACKET_PATH} and \texttt{LLI_PATH} that point to the executables of racket and lli. These constants need to be adjusted to contain the correct paths.
 % TODO better explanation, links to racket, llvm
 
