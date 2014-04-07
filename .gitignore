@@ -15,5 +15,7 @@ report/.texpadtmp/*
 
 report/stagesflowchart.eps
 report/astexample.eps
+report/closureasmjs.eps
+report/closurec.eps
 
 misc/fib.s
