@@ -3,7 +3,7 @@
 % to make < and > work
 \usepackage[T1]{fontenc}
 % for appendices
-\usepackage[toc,page]{appendix}
+%\usepackage[toc,page]{appendix}
 % CPS equations
 \usepackage{amsmath}
 \usepackage{stmaryrd}
@@ -12,18 +12,20 @@
 % Operational semantics
 \usepackage{semantic}
 % Stages diagram
-\usepackage{tikz}
+%\usepackage{tikz}
 % Stages diagram elements
 \usepackage{graphicx}
 % Chapter number and name on one line
 \usepackage{titlesec}
 \titleformat{\chapter}[hang] 
 {\normalfont\huge\bfseries}{\thechapter}{1em}{} 
+
 % No new page after chapter
 %\usepackage{etoolbox}
 %\makeatletter
 %\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
 %\makeatother
+
 % Source code listings
 \usepackage{listings}
 \lstset{frame=single, numbers=left, basicstyle=\ttfamily}
@@ -47,11 +49,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
-% TODO why scala? why LLVM IR/C
-% TODO mention that LJSP is a subset of Scheme
-% TODO consistent spelling of "JavaScript"
+% TODO why scala
 % TODO add syntax highlighting
-% TODO "I' instead of "we"
+% TODO use "we" instead of "i"
 % TODO explain why both C and LLVM IR as targets. initially: LLVM IR to emscripten, for LLVM IR it turned to be easier to go via C, then: going from C was easier and equivalent to going from LLVM IR
 % TODO ~~floor conversion is slow, but not actually that slow. mention it
 % TODO ray tracer implementation: features like antialiasing were added until the computations were complex enough to take some time
@@ -60,17 +60,18 @@
 
 %\onehalfspacing
 
+% TODO word count on this page
 \begin{center}
 \textbf{Originality avowal}
 \end{center}
 
 I verify that I am the sole author of this report, except where explicitly stated to the contrary.
 
-I grant the right to King's College London to make paper and electronic copies of the submitted work for purposes of marking, plagiarism detection and archival, and to upload a copy of the work to Turnitin or another trusted plagiarism detection service.
+I grant the right to King's College London to make paper and electronic copies of the submitted work for purposes of marking, plagiarism detection and archival, and to upload a copy of the work to Turnitin or another trusted plagiarism detection service.\\
 
 \begin{flushright}
 Jan Söndermann \\
-@@date@@@
+\today
 \end{flushright}
 \newpage
 			
@@ -89,24 +90,26 @@ To evaluate this new technology, we design a language called LJSP and build a co
 \begin{center}
 \textbf{Acknowledgements}
 \end{center}
-% TODO I would like to thank my supervisor Dr. Christian Urban for supervising my project and for providing me with both guidance and freedom.
+I would like to thank my supervisor Dr. Christian Urban for supervising my project and for providing me with both guidance and freedom over the course of the year.
 \newpage
 
 \tableofcontents
-\newpage
+\listoffigures
+%\newpage
 
 \chapter{Introduction}
 % ubiquity
 % TODO mention ajax
-One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to the web. This phenomenon, often called "Web 2.0" is exemplified in the success of web applications such as GMail and Facebook.
+One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to online applications on the web. This phenomenon, often called "Web 2.0" is exemplified in the success of web applications such as GMail and Facebook.
 
+% TODO replace "substantial margin" with hard numbers
 This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language that is supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, reflect this success: in 2013, JavaScript led this list by a substantial margin \cite{githubarchive} \cite{topgithub}.
 
 % TODO possibly add refs to ember, meteor websites
 Since JavaScript is no longer confined to being used for simple animations and input-validation tasks, the complexity of web apps has increased tremendously. Modern JavaScript frameworks, such as Ember.js link or Meteor use the full register of functionality the language offers and are just as complex as traditional web frameworks that use other languages such as Ruby or Python.
 
 % TODO possibly provide citation for the consensus claim
-Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially conceived for. There is a widespread consensus that the language has a number of shortcomings. Brendan Eich, the creator of JavaScript, writes\cite{brendeich} about its early history:
+Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially designed for. There is a widespread consensus that the language has many shortcomings. Brendan Eich, the creator of JavaScript, writes \cite{brendeich} about its early history:
 \begin{quote}
 In April 1995 I joined Netscape in order to "add Scheme to the browser." [...]
 
@@ -115,18 +118,26 @@ So in 10 days in May 1995, I prototyped "Mocha," the code name Marc Andreessen h
 To overcome all doubts, I needed a demo in 10 days. I worked day and night, and consequently made a few language-design mistakes (some recapitulating bad design paths in the evolution of LISP), but I met the deadline and did the demo.
 \end{quote}
 
+and further in \cite{comparticle}:
+
+\begin{quote}
+If I had done classes in JavaScript back in May 1995, I would have been told that it was too much like Java or that JavaScript was competing with Java … I was under marketing orders to make it look like Java but not make it too big for its britches … [it] needed to be a silly little brother language.
+\end{quote}
+
+
+% TODO maybe mention function > array
 % TODO problem with js: scope
 Criticism of JavaScript has mostly focussed on two areas:
 \begin{itemize}
-\item Inconsistencies and mistakes in the design of the language. Examples given for this often include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \\
-\mbox{\texttt{typeof x === 'undefined'}} to avoid comparing against a redefined \texttt{undefined}. For more examples, see the excellent \cite{jsgoodparts}.
+% TODO fix line break
+\item Inconsistencies and mistakes in the design of the language. Examples given for this often include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \mbox{\texttt{typeof x === 'undefined'}} avoid comparing against a redefined \texttt{undefined}. For more examples, see the excellent book by Crockford \cite{jsgoodparts}.
 % TODO give citation/explanation for the dynamic claim
-\item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinary difficult task for browser manufacturers. This is due to the extremely dynamic nature of JavaScript.
+\item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinary difficult task for browser developers. This is due to the weap typing and generally extremely dynamic nature of JavaScript.
 \end{itemize}
 
 % TODO don't cite jsgoodparts twice (below and above)
 % TODO possible add links to coffeescript etc.
-Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular "JavaScript: The Good Parts" \cite{jsgoodparts}). Another response has been to create new languages that compile to JavaScript, such as the very popular CoffeeScript, Microsoft's TypeScript and Google's Dart.
+Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular book "JavaScript: The Good Parts" \cite{jsgoodparts}). Another response has been to create new languages that compile to JavaScript, such as the very popular CoffeeScript, Microsoft's TypeScript and Google's Dart.
 
 The second problem has been partly remedied by a new generation of JavaScript engines spearheaded by Google's V8, released in 2008 as part of Google Chrome. The other browser makers, including Mozilla soon followed by rewriting their own JavaScript engines. These new engines often brought impressive speed gains.
 
@@ -143,21 +154,22 @@ To achieve the second goal, the project includes a ray tracer in JavaScript, par
 % TODO history. also include ray tracer
 
 \chapter{Background}
-This chapter will describe the background and context of the LJSP project. It will give an appropriate level of technical details of the technologies involved in the compiler and justify the motivation for starting this project.
+This chapter will describe the background and context of the LJSP project. It will give technical details of the technologies involved in the compiler and justify the motivation for starting this project.
 
 \section{asm.js}
+% TODO Page 10: maybe in the "abstract" of this section you give a teaser like: "In a nutshell we want to find out how fast asm.js really is and whether the hype suropunding it is really  justified." Or something like this.
 % TODO add reference to asm.js spec
 % TODO cite asm.js pdf
 
-Asm.js is a small subset of JavaScript that can be compiled to very fast machine code. Benchmarks show \cite{asmjsbenchmark} running times around twice the speed of native code. To showcase the speed of asm.js, researches at Mozilla compiled the Unreal gaming engine to asm.js, producing smooth and stutter free rendering inside the browser \cite{unreal}.
+Asm.js is a small subset of JavaScript that can be compiled to very fast machine code. Benchmarks \cite{asmjsbenchmark} show running times around twice the speed of native code. To showcase the speed of asm.js, researches at Mozilla compiled the Unreal gaming engine to asm.js, producing smooth and stutter free rendering inside the browser \cite{unreal}.
 
 The development and release of asm.js is the main motivation of the LJSP project. The goal of LJSP is to evaluate the performance achievable with a language that compiles to asm.js. This section will describe the concepts behind asm.js and give a technical description of its specification. The Implementation chapter below will build on this description to explain the asm.js code that the LJSP compiler outputs.
 
-Asm.js is designed as a very limited subset of JavaScript that includes information typically not included in JavaScript code. If the author of a function written as asm.js compatible code adds a statement that makes the function as compatible, and the browser of the user viewing a website that includes this code supports asm.js, the JavaScript engine of the browser can use that additional information to compile the code to very efficient Assembly.
+Asm.js is designed as a very limited subset of JavaScript that includes information typically not included in JavaScript code. If the author of a function written as asm.js compatible code adds a statement that makes the function as compatible, and the browser of the user viewing a website that includes this code supports asm.js, the JavaScript engine of the browser can use that additional information to compile the code to very efficient machine code.
 
 The way to opt-in to this optimisation is to add a \texttt{"use asm";} statement to the top of the function\footnote{The syntax for this opt-in is copied from the popular and widespread \texttt{"use strict";} that makes JavaScript engines less lenient when parsing JavaScript code.}. Supporting browsers (currently only Firefox) will then compile the code and output a notice such as "\texttt{successfully compiled asm.js code (total compilation time 25ms)}" in the case of successful compilation to the console when encountering this function.
 
-Most of the additional information that asm.js forces the programmer to include in his programs that would typically not be part of idiomatic JavaScript is type information. Unlike JavaScript, asm.js is statically typed, meaning every variable has a type inferable at compile time. The following examples will illustrate this difference. We start with a small function in standard Javascript).
+Most of the additional information that asm.js forces the programmer to include in his programs that would typically not be part of idiomatic JavaScript is type information. Unlike JavaScript, asm.js is statically typed, meaning every variable has a type inferable at compile time. The following examples will illustrate this difference. We start with a small function in standard JavaScript).
 
 % TODO enclose all listings in figures
 \begin{lstlisting}
@@ -179,7 +191,7 @@ function add_ints(a, b) {
 }
 \end{lstlisting}
 
-The additional lines 2 and 3 are the abovementioned type information. They declare both parameters \texttt{a} and \texttt{b} to be of type int. In other languages such as C, this would be written as \texttt{int a, int b}. In valid asm.js, all parameters to every function get a type assigned in this way.
+The additional lines 2 and 3 are the type information mentioned above. They declare both parameters \texttt{a} and \texttt{b} to be of type int. In other languages such as C, this would be written as \texttt{int a, int b}. In valid asm.js, all parameters to every function get a type assigned in this way.
 
 The other change from the original JavaScript version to the asm.js version of the add function is the addition of a bitwise or with 0 to the result of the addition in line 5. This is necessary because of the other main feature of asm.js besides the possibility of compiling it efficiently. 
 
@@ -200,7 +212,7 @@ To illustrate type coercions with an example, consider the following interactive
 
 $2147483647$ is equal to $2^{31}-1$, the largest value that can be saved in a 32 bit signed integer variable. If we add one to this value without any coercion, the result is transparently cast to a double and returned. If, however, we include a type coercion, the result overflows to $-2^{31}$.
 
-To conclude this section, we will give an overview of the asm.js specification with a restriction on the parts that are relevant to the LJSP compiler. For reasons of length, this overview will leave out information that is unimportant for the project and is not meant as a general introduction to asm.js.
+In the remaining part of this section, will give an overview of the asm.js specification with a restriction on the parts that are relevant to the LJSP compiler. For reasons of length, this overview will leave out information that is unimportant for the project and is not meant as a general introduction to asm.js.
 
 Asm.js code is organised in asm.js modules which consist of a function that includes the \texttt{"use asm";} statement mentioned at the beginning of this section. As parameters, it can take a stdlib object that makes it possible to import certain functions from the JavaScript standard library into the asm.js module and an ArrayBuffer\footnote{In JavaScript, ArrayBuffer objects represent blocks of memory.} object often called "heap". Besides this, it can also include:
 \begin{itemize}
@@ -217,7 +229,7 @@ Function tables in asm.js are arrays of functions. These arrays must be of a len
 The return statement at the end can make functions defined inside the module visible to the outside.
 
 % TODO ArrayBuffer should be written in monospace
-Concluding this section, I will explain the ArrayBuffer object mentioned above and the way that asm.js modules interact with it. In JavaScript, ArrayBuffer objects represet a block of memory that can hold any kind of data. It is, however, not possible to access this memory directly using the ArrayBuffer object. Instead, a subclass of another class, ArrayBufferView is created as a view on the ArrayBuffer. These views all interpret the memory held in the ArrayBuffer to be of a specific type. The example below, created with the Chrome JavaScript console, illustrates these classes and their usage:
+Concluding this section, we will explain the ArrayBuffer object mentioned above and the way that asm.js modules interact with it. In JavaScript, ArrayBuffer objects represet a block of memory that can hold any kind of data. It is, however, not possible to access this memory directly using the ArrayBuffer object. Instead, a subclass of another class, ArrayBufferView is created as a view on the ArrayBuffer. These views all interpret the memory held in the ArrayBuffer to be of a specific type. The example below, created with the Chrome JavaScript console, illustrates these classes and their usage:
 
 \begin{lstlisting}
 > var buf = new ArrayBuffer(12);
@@ -247,21 +259,23 @@ In line 11, the four byte view is used to write two numbers to the array. The re
 
 The fact that views interpret the underlying bits to be of a specific type is again exemplified by line 19 which does not, as one might expect, return \texttt{[42.0, 65536.0, 0]}, but instead interprets the bits of the two integers as 32 bit floats.
 
-Similarly to function table calles explained above, accessing the values in an ArrayBuffer requires addtional safeguards to make sure the result is not undefined. According to the asm.js spec, array dereference expressions must be of the form $x[(e~\text{\&}~mask)~\text{>}\text{>}~i]$ with $mask$ being equal to the number of bytes in the ArrayBuffer\footnote{Which must be a multiple of $4096$} and $i$ being equal to the number of bytes the data type of the view used for the access is based on (e.g. $4$ in the case of \texttt{Int32View}). In combination, they prevent out-of-bounds accesses by discarding bits larger than the length of the array and shifting the index to the right size for the view.
+% TODO mention further down that the mask doesn't seem to be required
+Similarly to function table calles explained above, accessing the values in an ArrayBuffer requires addtional safeguards to make sure the result is not undefined. According to the asm.js spec, array dereference expressions must be of the form \texttt{x[(e \& mask) {>}> i]} with \texttt{mask} being equal to the number of bytes in the ArrayBuffer\footnote{Which must be a multiple of $4096$} and \texttt{i} being equal to the number of bytes the data type of the view used for the access is based on (e.g. $4$ in the case of \texttt{Int32View}). In combination, they prevent out-of-bounds accesses by discarding bits larger than the length of the array and shifting the index to the right size for the view.
 
 \section{LLVM and Emscripten}
 % TODO cite LLVM paper
 % TODO mention some of the more obscure uses of LLVM
 % TODO give examples of LLVM IR code
-LLVM is a compiler project that includes and has spawned a large number of tools and programs related to the compilation of programs. At its core, it defines an intermediate representation called LLVM IR and an optimizer for this language. This intermediate representation aims to be a shared interface for front ends that parse programming languages and compile them to LLVM IR and back ends that take LLVM IR code and produce native code for a specific architecture such as x86 or arm. 
+In order to gather more data with which the performance of the compiler could be compared, the project was extended to also interact with LLVM and Emscripten. LLVM is a compiler project that includes and has spawned a large number of tools and programs related to the compilation of programs. At its core, it defines an intermediate representation called LLVM IR and an optimizer for this language. This intermediate representation aims to be a shared interface for front ends that parse programming languages and compile them to LLVM IR and back ends that take LLVM IR code and produce native code for a specific architecture such as x86 or arm. 
 
 % TODO cite paper on emcc (on desktop)
 While a large number of these front and back ends for various languages and architectures have been written, only one is relevant to the LJSP project: a LLVM IR to JavaScript compiler called Emscripten. Emscripten was written by the same people that invented asm.js, in fact, asm.js was created to fill a need the Emscripten developers had for a better compilation target.
 
+% TODO maybe capitalise "chapter"
 The LJSP compiler emits both C and LLVM IR code. This generated code can be compiled with Emscripten to asm.js. The Evaluation chapter will compare the running time of this code that Emscripten emits with the asm.js code that LJSP generates directly.
 
 \section{Ray tracing}
-Ever since the first computer were built, programmers have sought ways to generate pictures with programs. Especially with the rise of computer games, this has become a heavily researched area. Ray tracing is one such technique to generate images from description of 3D scenes.
+Ever since the first computers were built, programmers have sought ways to generate pictures with programs. Especially with the rise of computer games, this has become a heavily researched area. Ray tracing is one such technique to generate images from description of 3D scenes. Because generating these images is a computationally intensive task, it is suited to be used as benchmark.
 
 Before we describe the details of ray tracing, we have introduce two terms that we will refer to in our explanation: A \textbf{3D Scene} is an arrangement of objects at specific coordinates in 3D space. Object can include shapes such as spheres, cubes or planes, lights and a camera. The \textbf{camera} is not a visible object, but instead gives the perspective an angle from which the scene will be rendered. This is also commonly referred to as "eye". \textbf{Rendering} denotes the process of generating an image from a 3D scene and the program that does this is called a renderer.
 
@@ -285,6 +299,7 @@ This idea is illustrated by figure \ref{raytracingexplanation}.
 
 \chapter{Specification}
 % TODO example program (fib) with mathematical definition
+% TODO mention that LJSP is a subset of Scheme
 \section{Grammars}
 \subsection{LJSP Grammar}
 The grammar of LJSP in Extended Backus-Naur Form is given below.
@@ -394,7 +409,7 @@ The grammer for the Intermediate Representation of the LJSP compiler is given be
 In this section, we give the small-step semantics of the LJSP language. In the expressions below, $i$ stands for an identifier, $v$ stands for a generic value, $e$ stands for an expression, $c$ stands for a context that an expression is evaluated within and $\Lambda$ stands for a \texttt{(lambda...)} expression.
 % TODO maybe change names from func_appl1 to "func appl 1"
 \begin{gather*}
-\inference[var]{}{\langle i, c \rangle~\rightarrow~\langle v, c\rangle~\text{if}~c(i) = v}\\\\
+\inference[var]{}{\langle i, c \rangle~\rightarrow~\langle v, c\rangle}~\text{if}~c(i) = v\\\\
 %
 \inference[let1]{\langle e_1, c \rangle~\rightarrow~\langle e_1', c' \rangle}{\langle (\text{let}~i_1=e_1,~\dots~\text{in}~e), c \rangle~\rightarrow~\langle (\text{let}~i_1=e_1',~\dots~\text{in}~e), c' \rangle}\\
 %
@@ -445,10 +460,10 @@ The Abstract Syntax Tree (AST) is the representation of the program that the com
 
 As its name suggests, the Abstract Syntax Tree is a Tree representation of the code. As an illustration of the structure of these trees, we give the AST for the expression \hbox{\texttt{(* (+ x 1) 2)}} below.
 
-% TODO make a nicer tree with asymptote
 \begin{figure}[ht]
-\hskip-0.3in
-\Tree [.* [.+ x 1 ] 2 ]
+\begin{center}
+\includegraphics[scale=1.2]{astexample.eps}
+\end{center}
 \caption{Example of an Abstract Syntax Tree}
 \label{astexample}
 \end{figure}
@@ -506,10 +521,13 @@ One important consideration when structuring a compiler in this way is to avoid 
 \section{Detailed description of compilation stages}
 We will now describe all the stages of the LJSP compiler in detail. For many stages, this will include a set of equations to define the stages in a precise way. In these equations, $y$ will stands for a variable, $d$ for a double constant and $f$ for a fresh identifier. Functions of the form $\mathcal{A}\llbracket e \rrbracket$ will denote transformation $\mathcal{A}$ applied to expression $e$.
 
+% TODO Page 27, 5.2.1: you "announce" that you will be explaining parsing there, but then you refer to the Implementation Chapter. I feel cheated ;o) 
 \subsection{Parsing}
 This very first stage takes the textual representation of the program and converts it to an Abstract Syntax Tree that the subsequent stages manipulate. It does so according to the grammar of LJSP described in the Specification chapter. Because of its syntax, LJSP is a very easy language to parse, which makes this a relatively simple stage. The details of parsing will be described in the Implementation chapter.
 
 \subsection{\texttt{letn} expansion}
+This is a small stage that expands all \texttt{let} expressions that define $n$ @variables@ into $n$ \texttt{let} expressions that all define one variable each. Applying \texttt{letn} conversion to the expression \texttt{(let ((a 1) (b 2)) (+ a b))} would yield \texttt{(let ((a 1)) (let ((b 2)) (+ a b)))}. While not strictly necessary, this conversion greatly simplifies later stages such as CPS-translation, as they do not have to consider the possibility of multiple $(idn\ e)$ blocks inside \texttt{lets}. Equations for this stage are given in figure \ref{letnconversion}.
+
 \begin{figure}[ht]
 \begin{alignat*}{2}
 &\mathcal{L}\llbracket (\text{let}\ ((idn_1\ e_1)\ (idn_2\ e_2)\dots &&\eqdef (\text{let}\ ((idn_1\ e_1))\ (\text{let}\ ((idn_2\ e_2)) \dots \\
@@ -519,7 +537,6 @@ This very first stage takes the textual representation of the program and conver
 \caption{\texttt{letn} conversion}
 \label{letnconversion}
 \end{figure}
-This is a small stage that expands all \texttt{let} expressions that define $n$ @variables@ into $n$ \texttt{let} expressions that all define one variable each. Applying \texttt{letn} conversion to the expression \texttt{(let ((a 1) (b 2)) (+ a b))} would yield \texttt{(let ((a 1)) (let ((b 2)) (+ a b)))}. While not strictly necessary, this conversion greatly simplifies later stages such as CPS-translation, as they do not have to consider the possibility of multiple $(idn\ e)$ blocks inside \texttt{lets}. Equations for this stage are given in figure \ref{letnconversion}.
 
 \subsection{Prim op reduction}
 \begin{figure}[ht]
@@ -538,7 +555,7 @@ This stage converts the program to continuation-passing style (CPS). Because it 
 % TODO give names to snippets, refer to them by name
 % TODO based on system f paper
 \subsubsection{Continuation-Passing Style}
-Code that is in Continuation-Passing Style gives explicit names to every intermediate computation and makes control flow explicit by never returning from a function call.\cite{sysftal}\cite{appel} To illustrate this, we show the transformation of a simple function \texttt{f}, given below, to CPS step-by-step.
+Code that is in Continuation-Passing Style gives explicit names to every intermediate computation and makes control flow explicit by never returning from a function call. \cite{sysftal}\cite{appel} To illustrate this, we show the transformation of a simple function \texttt{f}, given below, to CPS step-by-step.
 
 \begin{lstlisting}
 function f(a, b) {
@@ -565,7 +582,7 @@ function f2(a, b) {
 }
 \end{lstlisting}
 
-The last step in our example is the one that gives Continuation-Passing Style its name: Functions in CPS conform programs do not return, but instead receive a function, usually called "continuation", that the caller passes in an additional parameter. This continuation can be understood as the remainder of the program that processes the result computed by the function:
+The last step in our example is the one that gives Continuation-Passing Style its name: Functions in CPS-conform programs do not return, but instead receive a function, usually called "continuation", that the caller passes in an additional parameter. This continuation can be understood as the remainder of the program that processes the result computed by the function:
 
 \begin{lstlisting}
 function f3(cont, a, b) {
@@ -1211,7 +1228,7 @@ var_1 = (double*)malloc(sizeof(double) * 1);
 
 Both operands are first cast from a \texttt{void*} to a \texttt{double*}, before getting dereferenced. The result, i.e. the values to be added are then saved in two variables (\texttt{prim_op_v_1} and \texttt{prim_op_v_2} in the example). Before the addition takes place, memory is allocated to hold the result and assigned to a \texttt{double*}. In the last line, the sum of the two operands is then written to the memory allocated in the previous line.
 
-As mentioned in the section on the memory layout of the C code generated by the compiler, there are a few small differences between the code that the "Conversion to C" stage and the "Conversion to Emscripten C" emit. "Conversion to Emscripten C" removes the \texttt{expression} and \texttt{main} functions. They are unnecessary, because emscripten compiles the C code to an asm.js module which will have its functions called by some other piece of code. "Conversion to Emscripten C" further replaces calls to \texttt{malloc} to \texttt{jalloc} and adds a call to \texttt{free_all} to \texttt{_copy} functions, as mentioned above, and adds the line \texttt{\#include "jalloc.c"} to the preprocessor block to make this function available. The last change it makes is adding another copy of every function that ends in \texttt{_copy} with the suffix \texttt{_call_by_value}. These new functions take the same number of parameters as the original functions, but their parameters are of type \texttt{double} instead of \texttt{double*}. This is necessary for the same reason the \texttt{_copy} functions are necessary for: The calling code has no access to the memory handling of the module that Emscripten generates and can not allocate any memory that the double pointers could point to. This is instead done by the new \texttt{_call_by_value} functions.
+As mentioned in the section on the memory layout of the C code generated by the compiler, there are a few small differences between the code that the "Conversion to C" stage and the "Conversion to Emscripten C" emit. "Conversion to Emscripten C" removes the \texttt{expression} and \texttt{main} functions. They are unnecessary, because Emscripten compiles the C code to an asm.js module which will have its functions called by some other piece of code. "Conversion to Emscripten C" further replaces calls to \texttt{malloc} to \texttt{jalloc} and adds a call to \texttt{free_all} to \texttt{_copy} functions, as mentioned above, and adds the line \texttt{\#include "jalloc.c"} to the preprocessor block to make this function available. The last change it makes is adding another copy of every function that ends in \texttt{_copy} with the suffix \texttt{_call_by_value}. These new functions take the same number of parameters as the original functions, but their parameters are of type \texttt{double} instead of \texttt{double*}. This is necessary for the same reason the \texttt{_copy} functions are necessary for: The calling code has no access to the memory handling of the module that Emscripten generates and can not allocate any memory that the double pointers could point to. This is instead done by the new \texttt{_call_by_value} functions.
 % TODO mention how these small hacks and adjustments were necessary all the time when writing the compiler. also: cps-translation types
 
 % TODO find better titles for this chapter that make clear the distinction between compiler and generated code
@@ -1755,7 +1772,7 @@ The HTML file depends on a number of JavaScript files, all of which are included
 The first of these files is the JavaScript file containing the asm.js code for rendering the scene using asm.js code generated by the LJSP compiler (the rendering method activated by the third of the four buttons). This file is called \texttt{ray_tracer/gen_code.js} and can be generated by executing the following command from the root of the repository: \texttt{scala -cp ljsp/ ljsp.Ljsp --asmjs -i ray_tracer/ljsp_code.scm -o ray_tracer/gen_code.js}. Please note that the LJSP compiler must have been successfully compiled, before it can be used. See the first section of this chapter for details on how to do this.
 
 The second file contains the asm.js code generated by Emscripten (the forth of the four buttons renders the scene using this implementation). To generate this file, an Emscripten compatible C version of the \texttt{raySphereIntersectionPoint} has to be generated using the LJSP compiler by calling \texttt{scala -cp ljsp/ ljsp.Ljsp --emC -i ray_tracer/ljsp_code.scm -o rtc.c} from the root of the repository. This generated a file called \texttt{rtc.c}, also included with the repository. To compile this file and save the result in \texttt{ray_tracer/emcc_output.js}, which is where the ray tracer expects the Emscripten code, call Emscripten with this command: \texttt{emcc -O2 -s EXPORTED_FUNCTIONS="['_raySphereIntersectionPoint_copy_call_by_value', '_vectorsDotProduct_copy_call_by_value']" -s NO_EXIT_RUNTIME=1 rtc.c -o ray_tracer/emcc_output.js}. For this command to work, Emscripten must be installed and \texttt{emcc} in the \texttt{PATH}. For instructions on how to install Emscripten, please see the Emscripten tutorial.
-% TODO link to emscripten tutorial
+% TODO link to Emscripten tutorial
 
 \section{Testing}
 % TODO mention programs required (racket, cc, lli) and setting paths
@@ -1778,6 +1795,7 @@ Running tests can be achieved by executing \texttt{python run_tests.py} on the c
     % TODO google "mozilla is unlocking the power of the web as a platform for gaming" and properly cite
     \bibitem{unreal} TODOTODOTOD
     \bibitem{physrendering} Matt Pharr, Greg Humphreys (2010) {\em Physically Based Rendering, 2nd edition} pp. 116
+    \bibitem{comparticle} Charles Severance {\em JavaScript: Designing a Language in 10 Days} Computer, vol. 45, no. 2, pp. 7-8, Feb., 2012 
 \end{thebibliography}
 
 \end{document}
