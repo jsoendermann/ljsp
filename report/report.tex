@@ -568,13 +568,14 @@ This subdivision of stages into the three groups described above has been inspir
 
 \begin{figure}[ht]
 \begin{center}
-% TODO add diagram
+\includegraphics[scale=0.75]{stagesoverview.eps}
 \caption{High level overview of LJSP compilation stages}
 \end{center}
 \label{highlevelstages}
 \end{figure}
 
 % TODO ref and figure label don't match
+% TODO mention that all stages of a specific colour are contained in that colour in fig 4.3
 One important consideration when structuring a compiler in this way is to avoid code duplication. Figure \ref{highlevelstages} shows a high level overview of the compilation stages in the LJSP compiler. It shows that regardless of the possible output languages the user of the compiler chooses, all programs pass through the red, intermediate stages. This makes them ideal for transformations that are shared among all output languages, such as code optimisations. The first implementation of the LJSP compiler did not include any intermediate stages and transformed LJSP ASTs obtained after the front end stages straight to asm.js. After adding additional back ends (C first, later LLVM), however, the need for an Intermediate Representation quickly became obvious due to the large amound of duplicated code.
 
 \section{Detailed description of compilation stages}
@@ -925,7 +926,7 @@ Continuations can be understood as a generalization of closures. A closure is a 
 \subsection{Hoisting}
 This is again a relatively simple stage that works in conjunction with the last stage, closure conversion. Hoisting takes closure converted lambdas and turns them from anonymous functions to named, top-level functions. Because after closure conversion, all variables used in these anonymous functions are bound, this is a very simple process.
 
-The last definition of \texttt{get_n_adder} given in the previous chapter would change to the following code after hoisting:
+The last definition of \texttt{get_n_adder} given in the previous chapter would change to the code shown in figure \ref{hoisting}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -937,15 +938,14 @@ def get_n_adder(n):
     r = make_closure(func_0, make_env(n))
     return r
 \end{lstlisting}
-\caption{Flowchart for compilation stages in LJSP}
-\label{stagesflowchart}
+\caption{Hoisting the code out of the closure}
+\label{hoisting}
 \end{figure}
 
 \subsection{Conversion to IR (Intermediate Representation)}
-% TODO mention that lets get converted to variable assignments
 This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates and converts it into the Intermediate Representation of the LJSP compiler. While not simple, this is a rather uninteresting stage, as its work mainly consists of converting AST objects from LJSP AST classes to IR AST classes. One significant change this stage does make to the code is that it wraps the expression that LJSP programs can have besides function definitions in its own function called \texttt{expression}.
 
-After passing through this stage, the code is in a sequential style consisting of a list of statements. This is opposed to the style of LJSP, where expressions are arranged as a tree.
+After passing through this stage, the code is in a sequential style consisting of a list of statements. This is opposed to the style of LJSP, where expressions are arranged as a tree. This turns let expressions of the form \texttt{let i=v in e} into the imperative equivalent of \texttt{i=v;e}.
 
 % TODO give examples for this 
 
