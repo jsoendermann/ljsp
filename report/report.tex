@@ -7,13 +7,16 @@
 % CPS equations
 \usepackage{amsmath}
 \usepackage{stmaryrd}
+% Average symbol
+\usepackage{amssymb}
 % Grammar
 \usepackage{syntax}
 % Operational semantics
 \usepackage{semantic}
-% Stages diagram
-%\usepackage{tikz}
-% Stages diagram elements
+% Source code listings
+\usepackage{listings}
+\lstset{frame=single, numbers=left, basicstyle=\ttfamily}
+% Diagrams
 \usepackage{graphicx}
 % Chapter number and name on one line
 \usepackage{titlesec}
@@ -26,15 +29,8 @@
 %\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
 %\makeatother
 
-% Source code listings
-\usepackage{listings}
-\lstset{frame=single, numbers=left, basicstyle=\ttfamily}
-% Line spacing
-\usepackage{setspace}
-% AST example
-\usepackage{qtree}
-% Average symbol
-\usepackage{amssymb}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -51,14 +47,13 @@
 \begin{document}
 % TODO explain why both C and LLVM IR as targets. initially: LLVM IR to emscripten, for LLVM IR it turned to be easier to go via C, then: going from C was easier and equivalent to going from LLVM IR
 % TODO consistent names for stages
-% TODO reference code snippets using nr.
 % TODO spelling: frontend/front end
+% TODO proofread
 
+% TODO END nicer title page
 \maketitle
 
-%\onehalfspacing
-
-% TODO word count on this page
+% TODO END word count on this page
 \begin{center}
 \textbf{Originality avowal}
 \end{center}
@@ -93,17 +88,15 @@ I would like to thank my supervisor Dr. Christian Urban for supervising my proje
 
 \tableofcontents
 \listoffigures
-%\newpage
 
 \chapter{Introduction}
 One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to online applications on the web. This phenomenon, often called "Web 2.0", is exemplified in the success of web applications such as GMail and Facebook. 
 
 This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language that is supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, reflect this success: in 2013, JavaScript led this list by a substantial margin \cite{githubarchive} \cite{topgithub}\footnote{Running the query given at \cite{topgithub} adjusted to include the entire year of 2013 yields $498467$ repositories for JavaScript and $395097$ for Ruby on second place}.
 
-% TODO possibly add refs to ember, meteor websites
 Since JavaScript is no longer confined to being used for simple animations and input-validation tasks, the complexity of web apps has increased tremendously. Modern JavaScript frameworks, such as Ember.js link or Meteor use the full register of functionality the language offers and are just as complex as traditional web frameworks that use other languages such as Ruby or Python.
 
-% TODO possibly provide citation for the consensus claim
+% TODO HOME possibly provide citation for the consensus claim
 Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially designed for. There is a widespread consensus that the language has many shortcomings. Brendan Eich, the creator of JavaScript, writes \cite{brendeich} about its early history:
 \begin{quote}
 In April 1995 I joined Netscape in order to "add Scheme to the browser." [...]
@@ -123,14 +116,13 @@ If I had done classes in JavaScript back in May 1995, I would have been told tha
 % TODO maybe mention function > array
 Criticism of JavaScript has mostly focussed on two areas:
 \begin{itemize}
-% TODO fix line break
+% TODO END fix line break
 \item Inconsistencies and mistakes in the design of the language. Examples given for this often include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \mbox{\texttt{typeof x === 'undefined'}} avoid comparing against a redefined \texttt{undefined}. Further problems include unusual scoping and confusing automatic casts. For a long list of problems with JavaScript, see \cite{jsgoodparts}.
-% TODO give citation/explanation for the dynamic claim
+% TODO HOME give citation/explanation for the dynamic claim
 \item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinary difficult task for browser developers. This is due to the weap typing and generally extremely dynamic nature of JavaScript.
 \end{itemize}
 
 
-% TODO possibly add links to coffeescript etc.
 Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular book "JavaScript: The Good Parts" \cite{jsgoodparts}). Another response has been to create new languages that compile to JavaScript, such as the very popular CoffeeScript, Microsoft's TypeScript and Google's Dart.
 
 The second problem has been partly remedied by a new generation of JavaScript engines spearheaded by Google's V8, released in 2008 as part of Google Chrome. The other browser makers, including Mozilla soon followed by rewriting their own JavaScript engines. These new engines often brought impressive speed gains.
@@ -152,7 +144,7 @@ This chapter will describe the background and context of the LJSP project. It wi
 
 \section{asm.js}
 % TODO Page 10: maybe in the "abstract" of this section you give a teaser like: "In a nutshell we want to find out how fast asm.js really is and whether the hype suropunding it is really  justified." Or something like this.
-% TODO links to hn posts, blog posts, hype
+% TODO HOME links to hn posts, blog posts, hype
 
 Asm.js is a small subset of JavaScript that can be compiled to very fast machine code. Benchmarks \cite{asmjsbenchmark} show running times around twice the speed of native code. To showcase the speed of asm.js, researches at Mozilla compiled the Unreal gaming engine to asm.js, producing smooth and stutter free rendering inside the browser \cite{unreal}.
 
@@ -173,7 +165,6 @@ function add(a, b) {
 \caption{A simple function in JavaScript}
 \label{jssimplefunc}
 \end{figure}
-
 
 The name of this function suggests that it was probably conceived to add two numbers. It could, however, be called with \texttt{add("hello ", "world");} and would yield the string \texttt{"hello world"}. Neither is it restricted in the type of numbers it accepts: it can be called with an arbitrary combination of integers and floating point numbers.
 
@@ -507,7 +498,7 @@ When compiling a program, the compiler will first create the AST of the input pr
 In the following, we will first describe the AST classes before going through all the individual stages of the compiler in detail.
 
 \subsection{The Abstract Syntax Tree}
-% TODO cite: something about ASTs maybe from the dragon book
+% TODO HOME cite: something about ASTs maybe from the dragon book
 The Abstract Syntax Tree (AST) is the representation of the program that the compiler uses internally. It gets generated by the first stage, parsing, whose purpose it is to convert the users' textual representation of the program to an AST. Correspondingly, the compiler includes functions that convert an AST back to program code in text form. The details of these conversion will be described in more detail in the Implementation Chapter.
 
 As its name suggests, the Abstract Syntax Tree is a Tree representation of the code. As an illustration of the structure of these trees, we give the AST for the expression \hbox{\texttt{(* (+ x 1) 2)}} below.
@@ -525,36 +516,16 @@ All nodes in the Abstract Syntax Tree are objects. These objects are instances o
 % TODO add diagrams for AST class hierarchies
 
 \subsection{Compilation stages}
-% TODO talk about nanostage compiler
+% TODO HOME talk about nanostage compiler
 Because compiling a program from one programming language to another is often a very complex transformation, most compilers break up this transformation into a number of stages that each accomplish a small part of this overall transformation. While these stages can vary quite significantly in complexity ranging from simple expansions of specific expressions (an example would be converting expressions of the form \hbox{\texttt{1 + 2 + 3 + 4}} to \hbox{\texttt{((1 + 2) + 3) + 4}}) to more complex transformations such as CPS-Translation, they are all of managable complexity when compared to the overall goal of transforming from the input to the output language.
 
 All stages in the compiler take an produce an Abstract Syntax Tree which they manipulate \footnote{An exception to this are the very first and very last stages, whose purpose it is to convert between textual representations of the program and the AST.}. An important observation on compilation stages is that they should not change what the AST evaluates to, i.e. not change the meaning of the program.
 
-Like many other compilers, the LJSP compiler is made up of compilation stages. These stages make up the core of the compiler and will be described in detail the following subsections.
-
 \subsubsection{Overview of compilation stages}
+Like most compilers, including industrial-strengh compilers such as LLVM, the LJSP compiler is made up of compilation stages. These stages make up the core of the compiler and will be described in detail in the rest of this chapter.
 
-\begin{figure}[ht]
-\begin{center}
-\includegraphics[scale=0.8]{stagesflowchart.eps}
-\caption{Flowchart for compilation stages in LJSP}
-\end{center}
-\label{stagesflowchart}
-\end{figure}
+One important consideration when structuring a compiler in this way is to avoid code duplication. Figure \ref{highlevelstages} shows a high level overview of the compilation stages in the LJSP compiler. It shows that regardless of the possible output languages the user of the compiler chooses, all programs pass through the red, intermediate stages. This makes them ideal for transformations that are shared among all output languages, such as code optimisations. The first implementation of the LJSP compiler did not include any intermediate stages and transformed LJSP ASTs obtained after the front end stages straight to asm.js. After adding additional back ends (C first, later LLVM), however, the need for an Intermediate Representation quickly became obvious due to the large amound of duplicated code.
 
-% TODO the name underneath the figure and the one in the text don't match
-Figure \ref{stagesflowchart} shows all the compilation stages that the LJSP compiler is made up of. These stages  can be grouped into three sections:
-\begin{itemize}
-\item \textbf{Front end stages}: These first six stages make up the first part of the transformations the code passes through. Their structure is that of a simple list as there is no branching of stages in the front end. These stages all operate on LJSP code, but they all reduce the complexity of the code. The decision to not use a separate language for as long as possible was made early in the development of the compiler, because it simplified testing these stages. Letn expansion and prim op reduction reduce the number of distinct instructions in the code, CPS-translation makes control flow explicit while the latter two stages remove anonymous function objects by turning them into named functions. This reduction of complexity is necessary to bridge the gap between LJSP, a very high-level language that includes such concepts as functions as first class variables, and low-level output languages such as LLVM IR that do not include these concepts. In the diagram, they are depicted as boxes with a green background.
-
-\item \textbf{Intermediate stages}: These stages convert the LJSP AST obtained after passing through the front end stages into a different language called the Intermediate Representation (IR) of the LJSP compiler before performing various optimisations on this IR code. IR is an imperative, untyped language, that is general enough to be converted to both asm.js and C but close enough to these languages to avoid code duplication. This part of the compiler currently consists of two stages, one that converts LJSP to IR and a simple optimisation that removes redundant assignments. It offers a suitable framework for adding additional optimisations that automatically get shared between all output languages. In the diagram, intermediate stages are shown as boxes with a red background.
-
-\item \textbf{Back end stages}: This part of the compiler comprises all the stages that result in an output language. The relationships between these stages are more complex and include some branching, the reasons for which will be described in the section below. In the diagram, back end stages are shown as boxes with a blue background.
-\end{itemize}
-
-This subdivision of stages into the three groups described above has been inspired by large, industrial strength compilers such as LLVM.
-
-% TODO this should come before the specific stages
 \begin{figure}[ht]
 \begin{center}
 \includegraphics[scale=0.75]{stagesoverview.eps}
@@ -563,9 +534,28 @@ This subdivision of stages into the three groups described above has been inspir
 \label{highlevelstages}
 \end{figure}
 
-% TODO ref and figure label don't match
-% TODO mention that all stages of a specific colour are contained in that colour in fig 4.3
-One important consideration when structuring a compiler in this way is to avoid code duplication. Figure \ref{highlevelstages} shows a high level overview of the compilation stages in the LJSP compiler. It shows that regardless of the possible output languages the user of the compiler chooses, all programs pass through the red, intermediate stages. This makes them ideal for transformations that are shared among all output languages, such as code optimisations. The first implementation of the LJSP compiler did not include any intermediate stages and transformed LJSP ASTs obtained after the front end stages straight to asm.js. After adding additional back ends (C first, later LLVM), however, the need for an Intermediate Representation quickly became obvious due to the large amound of duplicated code.
+% TODO HOME the name underneath the figure and the one in the text don't match
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[scale=0.8]{stagesflowchart.eps}
+\caption{Flowchart for all compilation stages in LJSP}
+\end{center}
+\label{stagesflowchart}
+\end{figure}
+
+Figure \ref{stagesflowchart} shows all the compilation stages that the LJSP compiler is made up of. The colours of the stages in the detailed flowchart correspond to the three colours used for front end, intermediate and back end stages in figure \ref{highlevelstages}. 
+
+The stages of the compiler can be grouped into three sections:
+\begin{itemize}
+\item \textbf{Front end stages}: These first six stages make up the first part of the transformations the code passes through. Their structure is that of a simple list as there is no branching of stages in the front end. These stages all operate on LJSP code, but they all reduce the complexity of the code. The decision to not use a separate language for as long as possible was made early in the development of the compiler, because it simplified testing these stages. Letn expansion and prim op reduction reduce the number of distinct instructions in the code, CPS-translation makes control flow explicit while the latter two stages remove anonymous function objects by turning them into named functions. This reduction of complexity is necessary to bridge the gap between LJSP, a very high-level language that includes such concepts as functions as first class variables, and low-level output languages such as LLVM IR that do not include these concepts. In the diagram, they are depicted as boxes with a green background.
+
+\item \textbf{Intermediate stages}: These stages convert the LJSP AST obtained after passing through the front end stages into a different language called the Intermediate Representation (IR) of the LJSP compiler before performing various optimisations on this IR code. IR is an imperative, untyped language, that is general enough to be converted to both asm.js and C but close enough to these languages to avoid code duplication. This part of the compiler currently consists of two stages, one that converts LJSP to IR and a simple optimisation that removes redundant assignments. It offers a suitable framework for adding additional optimisations that automatically get shared between all output languages. In the diagram, intermediate stages are shown as boxes with a red background.
+
+\item \textbf{Back end stages}: This part of the compiler comprises all the stages that result in an output language. The relationships between these stages are more complex and include some branching, the reasons for which will be described in the section below. In the diagram, back end stages are shown as boxes with a blue background.
+\end{itemize}
+
+
 
 \section{Detailed description of compilation stages}
 We will now describe all the stages of the LJSP compiler in detail. For many stages, this will include a set of equations to define the stages in a precise way. In these equations, $y$ will stands for a variable, $d$ for a double constant and $f$ for a fresh identifier. Functions of the form $\mathcal{A}\llbracket e \rrbracket$ will denote transformation $\mathcal{A}$ applied to expression $e$. This syntax is borrowed from \cite{sysftal}.
@@ -602,8 +592,6 @@ This stage reduces a number of primitive operations to a combination of other pr
 \subsection{CPS-Translation}
 This stage converts the program to continuation-passing style (CPS). Because it is the central stage of the compilation pipeline, we will first explain continuation-passing style in general before describing the particularities of the CPS-translation in the LJSP compiler.
 
-% TODO give names to snippets, refer to them by name
-% TODO based on system f paper
 \subsubsection{Continuation-Passing Style}
 Code that is in Continuation-Passing Style gives explicit names to every intermediate computation and makes control flow explicit by never returning from a function call \cite{sysftal} \cite{appel}. To illustrate this, we show the step-by-step transformation of a simple function \texttt{f}, given in Figure \ref{cpsconvfunc1}, to Continuation-Passing Style.
 
@@ -1110,7 +1098,6 @@ If the point is illumnated by the light, the tracing function next calculates pr
 
 If the object hit by the ray $r$ is reflective, the tracing function recurses by tracing the reflection ray before returning a combination of the result of the recursion with the colour of the object. Otherwise it returns the objects colour illuminated with the light calculated in the last section.
 
-% TODO mention internal forms
 \chapter{Implementation}
 
 This chapter will describe the implementation details of the LJSP compiler. It builds on and assumes the previous chapter which describes the parts of the compiler from a theoretical perspective.
@@ -1729,7 +1716,6 @@ All files related to it can be found in the \texttt{ray_tracer/} directory. They
 \subsection{The html interface}
 The user interacts with the ray tracer using the web page contained in\texttt{ray_tracer.html}. This html interface includes a canvas on which the rendered 3D scene will be drawn, four buttons that offer the user a choice of rendering methods as well as a way to display the time it took to render the image. Figure \ref{raytracinginterface} shows this html interface.
 
-% TODO maybe include this
 \begin{figure}[p]
 \includegraphics[scale=0.7]{raytracinginterface.eps}
 \caption{The ray tracer interface}
@@ -1738,11 +1724,8 @@ The user interacts with the ray tracer using the web page contained in\texttt{ra
 
 Every rendering method consists of a different implementation of one of the main functions the renderer uses: \texttt{raySphereIntersectionPoint}. This function computes the intersection point of a ray with a sphere. Comparing the running time of the different methods against each other offers a benchmark for each method.
 
-% TODO profiler screen shot here?
-
 There are four different rendering methods in total which correspond to the four buttons on the html page:
 
-% TODO there is some overlap with the list above, remove redundancy
 \begin{enumerate}
 \item Standard JavaScript, the implementation of this method can be found in the \texttt{ray_tracer.js} file
 \item Handwritten asm.js code, this is implemented in \texttt{handwritten_asm.js}
@@ -1837,7 +1820,7 @@ The framework tests the different stages of the compiler by first evaluating the
 The testing framework does not currently test intermediate stages. The Intermediate Representation (IR) is a language only used in the LJSP compiler, which would make it necessary to write a custom interpreter for it, should it be covered by the testing framework. Because the intermediate stages were a late addition to the compiler and are so far very low in complexity, errors could so far be caught by tests covering the back end stages that follow the intermediate stages. Should development on the LJSP compiler continue, the addition of an IR interpreter and the coverage of intermediate stages would be one of the next steps as we mention in the Conclusion Chapter.
 
 
-% TODO describe structure of the code
+% TODO possibly describe structure of the code
 
 \subsection{Testing front end stages}
 As mentioned in the Design Chapter, all front end stages operate on LJSP code. Because the grammar of LJSP is almost a subset of the grammar of Scheme\footnote{As mentioned in the Specification Chapter, the only difference is the \texttt{neg} operator that LJSP uses for arithmetic negation. Scheme uses \texttt{-} for that.}, this makes it possible to test these stages using a Scheme interpreter. The testing framework uses the "Racket" Scheme interpreter to evaluate LJSP code, but in priciple, every Scheme interpreter could be used.
@@ -1971,12 +1954,9 @@ Finally, more intermediate stages could be added that optimise the generated cod
 
 
 
-
-% TODO in evaluation or conclusion: say that asm.js is very limited and might not be useful far outside the example that mozilla gave (game engine)
-% TODO mention somewhere how limited asm.js is (arithmetic operations + reading and writing from array, quote "why asm.js bothers me") and that it's surprising that it does so badly for mathematical functions
+% TODO in evaluation or conclusion: say that asm.js is very limited and might not be useful far outside the example that mozilla gave (game engine); mention somewhere how limited asm.js is (arithmetic operations + reading and writing from array, quote "why asm.js bothers me") and that it's surprising that it does so badly for mathematical functions
 % TODO in evaluation: stress that handwritten is benchmark, not javascript
 % TODO move javascript functions in ray tracer to separate file/functions and make new benchmarks
-% TODO links to hn asm.js discussions, blogposts
 
 
 \chapter{User Guide}
