@@ -5,14 +5,14 @@ import flowchart;
 real column = 6cm;
 
 block parsed=rectangle(Label("Parsing"), (0,0), lightgreen);
-block expandLetNs=rectangle(Label("Expansion of letns"), (column,0), lightgreen);
-block reducePrimOps=rectangle(Label("Reduction of prim ops"), (2*column,0), lightgreen);
-block cpsTrans=rectangle(Label("CPS translation"), (0,-2cm), lightgreen);
+block expandLetNs=rectangle(Label("\texttt{letn} expansion"), (column,0), lightgreen);
+block reducePrimOps=rectangle(Label("Prim op reduction"), (2*column,0), lightgreen);
+block cpsTrans=rectangle(Label("CPS-translation"), (0,-2cm), lightgreen);
 block cc=rectangle(Label("Closure conversion"), (column,-2cm), lightgreen);
 block hoist=rectangle(Label("Hoisting"), (2*column,-2cm), lightgreen);
 
 block ir=rectangle(Label("Intermediate Representation"), (0cm,-4cm), lightred);
-block remRedundantAssigns=rectangle(Label("Remove redundant assigns"), (column, -4cm), lightred);
+block remRedundantAssigns=rectangle(Label("Redundant assignment removal"), (column, -4cm), lightred);
 
 block asmjs=rectangle(Label("asm.js"), (2*column,-6cm), lightblue);
 block c=rectangle(Label("C"), (column,-6cm), lightblue);
