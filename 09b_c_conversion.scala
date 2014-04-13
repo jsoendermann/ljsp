@@ -22,10 +22,10 @@ object c_conversion {
     }
 
     val ret_val = fresh("ret_val")
-    var sts_with_return = assign_last_expr_in_c_sts_list_to_ret_val(ret_val, sts)
+    val decls_sts_with_return = assign_last_expr_in_c_sts_list_to_ret_val(ret_val, sts)
 
-    decls = decls :+ CDeclareVar(ret_val, CTVoidPointer)
-    sts_with_return = sts_with_return :+ CReturn(ret_val)
+    decls = decls_sts_with_return._1 ++ decls :+ CDeclareVar(ret_val, CTVoidPointer)
+    val sts_with_return = decls_sts_with_return._2 :+ CReturn(ret_val)
 
     CFunction(f.name, f.params, decls.distinct, sts_with_return)
   }
@@ -115,6 +115,7 @@ object c_conversion {
 
     case IVarAssignment(idn, IStaticValue(d)) => {
       (CDeclareVar(idn, CTDoublePointer) :: Nil,
+
         CVarAssignment(idn, CMalloc(CTDoublePointer, CTDouble, 1)) ::
         CDereferencedVarAssignment(idn, CStaticValue(d)) :: Nil)
     }
@@ -246,15 +247,35 @@ object c_conversion {
     case _ => s
   }
 
-  // TODO this doesn't work with static values that get returned
-  def assign_last_expr_in_c_sts_list_to_ret_val(ret_val: Idn, statements: List[CStatement]) : List[CStatement] = statements match {
+  def assign_last_expr_in_c_sts_list_to_ret_val(ret_val: Idn, statements: List[CStatement]) : (List[CDeclareVar], List[CStatement]) = statements match {
     case (s::Nil) => {
       (s match {
-          case CIf(cond, block1, block2) => CIf(cond, assign_last_expr_in_c_sts_list_to_ret_val(ret_val, block1), assign_last_expr_in_c_sts_list_to_ret_val(ret_val, block2)) :: Nil
-          case _ => CVarAssignment(ret_val, s.asInstanceOf[CExp]) :: Nil
+          case CIf(cond, block1, block2) => {
+            val decls_sts_block1 = assign_last_expr_in_c_sts_list_to_ret_val(ret_val, block1)
+            val decls_sts_block2 = assign_last_expr_in_c_sts_list_to_ret_val(ret_val, block2)
+
+            (decls_sts_block1._1 ++ decls_sts_block2._1,
+              CIf(cond, decls_sts_block1._2, decls_sts_block2._2) :: Nil)
+          }
+          case CStaticValue(d) => {
+            val double_ret = fresh("double_ret")
+
+            (CDeclareVar(double_ret, CTDoublePointer) :: Nil,
+
+              CVarAssignment(double_ret, CMalloc(CTDoublePointer, CTDouble, 1)) ::
+              CDereferencedVarAssignment(double_ret, CStaticValue(d)) ::
+              CVarAssignment(ret_val, CIdn(double_ret)) :: Nil)
+          }
+          case _ => (Nil, CVarAssignment(ret_val, s.asInstanceOf[CExp]) :: Nil)
         })
     }
-    case (s::sts) => s :: assign_last_expr_in_c_sts_list_to_ret_val(ret_val, sts)
+    case (s::sts) => {
+      val decls_sts = assign_last_expr_in_c_sts_list_to_ret_val(ret_val, sts)
+
+      (decls_sts._1,
+        s :: decls_sts._2)
+    }
+      
     // This is necessary to suppress warnings
     case Nil => throw new IllegalArgumentException()
   }

@@ -65,16 +65,24 @@ object AST {
 
   case class CFunction(name: Idn, params: List[Idn], declarations: List[CDeclareVar], statements: List[CStatement])
 
-  // TODO use the same method to implement C types as was used for LLVM IR types below
   abstract class CType
+  case object CTVoid extends CType
   case object CTInt extends CType
-  case object CTIntPointer extends CType
   case object CTDouble extends CType
-  case object CTDoublePointer extends CType
-  case object CTDoublePointerPointer extends CType
-  case object CTVoidPointer extends CType
-  case object CTVoidPointerPointer extends CType
   case class CTFunctionPointer(num_params: Int) extends CType
+
+  case class CTPointerTo(t: CType) extends CType
+  def CTUnderlyingType(p: CType) : CType = p match {
+    case CTPointerTo(t) => t
+    case _ => throw new IllegalArgumentException("Can't get underlying type of basic type")
+  }
+
+  val CTIntPointer = CTPointerTo(CTInt)
+  val CTDoublePointer = CTPointerTo(CTDouble)
+  val CTDoublePointerPointer = CTPointerTo(CTDoublePointer)
+  val CTVoidPointer = CTPointerTo(CTVoid)
+  val CTVoidPointerPointer = CTPointerTo(CTVoidPointer)
+
 
   abstract class CStatement
   case class CDeclareVar(var_name: Idn, var_type: CType) extends CStatement
@@ -107,7 +115,6 @@ object AST {
 
   case class LFunction(name: String, params: List[Idn], statements: List[LStatement])
 
-  // TODO tidy this up, make it possible to go up and down pointer levels
   abstract class LType
   case object LTI8 extends LType
   case object LTInt extends LType
@@ -115,8 +122,10 @@ object AST {
   case class LTFunctionPointer(num_params: Int) extends LType
 
   case class LTPointerTo(t: LType) extends LType
-  // TODO this should probably be a function
-  case class LTUnderlyingType(p: LType) extends LType
+  def LTUnderlyingType(p: LType) : LType = p match {
+    case LTPointerTo(t) => t
+    case _ => throw new IllegalArgumentException("Can't get underlying type of basic type")
+  }
 
   val LTI8Pointer = LTPointerTo(LTI8)
   val LTI8PointerPointer = LTPointerTo(LTI8Pointer)
@@ -125,6 +134,7 @@ object AST {
   val LTDoublePointer = LTPointerTo(LTDouble)
   val LTDoublePointerPointer = LTPointerTo(LTDoublePointer)
   val LTDoublePointerPointerPointer = LTPointerTo(LTDoublePointerPointer)
+
 
   abstract class LStatement
   case class LVarAssignment(v: Idn, e: LExp) extends LStatement

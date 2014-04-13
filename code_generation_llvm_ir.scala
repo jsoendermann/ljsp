@@ -42,8 +42,6 @@ object code_generation_llvm_ir {
     case LTFunctionPointer(num_params: Int) => "i8* (" + List.fill(num_params)("i8*").mkString(", ") + ")*"    
 
     case LTPointerTo(t: LType) => llvm_ir_type_to_string(t) + "*"
-    case LTUnderlyingType(LTPointerTo(t)) => llvm_ir_type_to_string(t)
-    // TODO nested underlying types
 
     case _ => throw new IllegalArgumentException("Unknown type") 
   }
