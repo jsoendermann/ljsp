@@ -509,9 +509,8 @@ As its name suggests, the Abstract Syntax Tree is a Tree representation of the c
 \label{astexample}
 \end{figure}
 
-All nodes in the Abstract Syntax Tree are objects. These objects are instances of classes that very closely reflect the grammar of the language the program that the AST represents is written in. This means that every language used in the LJSP compiler (LJSP itself, the Intermediate Representation described in the next section and all output languages) have their own hierarchy of AST classes. Some compilation stages manipulate the AST without changing the types of the objects its made up of, whereas some convert the AST from one language to another. 
-
-% TODO HOME add diagrams for AST class hierarchies
+All nodes in the Abstract Syntax Tree are objects. These objects are instances of classes that very closely reflect the grammar of the language the program that the AST represents is written in. This means that every language used in the LJSP compiler (LJSP itself, the Intermediate Representation described in the next section and all output languages) have their own hierarchy of AST classes. Some compilation stages manipulate the AST without changing the types of the objects its made up of and some convert the AST from one class hierarchy to another. 
+% TODO LIB explain this better
 
 \subsection{Compilation Stages}
 Because compiling a program from one programming language to another is often a very complex transformation, most compilers break up this transformation into a number of stages\footnote{We will use the terms "stage", "conversion" and "translation" interchangably.} that each accomplish a small part of this overall transformation. While these stages can vary quite significantly in complexity ranging from simple expansions of specific expressions (an example would be converting expressions of the form \hbox{\texttt{1 + 2 + 3 + 4}} to \hbox{\texttt{((1 + 2) + 3) + 4}}) to more complex transformations such as CPS-translation, they are all of managable complexity when compared to the overall goal of transforming from the input to the output language.
