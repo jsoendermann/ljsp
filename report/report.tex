@@ -96,7 +96,7 @@ I would like to thank my supervisor Dr. Christian Urban for supervising my proje
 \chapter{Introduction}
 One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to online applications on the web. This phenomenon, often called "Web 2.0", is exemplified in the success of web applications such as GMail and Facebook. 
 
-This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language that is supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, reflect this success: in 2013, JavaScript led this list by a substantial margin \cite{githubarchive} \cite{topgithub}\footnote{Running the query given at \cite{topgithub} adjusted to include the entire year of 2013 yields $498467$ repositories for JavaScript and $395097$ for Ruby on second place}.
+This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language that is supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, reflect this success: in 2013, JavaScript led this list by a substantial margin \cite{githubarchive, topgithub}\footnote{Running the query given at \cite{topgithub} adjusted to include the entire year of 2013 yields $498467$ repositories for JavaScript and $395097$ for Ruby on second place}.
 
 Since JavaScript is no longer confined to being used for simple animations and input-validation tasks, the complexity of web apps has increased tremendously. Modern JavaScript frameworks, such as Ember.js link or Meteor use the full register of functionality the language offers and are just as complex as traditional web frameworks that use other languages such as Ruby or Python.
 
@@ -116,12 +116,10 @@ If I had done classes in JavaScript back in May 1995, I would have been told tha
 \end{quote}
 
 
-% TODO maybe mention function > array
 Criticism of JavaScript has mostly focussed on two areas:
 \begin{itemize}
 % TODO END fix line break
 \item Inconsistencies and mistakes in the design of the language. Examples given for this often include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \mbox{\texttt{typeof x === 'undefined'}} avoid comparing against a redefined \texttt{undefined}. Further problems include unusual scoping and confusing automatic casts. For a long list of problems with JavaScript, see \cite{jsgoodparts}.
-% TODO HOME give citation/explanation for the dynamic claim
 \item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinary difficult task for browser developers. This is due to the weak typing and generally extremely dynamic nature of JavaScript.
 \end{itemize}
 
@@ -276,7 +274,7 @@ Before we describe the details of ray tracing, we have introduce two terms that 
 
 Ray tracing produces relatively impressive results with simple techniques. It works by shooting rays from the eye into the scene. The ray tracer then traces these rays and determines whether they hit an object in the scene. If they do, the process of shooting rays into the scene is repeated recursively with the intersection point as the origin of the rays to achieve photorealistic effects such as reflection. If they don't, black or some other background colour is displayed.
 
-\section{Similar Languages}
+%\section{Similar Languages}
 % TODO HOME lisps that compile to js but also coffeescript, dart, etc.
 
 \chapter{Specification}
@@ -519,10 +517,9 @@ All nodes in the Abstract Syntax Tree are objects. These objects are instances o
 % TODO add diagrams for AST class hierarchies
 
 \subsection{Compilation stages}
-% TODO HOME talk about nanostage compiler
 Because compiling a program from one programming language to another is often a very complex transformation, most compilers break up this transformation into a number of stages that each accomplish a small part of this overall transformation. While these stages can vary quite significantly in complexity ranging from simple expansions of specific expressions (an example would be converting expressions of the form \hbox{\texttt{1 + 2 + 3 + 4}} to \hbox{\texttt{((1 + 2) + 3) + 4}}) to more complex transformations such as CPS-Translation, they are all of managable complexity when compared to the overall goal of transforming from the input to the output language.
 
-All stages in the compiler take an produce an Abstract Syntax Tree which they manipulate \footnote{An exception to this are the very first and very last stages, whose purpose it is to convert between textual representations of the program and the AST.}. An important observation on compilation stages is that they should not change what the AST evaluates to, i.e. not change the meaning of the program.
+All stages in the compiler take an produce an Abstract Syntax Tree which they manipulate\footnote{An exception to this are the very first and very last stages, whose purpose it is to convert between textual representations of the program and the AST.}. An important observation on compilation stages is that they should not change what the AST evaluates to, i.e. not change the meaning of the program.
 
 \subsubsection{Overview of compilation stages}
 Like most compilers, including industrial-strengh compilers such as LLVM, the LJSP compiler is made up of compilation stages. These stages make up the core of the compiler and will be described in detail in the rest of this chapter.
@@ -547,7 +544,7 @@ One important consideration when structuring a compiler in this way is to avoid 
 \label{stagesflowchart}
 \end{figure}
 
-Figure \ref{stagesflowchart} shows all the compilation stages that the LJSP compiler is made up of. The colours of the stages in the detailed flowchart correspond to the three colours used for front end, intermediate and back end stages in figure \ref{highlevelstages}. 
+Figure \ref{stagesflowchart} shows all the compilation stages that the LJSP compiler is made up of. The colours of the stages in the detailed flowchart correspond to the three colours used for front end, intermediate and back end stages in Fig. \ref{highlevelstages}. 
 
 The stages of the compiler can be grouped into three sections:
 \begin{itemize}
@@ -569,7 +566,7 @@ We will now describe all the stages of the LJSP compiler in detail. For many sta
 This very first stage takes the textual representation of the program and converts it to an Abstract Syntax Tree that the subsequent stages manipulate. It does so according to the grammar of LJSP described in the Specification Chapter. Because of its syntax, LJSP is a very easy language to parse, which makes this a relatively simple stage. The details of parsing will be described in the Implementation Chapter.
 
 \subsection{\texttt{letn} expansion}
-This is a small stage that expands all \texttt{let} expressions that define $n$ @variables@ into $n$ \texttt{let} expressions that all define one variable each. Applying \texttt{letn} conversion to the expression \texttt{(let ((a 1) (b 2)) (+ a b))} would yield \texttt{(let ((a 1)) (let ((b 2)) (+ a b)))}. While not strictly necessary, this conversion greatly simplifies later stages such as CPS-translation, as they do not have to consider the possibility of multiple $(idn\ e)$ blocks inside \texttt{lets}. Equations for this stage are given in figure \ref{letnconversion}.
+This is a small stage that expands all \texttt{let} expressions that define $n$ @variables@ into $n$ \texttt{let} expressions that all define one variable each. Applying \texttt{letn} conversion to the expression \texttt{(let ((a 1) (b 2)) (+ a b))} would yield \texttt{(let ((a 1)) (let ((b 2)) (+ a b)))}. While not strictly necessary, this conversion greatly simplifies later stages such as CPS-translation, as they do not have to consider the possibility of multiple $(idn\ e)$ blocks inside \texttt{lets}. Equations for this stage are given in Fig. \ref{letnconversion}.
 
 \begin{figure}[ht]
 \begin{alignat*}{2}
@@ -591,12 +588,13 @@ This is a small stage that expands all \texttt{let} expressions that define $n$ 
 \caption{Prim op reduction}
 \label{primopreduction}
 \end{figure}
-This stage reduces a number of primitive operations to a combination of other primitive operations. This reduces work in backend stages, as only as limited subset of primitive operations that are part of the LJSP grammar need to get converted to the respective language that the backend generates. One example a primitive operation that the parser recognises but that backend stages do not have to handle is the negation operator $-$ that switches the sign of a double. Prim op reduction reduces expressions of the form $-x$ to simple subtraction: $0-x$. The other primitive operations that Prim op reduction removes from the AST are given in \ref{primopreduction}
+This stage reduces a number of primitive operations to a combination of other primitive operations. This reduces work in backend stages, as only as limited subset of primitive operations that are part of the LJSP grammar need to get converted to the respective language that the backend generates. One example a primitive operation that the parser recognises but that backend stages do not have to handle is the negation operator $-$ that switches the sign of a double. Prim op reduction reduces expressions of the form $-x$ to simple subtraction: $0-x$. The other primitive operations that Prim op reduction removes from the AST are given in \ref{primopreduction}.
+
 \subsection{CPS-Translation}
 This stage converts the program to continuation-passing style (CPS). Because it is the central stage of the compilation pipeline, we will first explain continuation-passing style in general before describing the particularities of the CPS-translation in the LJSP compiler.
 
 \subsubsection{Continuation-Passing Style}
-Code that is in Continuation-Passing Style gives explicit names to every intermediate computation and makes control flow explicit by never returning from a function call \cite{sysftal} \cite{appel}. To illustrate this, we show the step-by-step transformation of a simple function \texttt{f}, given in Figure \ref{cpsconvfunc1}, to Continuation-Passing Style.
+Code that is in Continuation-Passing Style gives explicit names to every intermediate computation and makes control flow explicit by never returning from a function call \cite{sysftal, appel}. To illustrate this, we show the step-by-step transformation of a simple function \texttt{f}, given in Figure \ref{cpsconvfunc1}, to Continuation-Passing Style.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -608,7 +606,7 @@ function f(a, b) {
 \label{cpsconvfunc1}
 \end{figure}
 
-First, we give a name to the result of the additions that the function returns. This change results in the code given in figure \ref{cpsconvfunc2}.
+First, we give a name to the result of the additions that the function returns. This change results in the code given in Fig. \ref{cpsconvfunc2}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -621,7 +619,7 @@ function f1(a, b) {
 \label{cpsconvfunc2}
 \end{figure}
 
-To conform to the requirement that every intermediate result be explicitely named, we need to break up the long sum into two computations. This makes it clear that the first addition gets precedence before the second. The result can be seen in figure \ref{cpsconvfunc3}.
+To conform to the requirement that every intermediate result be explicitely named, we need to break up the long sum into two computations. This makes it clear that the first addition gets precedence before the second. The result can be seen in Fig. \ref{cpsconvfunc3}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -635,7 +633,7 @@ function f2(a, b) {
 \label{cpsconvfunc3}
 \end{figure}
 
-The last step in our example is the one that gives Continuation-Passing Style its name: Functions in CPS-conform programs do not return, but instead receive a function, usually called "continuation", that the caller passes in an additional parameter. This continuation can be understood as the remainder of the program that processes the result computed by the function. This is shown in figure \ref{cpsconvfunc4}.
+The last step in our example is the one that gives Continuation-Passing Style its name: Functions in CPS-conform programs do not return, but instead receive a function, usually called "continuation", that the caller passes in an additional parameter. This continuation can be understood as the remainder of the program that processes the result computed by the function. This is shown in Fig. \ref{cpsconvfunc4}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -673,7 +671,7 @@ Next, we assign our continuation. \texttt{call/cc} gets called with set-cont whi
 \label{contcc2}
 \end{figure}
 
-We can now call this continuation again with a different value as shown in figure \ref{contcc3}.
+We can now call this continuation again with a different value as shown in Fig. \ref{contcc3}.
 \begin{figure}[ht]
 \begin{lstlisting}
 > (cont 2)
@@ -685,7 +683,7 @@ We can now call this continuation again with a different value as shown in figur
 \label{contcc3}
 \end{figure}
 
-One way of visualising the continuation is to write it as \texttt{(+ 1 (* 2 ...))}. This is the continuation of the code at \texttt{...} Whatever value this code computes, it passes it on to our continuation. It is worth noting that the contination is not just simply a function that multiplies its argument by 2 and adds 1, as the code in figure \ref{contcc4} illustrates.
+One way of visualising the continuation is to write it as \texttt{(+ 1 (* 2 ...))}. This is the continuation of the code at \texttt{...} Whatever value this code computes, it passes it on to our continuation. It is worth noting that the contination is not just simply a function that multiplies its argument by 2 and adds 1, as the code in Fig. \ref{contcc4} illustrates.
 \begin{figure}[ht]
 \begin{lstlisting}
 > (+ 1000 (cont 2))
@@ -735,7 +733,7 @@ The transformation for both the \texttt{define} and \texttt{lambda} expressions 
 
 This stage makes one additional change to the code that solves a problem that arises when other code wants to call a CPS-translated function: The function requires a continuation that it can call with its result, but the calling code is not necessarily in Continuation-Passing Style and requires the function it calls to return an ordinary return value. Therefore, after CPS-Translating the program, the LJSP compiler makes a copy of each function in the program with the suffix \texttt{_copy} added to its name. These new functions take the same number of arguments as the original version they copied minus one (the new continuation parameter added to the functions in the program). The body of the copied functions, however, is replaced by a call to the original function plus the identity function as continuation. 
 
-The example below illustrates this for a simple function. The original function before CPS translating is given in figure \ref{cpsdetail1}. The CPS-translation stage turns this into the two functions shown in figure \ref{cpsdetail2}.
+The example below illustrates this for a simple function. The original function before CPS translating is given in Fig. \ref{cpsdetail1}. The CPS-translation stage turns this into the two functions shown in Fig. \ref{cpsdetail2}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -792,7 +790,7 @@ These copied functions later function as entry points to the code. This is so th
 \end{figure}
 Besides CPS-translation, closure conversion is the other core stage in the frontend of the LJSP compiler. The goal of closure conversion, in conjunction with the stage that follows it, is to convert anonymous function objects (often called lambdas) to named top-level functions. This is necessary when compiling languages that allow functions as first-class objects, such as LISP, to languages that do not have that property, such as C.
 
-A first naive approach to solving this problem can be illustrated by the code snippet given in figure \ref{cc1}.
+A first naive approach to solving this problem can be illustrated by the code snippet given in Fig. \ref{cc1}.
 
 \begin{figure}[h!]
 \begin{lstlisting}
@@ -803,7 +801,7 @@ def return_n_squarer():
 \label{cc1}
 \end{figure}
 
-When called, the function \texttt{return_n_squarer} returns another function that takes one parameter \texttt{x} and returns $x^2$. In trivial cases such as the one given, it is immediately possible to give a name to the anonymous lambda and lift it to the top level. The resulting code is given in figure \ref{cc2}. It compiles and produces the same result as the original version.
+When called, the function \texttt{return_n_squarer} returns another function that takes one parameter \texttt{x} and returns $x^2$. In trivial cases such as the one given, it is immediately possible to give a name to the anonymous lambda and lift it to the top level. The resulting code is given in Fig. \ref{cc2}. It compiles and produces the same result as the original version.
 
 \begin{figure}[h!]
 \begin{lstlisting}
@@ -817,7 +815,7 @@ def return_n_squarer():
 \label{cc2}
 \end{figure}
 
-We will now consider a slightly more complex function that needs to be closure converted, given in figure \ref{cc3}.
+We will now consider a slightly more complex function that needs to be closure converted, given in Fig. \ref{cc3}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -831,7 +829,7 @@ def get_n_adder(n):
 
 This function takes a parameter \texttt{n} and returns a function that takes its own parameter \texttt{x} and returns $x+n$. \texttt{get_n_adder(1)} returns the successor function, \texttt{get_n_adder(7)} returns a function that adds $7$ to its parameter and returns the sum.
 
-If we try the naive approach that we used in the first example we encounter a problem that didn't arise in the example above. The code that would result is shown in figure \ref{cc4}.
+If we try the naive approach that we used in the first example we encounter a problem that didn't arise in the example above. The code that would result is shown in Fig. \ref{cc4}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -852,7 +850,7 @@ Before we explain closure conversion in detail, it is necessary to define two co
 
 The goal of closure conversion is to turn all free variables in the function to be converted into bound variables. The way this is achieved is by adding an additional parameter to the lambda, usually an array or dictionary, that contains the values of all previously free variables. Before the body of the lambda is exectued, these variables are then bound by assigning them to the value that the envirionment-variable gives for them. Figure \ref{cloconv} includes a function $FV$ that returns the free variables of an expression.
 
-If we bring the lambda from the \texttt{get_n_adder} example given in figure \ref{cc3} into this form, we obtain the code shown in figure \ref{cc5}.
+If we bring the lambda from the \texttt{get_n_adder} example given in Fig. \ref{cc3} into this form, we obtain the code shown in Fig. \ref{cc5}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -868,7 +866,7 @@ Apart from the lambda itself, both the code that defines it and the code that ca
 
 After closure conversion is complete, the code no longer defines isolated lambdas. Instead it defines closures, that are made up of lambdas (the code) and an environment variable (the data). The layout and creation of this data structure is implementation dependant and will be described in detail in the Implementation Chapter. In the example below, we will make use of two functions called \texttt{make_closure} and \texttt{make_lambda} that hide away the creation of their respective data structure.
 
-Using these functions and free variable assignment as shown in the last example, the \texttt{get_n_adder} example from the beginning of this chapter would get converted to the code given in figure \ref{cc6} that creates a closure explicitly by naming the environment, instead of doing so implicitly by simply using variables from this environment. The code of this closure can now be moved into a separate function, which is precisely what the next compilation stage does.
+Using these functions and free variable assignment as shown in the last example, the \texttt{get_n_adder} example from the beginning of this chapter would get converted to the code given in Fig. \ref{cc6} that creates a closure explicitly by naming the environment, instead of doing so implicitly by simply using variables from this environment. The code of this closure can now be moved into a separate function, which is precisely what the next compilation stage does.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -883,7 +881,7 @@ def get_n_adder(n):
 \label{cc6}
 \end{figure}
 
-Whereas the return type of \texttt{get_n_adder} was a lambda that could be called directly, it is now a closure which requires slightly more work to be executed. Assuming the definition of \texttt{get_n_adder} given in the last example, figure \ref{cc7} shows how to obtain and use the successor function.
+Whereas the return type of \texttt{get_n_adder} was a lambda that could be called directly, it is now a closure which requires slightly more work to be executed. Assuming the definition of \texttt{get_n_adder} given in the last example, Fig. \ref{cc7} shows how to obtain and use the successor function.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -906,7 +904,7 @@ Continuations can be understood as a generalization of closures. A closure is a 
 \subsection{Hoisting}
 This is again a relatively simple stage that works in conjunction with the last stage, closure conversion. Hoisting takes closure converted lambdas and turns them from anonymous functions to named, top-level functions. Because after closure conversion, all variables used in these anonymous functions are bound, this is a very simple process.
 
-The last definition of \texttt{get_n_adder} given in the previous chapter would change to the code shown in figure \ref{hoisting}.
+The last definition of \texttt{get_n_adder} given in the previous chapter would change to the code shown in Fig. \ref{hoisting}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -927,12 +925,12 @@ This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates
 
 After passing through this stage, the code is in a sequential style consisting of a list of statements. This is opposed to the style of LJSP, where expressions are arranged as a tree. This turns let expressions of the form \texttt{let i=v in e} into the imperative equivalent of \texttt{i=v;e}.
 
-% TODO give examples for this 
+% TODO give examples of this 
 
 \subsection{Redundant Assignment Removal}
 This is an optimisation stage that removes instructions from the IR Abstract Syntax Tree without affecting the meaning of the program. It is based on the observation that every variable only gets assigned to once. After being assigned a value, a variable can occur many times on the right hand sight of an assignment, but never on the left hand sight again.
 
-This stage scans the code for simple assignments that assign one variable to another without any additional computations of the form $x = y$. It then replaces every occurence of $x$ by $y$ in the code following the assignment before removing the assignment entirely. To see that this does not change the result of the program being converted, consider the example shown in figure \ref{redrem1}.
+This stage scans the code for simple assignments that assign one variable to another without any additional computations of the form $x = y$. It then replaces every occurence of $x$ by $y$ in the code following the assignment before removing the assignment entirely. To see that this does not change the result of the program being converted, consider the example shown in Fig. \ref{redrem1}.
 \begin{figure}[ht]
 \begin{lstlisting}
 x = 3
@@ -943,7 +941,7 @@ z = y * y
 \label{redrem1}
 \end{figure}
 
-After redundant assignment removal, the second statement will have been removed and the code will be changed to the code shown in figure \ref{redrem2}, which still evaluates to the same value as before.
+After redundant assignment removal, the second statement will have been removed and the code will be changed to the code shown in Fig. \ref{redrem2}, which still evaluates to the same value as before.
 \begin{figure}[ht]
 \begin{lstlisting}
 x = 3
@@ -965,7 +963,7 @@ The main difference between IR and asm.js code is memory management, which is ne
 \subsection{Conversion to C}
 Like "Conversion to IR", this is again a stage that changes the types of the objects in the Abstract Syntax Tree. Unlike the previous stage, this is one of the most complex stages of the entire compiler. This is due to the fact that C is a statically typed language with explicit memory management, whereas the Intermediate Representation includes no type or memory information. This, in turn, means that the "Conversion to C" stage needs to derive the type of every variable that appears in the code.
 
-It does so by examining the ways in which the variable gets used. Consider the IR code shown in figure \ref{convc1}.
+It does so by examining the ways in which the variable gets used. Consider the IR code shown in Fig. \ref{convc1}.
 \begin{figure}[ht]
 \begin{lstlisting}
 x = some_function()
@@ -975,7 +973,7 @@ y = x + 2.0
 \label{convc1}
 \end{figure}
 
-Even if we don't know the type signature of \texttt{some_function}, it is clear from this snippet that variable \texttt{x} is of type double and can not hold a function pointer, as the addition \texttt{x + 2.0} is only defined for operands of type double. Similarly, in the example shown in figure \ref{convc2}, the compiler could derive that variable \texttt{a} holds a function object.
+Even if we don't know the type signature of \texttt{some_function}, it is clear from this snippet that variable \texttt{x} is of type double and can not hold a function pointer, as the addition \texttt{x + 2.0} is only defined for operands of type double. Similarly, in the example shown in Fig. \ref{convc2}, the compiler could derive that variable \texttt{a} holds a function object.
 \begin{figure}[ht]
 \begin{lstlisting}
 function f(a) {
@@ -1006,7 +1004,7 @@ As LLVM IR is a low level language, this stage consists of expanding each C stat
 
 The reason these temporary variables are necessary is because LLVM IR adds another layer of pointers to the code: Local variables in LLVM IR are mapped to registers and what were local variables in C become addresses in memory that need to be loaded when needed. Because the C code generated by the LJSP compiler already uses pointers extensively, this sometimes leads to triple pointers (\texttt{void***}) in the resulting LLVM IR.
 
-The following small example illustrates this. Consider the following line of C code shown in figure \ref{convllvmir1}.
+The following small example illustrates this. Consider the following line of C code shown in Fig. \ref{convllvmir1}.
 \begin{figure}[ht]
 \begin{lstlisting}
 a = (void**)b;   // b is of type void*
@@ -1015,7 +1013,7 @@ a = (void**)b;   // b is of type void*
 \label{convllvmir1}
 \end{figure}
 
-This stage converts this line of C to the three line of LLVM IR given in figure \ref{convllvmir2}. In LLVM IR, local variables start with a \texttt{\%} sign. 
+This stage converts this line of C to the three line of LLVM IR given in Fig. \ref{convllvmir2}. In LLVM IR, local variables start with a \texttt{\%} sign. 
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1116,7 +1114,7 @@ Asm.js offers three ways of saving values to memory: local variables, global var
 
 Local variables are variables local to the function they are declared in. All local variables in a function have to be declared at the top of the function. When the compiler converts an asm.js AST to code, it scans through all functions to find local variables that are used inside the function to create the appropriate declarations. Because all local variables are of type double, all these declarations are of the form \texttt{var n = 0.0;}, because the way to declare a variable as double in asm.js is to initialise it with a floating point value.
 
-Every asm.js module generated by the LJSP compiler has exactly four global variables, shown by the code snipped shown in figure \ref{iasmjsmm1}. 
+Every asm.js module generated by the LJSP compiler has exactly four global variables, shown by the code snipped shown in Fig. \ref{iasmjsmm1}. 
 \begin{figure}[ht]
 \begin{lstlisting}
 var sqrt = stdlib.Math.sqrt;
@@ -1134,7 +1132,7 @@ Global variable \texttt{D32} holds a Float32 View to the heap as explained in th
 
 The last global variable, \texttt{mem_top} is used for memory management. This leads to the next section, the memory model used for managing the heap.
 
-After Closure Conversion, the code includes calls to the \texttt{make-env} and \texttt{make-hl} functions that, in conjunction, are used to create closures.  The IR function in the example shown in figure \ref{iasmjsmm2} is taken from a program that computes fibonacci numbers (the code was rearranged slightly to make it more readable). Note how the closure created in lines 6 and 7 is not called right away, but instead given as parameters to a recursive call to fib in line 8.
+After Closure Conversion, the code includes calls to the \texttt{make-env} and \texttt{make-hl} functions that, in conjunction, are used to create closures.  The IR function in the example shown in Fig. \ref{iasmjsmm2} is taken from a program that computes fibonacci numbers (the code was rearranged slightly to make it more readable). Note how the closure created in lines 6 and 7 is not called right away, but instead given as parameters to a recursive call to fib in line 8.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1153,7 +1151,7 @@ function fib(cont, n) {
 \label{iasmjsmm2}
 \end{figure}
 
-In asm.js code, this data structure is implemented with arrays that are saved in the \texttt{ArrayBuffer} object. Every asm.js module generated by the LJSP compiler includes a function called alloc shown in figure \ref{iasmjsmm3}. This function is used to allocate memory for new arrays.
+In asm.js code, this data structure is implemented with arrays that are saved in the \texttt{ArrayBuffer} object. Every asm.js module generated by the LJSP compiler includes a function called alloc shown in Fig. \ref{iasmjsmm3}. This function is used to allocate memory for new arrays.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1186,7 +1184,7 @@ The closure data structure is built by the compiler out of array as follows: It 
 
 Because this variable gets increased by every memory allocation, it is necessary to free memory somewhere in the code, if we want to avoid memory overflows. The place where this happens are the functions that end in \texttt{_copy}, introduced by the CPS-Translation phase. Because the functions are the entry points to the module, they reset \texttt{mem_top} to $0$ before calling the function they were copied from. This is possible because in LJSP, no state is shared between function calls.
 
-The example shown in figure \ref{iasmjsmm4} shows the asm.js code of the \texttt{_copy} function for the \texttt{fib} function from the example above. Detailed explanations of all statements will be given in the next section.
+The example shown in Fig. \ref{iasmjsmm4} shows the asm.js code of the \texttt{_copy} function for the \texttt{fib} function from the example above. Detailed explanations of all statements will be given in the next section.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1226,7 +1224,7 @@ Asm.js modules generated by the LJSP compiler are made up of the following eleme
 \item A return statement
 \end{itemize}
 
-An example return statement from the gen_code.js file included in the repository is given in figure \ref{iasmjsmm5}. Only the \texttt{_copy} functions are exported from the module to ensure that only these functions are used as entry points and the heap gets properly reset before every computation. They are, however, exported under their original name (without the suffix), which makes the copying completely transparent to the user.
+An example return statement from the gen_code.js file included in the repository is given in Fig. \ref{iasmjsmm5}. Only the \texttt{_copy} functions are exported from the module to ensure that only these functions are used as entry points and the heap gets properly reset before every computation. They are, however, exported under their original name (without the suffix), which makes the copying completely transparent to the user.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1238,7 +1236,7 @@ return {vectorsDotProduct: vectorsDotProduct_copy,
 \label{iasmjsmm5}
 \end{figure}
 
-The function tables of the same program are shown in figure \ref{iasmjsmm6}. All functions in the module can be found in one of the function tables, even if they are always called by name. The name assigned to every table consists of \texttt{ftable} followed by the number of parameters the functions in that table take. This is visible in the fact that \texttt{_copy} functions can always be found in a function table with a parameter count one less than the table that contains the original function. In the example below, \texttt{vectorsDotProduct_copy} is in \texttt{ftable6} and \texttt{vectorsDotProduct} is in \texttt{ftable7}.
+The function tables of the same program are shown in Fig. \ref{iasmjsmm6}. All functions in the module can be found in one of the function tables, even if they are always called by name. The name assigned to every table consists of \texttt{ftable} followed by the number of parameters the functions in that table take. This is visible in the fact that \texttt{_copy} functions can always be found in a function table with a parameter count one less than the table that contains the original function. In the example below, \texttt{vectorsDotProduct_copy} is in \texttt{ftable6} and \texttt{vectorsDotProduct} is in \texttt{ftable7}.
 
 As mentioned in the Background Chapter, every function table has to have a size equal to a power of two. Because it is not always the case that this matches with the number of functions in the module, function tables with a length not equal to $2^x$ have their size increased to the next higher power of two by appending the first function in the table as many times as necessary. An example of this is \texttt{ftable2} in the code, which had its first element copied three times to reach a size of $2^3$. These copied functions are not used and only necessary to create valid asm.js code.
 
@@ -1257,7 +1255,7 @@ var ftable11 = [raySphereIntersectionPoint];
 
 To conclude this section, we will describe some of the more complex statements that the compiler outputs.
 
-While heap assignments work in principle as described above, in practise they require a number of casts and type coercions that makes them quite hard to read. The short example given in figure \ref{iasmjsmm7} shows the creation of a closure. Except for line breaks, variable renaming and the removal of redundant parentheses, this is unedited asm.js code as generated by the compiler.
+While heap assignments work in principle as described above, in practise they require a number of casts and type coercions that makes them quite hard to read. The short example given in Fig. \ref{iasmjsmm7} shows the creation of a closure. Except for line breaks, variable renaming and the removal of redundant parentheses, this is unedited asm.js code as generated by the compiler.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1291,7 +1289,7 @@ While the number assigned in line 7 seems, at first sight, to give insufficient 
 \subsubsection{Memory model}
 Unlike asm.js, which uses global variables, the C code only use local variables and memory on the heap allocated with \texttt{malloc}. While in asm.js modules, functions take parameters of type double, in the C code, all parameters are pointers of type \texttt{void*}. The reason for this is that both pointers to double values and arrays are passed to the function through its parameters. Based in what context the parameters are used inside the function, they are cast to the appropriate type and dereferenced.
 
-This means that it is not possible to pass static double values as arguments to function calls. Instead, it is necessary to allocate memory on the heap, write the value to that allocated space in memory and pass a pointer to it in the function call. An example of this is given in figure \ref{icmm1}.
+This means that it is not possible to pass static double values as arguments to function calls. Instead, it is necessary to allocate memory on the heap, write the value to that allocated space in memory and pass a pointer to it in the function call. An example of this is given in Fig. \ref{icmm1}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1305,7 +1303,7 @@ ret_val_3 = func_pointer_0(env_param_0, const_0);
 
 To make it possible to pass local variables as arguments to functions, they are declared to be of type \texttt{double*}, assigned memory allocated with \texttt{malloc} and dereferenced when read from or written to. Simply passing a reference in a function call would lead to a crash as local variables are allocated on the stack and destroyed when the function they are local to returns.
 
-Creating closures is done simmilarly to asm.js code. Figure \ref{icmm2} shows the C version of the code given in figure \ref{iasmjsmm7}.
+Creating closures is done simmilarly to asm.js code. Figure \ref{icmm2} shows the C version of the code given in Fig. \ref{iasmjsmm7}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1375,7 +1373,7 @@ C code as generated by the LJSP compiler is made up of three sections:
 \item Functions
 \end{itemize}
 
-The preprocessor directives are the same for all programs and are shown in figure \ref{icmm4}.
+The preprocessor directives are the same for all programs and are shown in Fig. \ref{icmm4}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1394,7 +1392,7 @@ The preprocessor directives are the same for all programs and are shown in figur
 
 The function declarations include all functions in the file except \texttt{main}, so that they can call each other and don't need to be defined in a particular order.
 
-The function block includes all the function that are present in IR code before the "Conversion to C" stage. It further includes a new function introduced by this stage called \texttt{expression} which takes no parameter and has as its body the expression of the program. It also includes a \texttt{main} function, shown in figure \ref{icmm5}, which calls the \texttt{expression} function and prints its result to the console.
+The function block includes all the function that are present in IR code before the "Conversion to C" stage. It further includes a new function introduced by this stage called \texttt{expression} which takes no parameter and has as its body the expression of the program. It also includes a \texttt{main} function, shown in Fig. \ref{icmm5}, which calls the \texttt{expression} function and prints its result to the console.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1407,7 +1405,7 @@ int main(int argc, char **argv) {
 \label{icmm5}
 \end{figure}
 
-The functions themselves are split into a set of variable declarations and a list of statements. Generally, the statements are quite similar to IR code. One noteworthy exception are primitive operations which are much more complex, as these operations are performed on void pointers and the result must be written to a double pointer. The example given in figure \ref{icmm6} shows the result of converting the IR statement \texttt{var_2 + var_4} to C:
+The functions themselves are split into a set of variable declarations and a list of statements. Generally, the statements are quite similar to IR code. One noteworthy exception are primitive operations which are much more complex, as these operations are performed on void pointers and the result must be written to a double pointer. The example given in Fig. \ref{icmm6} shows the result of converting the IR statement \texttt{var_2 + var_4} to C:
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1446,6 +1444,7 @@ The code is structured as follows:
 
 \section{Implemenation of Various Stages}
 % TODO explain types in C
+% TODO say that only those with significant implementation details will be explained
 This section will describe the implementation details of most stages. The stages not mentioned in this section follow the theoretical description given in the Design Chapter so closely that there is nothing that stands out enough to warrant inclusion in this chapter.
 \subsection{Parsing}
 Parsing is implemented using the parser combinator classes of the Scala standard library. This makes the code terse and readable. It also clearly reflects the grammar of LJSP in code form. The grammar rule for a \texttt{define} is given in the Specification Chapter as follows:
@@ -1456,7 +1455,7 @@ Parsing is implemented using the parser combinator classes of the Scala standard
 <params> ::= <ident> <params> | $\epsilon$
 \end{grammar}
 
-This rule is still visible in the Scala. Note that for the Scala parser combinators, \texttt{rep} has the meaning of "Zero or more", which made the additional \textit{params} rule unnecessary in the code. The parsing rule for \texttt{define}s is shown in figure \ref{parsingrule}.
+This rule is still visible in the Scala. Note that for the Scala parser combinators, \texttt{rep} has the meaning of "Zero or more", which made the additional \textit{params} rule unnecessary in the code. The parsing rule for \texttt{define}s is shown in Fig. \ref{parsingrule}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1487,7 +1486,7 @@ After the completion of this stage, the following primitive operations will have
 \end{itemize}
 
 \subsection{CPS-Translation}
-The code for CPS-Translation closely resembles the equations given in the Design Chapter. One peculiarity of the CPS-Translation function is that it comes in two versions taking two different types of continuations. The first line of the definitions of both functions are shown in figure \ref{cpstranstwofuncs}.
+The code for CPS-Translation closely resembles the equations given in the Design Chapter. One peculiarity of the CPS-Translation function is that it comes in two versions taking two different types of continuations. The first line of the definitions of both functions are shown in Fig. \ref{cpstranstwofuncs}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1500,7 +1499,7 @@ def cps_tail_trans(e: SExp, c: SExp) : SExp
 
 While both function take the expression to be CPS translated as their first parameter, the first function takes a function that maps an \texttt{SExp} to an \texttt{SExp} as its second parameter while the second function takes the continuation in a simple \texttt{SExp}. In effect, the first function takes a part of the Abstract syntax tree that the result of CPS-Translating \texttt{e} is to be inserted into, while the second function takes an expression that contains the continuation in the context of the program to be compiled.
 
-To further illustrate this concept, consider the translation of \texttt{SIf} statements used in earlier versions of the compiler shown in figure \ref{ifcpstrans}.
+To further illustrate this concept, consider the translation of \texttt{SIf} statements used in earlier versions of the compiler shown in Fig. \ref{ifcpstrans}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1525,7 +1524,7 @@ In the mathematical notation used in the Design Chapter, this can be expressed a
 
 This version of the CPS-translation of if expressions creates a lambda ($\lambda p.k(p)$ in the equation above) and CPS-translates $e_2$ and $e_3$ with this lambda as their continuation. Because this is a lambda in the context of the program, not in the context of the compiler, it requires the additional \texttt{cps_tail_trans} function.
 
-In contrast, the CPS-translation of if expressions in the current version of the compiler is shown in figure \ref{ifcpstranscurrent}.
+In contrast, the CPS-translation of if expressions in the current version of the compiler is shown in Fig. \ref{ifcpstranscurrent}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1558,7 +1557,7 @@ In earlier versions of the compiler, this was implemented using Scala tuples, bu
 
 % TODO make these titles consistent with the one used in the design Chapter
 \subsection{Remove redundant assignments}
-This stage is implemented in a purely functional way. The core of redundant assignment removal is given in slightly edited form in figure \ref{remredasign1}.
+This stage is implemented in a purely functional way. The core of redundant assignment removal is given in slightly edited form in Fig. \ref{remredasign1}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1584,7 +1583,7 @@ This function calls itself recursively for each element in the list, discarding 
 \subsection{Conversion to asm.js}
 Besides the rather simple task of converting IR AST classes to their equivalent in the asm.js AST class hierarchy (\texttt{IStaticValue} to \texttt{AStaticValue}, \texttt{IFunctionCallByName} to \texttt{AFunctionCallByName}, etc.), this stage makes a number of other major changes to the code.
 
-The first is the generation of function tables. The part of the code that accomplishes is given in figure \ref{iconvasmjs1}, again slightly edited.
+The first is the generation of function tables. The part of the code that accomplishes is given in Fig. \ref{iconvasmjs1}, again slightly edited.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1612,7 +1611,7 @@ In line 3 and 4, this Map is turned into a second map, now mapping strings of th
 
 Finally, the statement spanning from line 6 to 13 goes through every function table, represented by a key/value pair in the map, calculates the difference in the count of function names to the next power of two and fills up the list with enough copies of the first function to reach that next power of two. It does so using the \texttt{fill} method of Scala's \texttt{List} class. This method takes a number \texttt{n} and an object \texttt{o} and creates a list with \texttt{n} copies of \texttt{o}.
 
-After the function tables have been created in such a way, converting a call to a variable holding the index to a function is a simple process. The code that does this is shown in figure \ref{iconvasmjs2}. Note how the correct function table name is found simply by adding the number of parameters (increased by one for the environment parameter) to the string \texttt{"ftable"}.
+After the function tables have been created in such a way, converting a call to a variable holding the index to a function is a simple process. The code that does this is shown in Fig. \ref{iconvasmjs2}. Note how the correct function table name is found simply by adding the number of parameters (increased by one for the environment parameter) to the string \texttt{"ftable"}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1640,7 +1639,7 @@ This is one of the most complex stages in the LJSP compiler. This is reflected i
 
 Unlike the other stages, which convert statements of one kind to statements of another kind, this stage converts IR statements to tuples of declarations and C statemnets. This is reflected in the type of the conversion function which returns a result of type \texttt{(List[CDeclareVar], List[CStatement])}. Deriving the correct type of the variables to be declared is one part of the work of this stage.
 
-In the Intermediate Representation, it is not necessary to declare any variables before using them. Consider an IR statement such as \texttt{a = 3.0;}. In C, this statement gets expanded to the code shown in figure \ref{iconvc1}.
+In the Intermediate Representation, it is not necessary to declare any variables before using them. Consider an IR statement such as \texttt{a = 3.0;}. In C, this statement gets expanded to the code shown in Fig. \ref{iconvc1}.
 \begin{figure}[ht]
 \begin{lstlisting}
 double* a;
@@ -1652,7 +1651,7 @@ a = (double*)malloc(sizeof(double) * 1);
 \label{iconvc1}
 \end{figure}
 
-The implementation of the part of the code that accomplishes this transformation is given in figure \ref{iconvc2}.
+The implementation of the part of the code that accomplishes this transformation is given in Fig. \ref{iconvc2}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1697,8 +1696,8 @@ Although the file containing this stage is the largest of all the files containi
 
 % TODO in design section, explain why LLVM IR code gets renumbered, does this have any effect on the running time?
 
-\section{Code emission}
-Emiting code in text form is the reverse of parsing: taking an Abstract Syntax Tree and converting it to the textual representation of the programming language.
+\section{Code Generation}
+Generating or emitting code in text form is the reverse of parsing. It's the process of taking an Abstract Syntax Tree and converting it to the textual representation of the programming language. Because of this relationship between parsing and code generation, the latter is sometimes called "unparsing" \cite{nanopass}.
 
 In early versions of the LJSP compiler this was accomplished by simply adding a \texttt{toString} method to all classes that make up the AST. Because converting an expression or statement to a string involves converting all sub-expressions to strings, the \texttt{toString} method of the root object would recursively traverse the entire tree. This lead to very hard to read code. 
 
@@ -1746,7 +1745,7 @@ The internals of the ray tracer can be found in \texttt{ray_tracer.js}. This fil
 
 The \texttt{render} function is split into a number of sections. It starts with declarations of global variables that hold the objects making up the scene (\texttt{spheres}, \texttt{planes} and \texttt{lights}). The global variables section further contains the definition of two variables that are used for floating point math (\texttt{hugeValue} and \texttt{tinyValue}). The next section contains definitions for all the classes used in the ray tracer. It is followed by a number of sections that define functions on these classes, such as the dot product for the \texttt{Vector} class or colour mixing for the \texttt{Colour} class. None of these functions are particularly noteworthy, except for the \texttt{vectorsDotProduct} which will be described below.
 
-Following these small functions are the two intersection functions that calculate intersection points of rays with spheres and planes. These functions follow the mathematical description of the Design Chapter very closely. This section also contains the \texttt{closestIntersectionPoint} function that takes a ray as its parameter and loops over all objects in the scene, calling the two other functions that make up this section, depending on whether the current object is a sphere or a plane. An implementation detail not mentioned in the Design Chapter is that this function contains a safeguard inside the loop that loops over all the objects, shown in figure \ref{irenderer1}.
+Following these small functions are the two intersection functions that calculate intersection points of rays with spheres and planes. These functions follow the mathematical description of the Design Chapter very closely. This section also contains the \texttt{closestIntersectionPoint} function that takes a ray as its parameter and loops over all objects in the scene, calling the two other functions that make up this section, depending on whether the current object is a sphere or a plane. An implementation detail not mentioned in the Design Chapter is that this function contains a safeguard inside the loop that loops over all the objects, shown in Fig. \ref{irenderer1}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1766,7 +1765,7 @@ The render function adds with a list of statements that make up the main method 
 
 \subsubsection{Implementation of different rendering methods}
 
-The \texttt{render} function takes one parameter that determines the rendering method. The implementation of this is shown in the code snippet given in figure \ref{irenderer2}, which shows an abridged version of the \texttt{raySphereIntersectionPoint} function.
+The \texttt{render} function takes one parameter that determines the rendering method. The implementation of this is shown in the code snippet given in Fig. \ref{irenderer2}, which shows an abridged version of the \texttt{raySphereIntersectionPoint} function.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1838,7 +1837,7 @@ One thing to note is that while later front end stages still produce valid Schem
 \item \texttt{hoisted-lambda}, this function is used by the hoisting stage to construct closures that have a named, hoisted, function as their code section
 \end{itemize}
 
-To still be able to test the LJSP code produced by all front end stages of the compiler, these functions, in addition to the \texttt{neg} operator, are implemented in Scheme in the \texttt{test/test_lib.scm} file. This file makes use of some more advanced features of Scheme, but it is heavily commented. To illustrate and explain the test library, the implementation of the \texttt{hoisted-lambda} function used by the hoisting stage is given in figure \ref{testing1}.
+To still be able to test the LJSP code produced by all front end stages of the compiler, these functions, in addition to the \texttt{neg} operator, are implemented in Scheme in the \texttt{test/test_lib.scm} file. This file makes use of some more advanced features of Scheme, but it is heavily commented. To illustrate and explain the test library, the implementation of the \texttt{hoisted-lambda} function used by the hoisting stage is given in Fig. \ref{testing1}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1922,8 +1921,7 @@ Using Scala to implement the compiler turned out to generally have been a good c
 
 The biggest design mistake made during the development of the LJSP compiler was to make all parameters to C functions to be of type \texttt{void*} instead of deriving their types from the way they are used inside the function body. Doing so would have made the C code easier to generate, less complex and possibly substantially faster. It would have avoided the need for much of the complex pointer handling and some memory management. It also would not have been difficult to implement, because type derivation is already done for all local variables and could easily have been extended to include parameters as well. The reason we decided to make all parameters of the same type was because that is how the asm.js conversion stage, that had been implemented earlier, was designed. It worked well for asm.js, but it was not an optimal choice for C. Implementing type derivation for parameters, removing most of the calls to \texttt{jalloc} and compiling the code again with Emscripten would yield an interesting additional data point.
 
-% TODO HOME maybe find an example where this was done right. nano stage compiler?
-Another aspect of the compiler that could be improved is related to the fact that there is a substantial number of stages that only change expressions of a small number of types while leaving the remaining expressions unaltered: "Reduction of Primitive Operations" only touches prim ops, "Closure Conversion" only changes lambas and applications. To traverse the entire Abstract Syntax Tree, these stages need to handle every kind of expression, however, so that subexpressions can be examined. Closure converting the expression \texttt{(if $e_1$ $e_2$ $e_3$)}, for example, leaves the if untouched but gets called recursively for all three subexpressions $e_1$, $e_2$ and $e_3$. Separating the AST-traversing algorithm from the changes that every stage early on would have made the code much more concise.
+Another aspect of the compiler that could be improved is related to the fact that there is a substantial number of stages that only change expressions of a small number of types while leaving the remaining expressions unaltered: "Reduction of Primitive Operations" only touches prim ops, "Closure Conversion" only changes lambas and applications. To traverse the entire Abstract Syntax Tree, these stages need to handle every kind of expression, however, so that subexpressions can be examined. Closure converting the expression \texttt{(if $e_1$ $e_2$ $e_3$)}, for example, leaves the if untouched but gets called recursively for all three subexpressions $e_1$, $e_2$ and $e_3$. Separating the AST-traversing algorithm from the changes that every stage early on would have made the code much more concise. Sarkar, Waddell, and Dybvig describe \cite{nanopass} a mechanism they call "pass expander" that automatically generates code to handle expressions in each stage that don't change.
 
 % TODO ast transformations would be nicer if the compiler generated the subtrees from short code snippets instead of creating the objects manually. maybe some other people have done work on this
 
@@ -1954,10 +1952,7 @@ The next step in evaluating asm.js would be to extend LJSP's grammar so that the
 
 Another addition to the project that would have to be made soon, should development on it continue, is an interpreter for the Intermediate Representation. This would then make it possible to include the intermediate stages in the stages covered by the testing framework.
 
-Finally, more intermediate stages could be added that optimise the generated code more heavily such as tail call elimination. The intermediate representation that is already part of the compiler offers a suitable framework for adding such stages. This would depend on the addition proposed in the previous paragraph, as these new stages would have to be tested to be reliable.
-% TODO something about how especially optimisation stages are prone to be full of bugs
-
-
+Finally, more intermediate stages could be added that optimise the generated code more heavily such as tail call elimination. The intermediate representation that is already part of the compiler offers a suitable framework for adding such stages. This would depend on the addition proposed in the previous paragraph, as these new stages would have to be tested to be reliable. Especially optimisation stages are prone to contain errors and keeping these new stages as small as possible, as described in \cite{nanopass2} would make testing and debugging them easier.
 
 % TODO in evaluation or conclusion: say that asm.js is very limited and might not be useful far outside the example that mozilla gave (game engine); mention somewhere how limited asm.js is (arithmetic operations + reading and writing from array, quote "why asm.js bothers me") and that it's surprising that it does so badly for mathematical functions
 % TODO in evaluation: stress that handwritten is benchmark, not javascript
@@ -2011,11 +2006,13 @@ Running tests can be achieved by executing \texttt{python run_tests.py} on the c
     \bibitem{physrendering} Matt Pharr, Greg Humphreys (2010) {\em Physically Based Rendering, 2nd edition} pp. 116
     \bibitem{comparticle} Charles Severance {\em JavaScript: Designing a Language in 10 Days} Computer, vol. 45, no. 2, pp. 7-8, Feb., 2012 
     \bibitem{asmjsspec} {\em asm.js specification - Working Draft} http://asmjs.org/spec/latest/ accessed on 9.4.2014
-    \bibitem{asmjspdf} {\em asm.js: a High Performance Subset of JavaScript} https://github.com/dherman/asm.js/blob/master/tex/def.pdf accessed on 9.4.2014
+    \bibitem{asmjspdf} Dave Herman, Luke Wagner, and Alon Zakai {\em asm.js: a High Performance Subset of JavaScript} https://github.com/dherman/asm.js/blob/master/tex/def.pdf accessed on 9.4.2014
     \bibitem{emscriptenpapar} Alon Zakai, {\em Emscripten: An LLVM-to-JavaScript Compiler} 'OOPSLA Companion' , ACM, , pp. 301-312
     \bibitem{onlisp} Paul Graham, {\em On Lisp}, Prentice Hall, 1993, p. 260
     \bibitem{findingbugsinccomp} John Regehr et al., {\em Finding and Understanding Bugs in C Compilers}, ACM SIGPLAN Conference on Programming Language Design and Implementation (PLDI), San Jose, CA, Jun. 2011
     \bibitem{compcert} Xavier Leroy {\em Formal verification of a realistic compiler}, Commun. ACM, 2009
+    \bibitem{nanopass} Sarkar, D.; Waddell, O. \& Dybvig, R. K. (2004), {\em A nanopass infrastructure for compiler education}, in Chris Okasaki \& Kathleen Fisher, ed., 'ICFP', ACM, pp. 201-212
+    \bibitem{nanopass2} Keep, Andrew W. and Dybvig, R. Kent (2013), {\em A Nanopass Framework for Commercial Compiler Development}, in 'ICFP', ACM, pp. 343-350
 \end{thebibliography}
 
 \end{document}
