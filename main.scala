@@ -12,6 +12,7 @@ import ljsp.parser._
 
 import ljsp.expand_let_ns._
 import ljsp.reduce_prim_ops._
+import ljsp.wrap_funcs_in_lambdas._
 import ljsp.cps_translation._
 import ljsp.closure_conversion._
 import ljsp.hoisting._
@@ -34,6 +35,9 @@ object Ljsp {
         |    --letExp: let expressions that define more than one var, e.g. (let ((a 1) (b 2)) <expr>), get expanded
         |              to single lets: (let ((a 1)) (let ((b 2)) <expr>))
         |    --reducePrimOps: Reduces some primitive operations to others, e.g. a >= b to !(a < b)
+        |    --wrapFuncsInLambdas: Wraps function variables in lambdas. If the program contains a function called
+        |                          'succ', a function call such as (apply succ 1) would get converted to
+        |                          (apply (lambda (n) (succ n)) 1)
         |    --cps: Code in Continuation-Passing Style
         |    --cc: Closure converted code (lambdas get their environment in a parameter)
         |    --hoist: Hoisted code (lambdas get lifted to the top level an converted to normal functions)
@@ -55,6 +59,7 @@ object Ljsp {
       case "--parsed" :: tail => parseOptions(parsed_options ++ Map('target -> "parsed"), tail)
       case "--letExp" :: tail => parseOptions(parsed_options ++ Map('target -> "letExp"), tail)
       case "--reducePrimOps" :: tail => parseOptions(parsed_options ++ Map('target -> "reducePrimOps"), tail)
+      case "--wrapFuncsInLambdas" :: tail => parseOptions(parsed_options ++ Map('target -> "wrapFuncsInLambdas"), tail)
       case "--cps" :: tail => parseOptions(parsed_options ++ Map('target -> "cps"), tail)
       case "--cc" :: tail => parseOptions(parsed_options ++ Map('target -> "cc"), tail)
       case "--hoist" :: tail => parseOptions(parsed_options ++ Map('target -> "hoist"), tail)
@@ -72,7 +77,8 @@ object Ljsp {
     def parsedProg(prog: String) : SProgram = JLispParsers.parseExpr(prog)
     def letExpandedProg(prog: String) : SProgram = expand_let_ns_prog(parsedProg(prog))
     def reducePrimOpsProg(prog: String) : SProgram = reduce_prim_ops_prog(letExpandedProg(prog))
-    def cpsTranslatedProg(prog: String) : SProgram = cps_trans_prog(reducePrimOpsProg(prog), (x: SExp) => x)
+    def wrapFuncsInLambdasProg(prog: String) : SProgram = wrap_funcs_in_lambdas_prog(reducePrimOpsProg(prog))
+    def cpsTranslatedProg(prog: String) : SProgram = cps_trans_prog(wrapFuncsInLambdasProg(prog), (x: SExp) => x)
     def closureConvertedProg(prog: String) : SProgram = cl_conv_prog(cpsTranslatedProg(prog))
     def hoistedProg(prog: String) : SProgram = hoist_prog(closureConvertedProg(prog))
     def irModule(prog: String) : IModule = convert_prog_to_ir(hoistedProg(prog))
@@ -108,6 +114,7 @@ object Ljsp {
         case Some("parsed") => ljsp_prog_to_string(parsedProg(prog))
         case Some("letExp") => ljsp_prog_to_string(letExpandedProg(prog))
         case Some("reducePrimOps") => ljsp_prog_to_string(reducePrimOpsProg(prog))
+        case Some("wrapFuncsInLambdas") => ljsp_prog_to_string(wrapFuncsInLambdasProg(prog))
         case Some("cps") => ljsp_prog_to_string(cpsTranslatedProg(prog))
         case Some("cc") => ljsp_prog_to_string(closureConvertedProg(prog))
         case Some("hoist") => ljsp_prog_to_string(hoistedProg(prog))
@@ -127,6 +134,9 @@ object Ljsp {
           "\n\n" +
           "Code with prim ops reduced:\n" +
           ljsp_prog_to_string(reducePrimOpsProg(prog)) +
+          "\n\n" +
+          "Code with functions wrapped in lambdas:\n" + 
+          ljsp_prog_to_string(wrapFuncsInLambdasProg(prog)) +
           "\n\n" +
           "CPS translated code:\n" +
           ljsp_prog_to_string(cpsTranslatedProg(prog)) +
