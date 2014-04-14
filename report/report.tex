@@ -386,7 +386,7 @@ The front end stages of the compiler (explained in detail in the Design Chapter)
 
 
 \section{Semantics of LJSP}
-In this section, we formally define the semantics of the LJSP language. In the expressions below, $i$ stands for an identifier, $v$ stands for a generic value, $e$ stands for an expression, $c$ stands for a context that an expression is evaluated within, $d$ stands for a double value and $\Lambda$ stands for a \texttt{(lambda...)} expression.
+In this section, we formally define the semantics of the LJSP language. In the expressions below, $i$ stands for an identifier, $v$ stands for a generic value, $e$ stands for an expression, $c$ stands for a context that an expression is evaluated within, $d$ stands for a double value and $\Lambda$ stands for a \texttt{(lambda...)}-expression.
 
 \subsection{Small-Step Semantics}
 \begin{gather*}
@@ -559,7 +559,7 @@ We will now describe all the stages of the LJSP compiler in detail. For many sta
 This very first stage takes the textual representation of the program and converts it to an Abstract Syntax Tree that the subsequent stages manipulate. It does so according to the grammar of LJSP described in the Specification Chapter. Because of its syntax, LJSP is a very easy language to parse, which makes this a relatively simple stage. The details of parsing will be described in the Implementation Chapter.
 
 \subsection{\texttt{letn} expansion}
-This is a small stage that expands all \texttt{let} expressions that define $n$ @variables@ into $n$ \texttt{let} expressions that all define one variable each. Applying \texttt{letn} conversion to the expression \texttt{(let ((a 1) (b 2)) (+ a b))} would yield \texttt{(let ((a 1)) (let ((b 2)) (+ a b)))}. While not strictly necessary, this conversion greatly simplifies later stages such as CPS-translation, as they do not have to consider the possibility of multiple $(idn\ e)$ blocks inside \texttt{lets}. Equations for this stage are given in Fig. \ref{letnconversion}.
+This is a small stage that expands all \texttt{let}-expressions that define $n$ @variables@ into $n$ \texttt{let}-expressions that all define one variable each. Applying \texttt{letn} conversion to the expression \texttt{(let ((a 1) (b 2)) (+ a b))} would yield \texttt{(let ((a 1)) (let ((b 2)) (+ a b)))}. While not strictly necessary, this conversion greatly simplifies later stages such as CPS-translation, as they do not have to consider the possibility of multiple $(idn\ e)$ blocks inside \texttt{lets}. Equations for this stage are given in Fig. \ref{letnconversion}.
 
 \begin{figure}[ht]
 \begin{alignat*}{2}
@@ -593,7 +593,24 @@ This stage reduces a number of primitive operations to a combination of other pr
 \caption{Function Variable Wrapping}
 \label{fvarwrapping}
 \end{figure}
-This stage wraps @@@@ % example: def succ, let v1 = lambda... let v2 = succ, (v2 (v1 1)), b/c after closure conversion, lambdas need to be called differently
+This stage wraps function variables that contain named functions (those that are defined with a \texttt{define} statement in the program) in \texttt{lambda} expressions. To motivate this problem, consider the program shown in Fig. \ref{wrapexampleprog}.
+
+\begin{figure}[ht]
+\begin{lstlisting}
+; The successor function
+(define (succ n) (+ n 1))
+
+(let ((f1 succ)
+      (f2 (lambda (n) (+ n 1))))
+  (f1 (f2 1)))
+\end{lstlisting}
+\caption{Two types of function variables}
+\label{wrapexampleprog}
+\end{figure}
+
+In line 6, both \texttt{f1} and \texttt{f2} contain the successor function and the expression evaluates to 3. They do, however, vary in the type of function they contain: \texttt{f1} contains a reference to a named function, whereas \texttt{f2} contains a \texttt{lambda} or anonymous function. While this does not cause any problems at this stage of the compilation, once the program has been closure converted, lambdas and functions get called differently\footnote{For more details on why that is, please see the description in the section on closure conversion below.}. Because the variables do not give any information about what kind of function they contain, it would then be impossible to determine how they should be used.
+
+To solve this problem, this stage wraps \texttt{lambda}-expressions around all named functions that are used as variables and effectively converts all function variables to lambdas. These lambdas take the same number of parameters as the named function they wrap and do nothing but call the function itself with the parameters given to the lambda. Line 4 of the program shown in \ref{wrapexampleprog} would get converted accordingly to: \texttt{(let ((f1 (lambda (n) (succ n))) ...}.
 
 \subsection{CPS-Translation}
 This stage converts the program to continuation-passing style (CPS). Because it is the central stage of the compilation pipeline, we will first explain continuation-passing style in general before describing the particularities of the CPS-translation in the LJSP compiler.
@@ -652,7 +669,7 @@ function f3(cont, a, b) {
 \label{cpsconvfunc4}
 \end{figure}
 
-Code that is CPS conform is nearly linear: it consists of a sequence of let expressions followed by a single function call. The only expression that violates this linearity is the if-expression that branches execution flow.
+Code that is CPS conform is nearly linear: it consists of a sequence of let-expressions followed by a single function call. The only expression that violates this linearity is the if-expression that branches execution flow.
 
 To further illustrate the concept of continuations, we give a short program written in Scheme below. Scheme is unique among most programming languages in that it gives the programmer access to the continuations in his program using a function called \texttt{call/cc}\footnote{call/cc stands for "call with current continuation". Unlike in most other languages, identifiers in Scheme can contain the '/' character.}. \texttt{call/cc} takes as its one parameter a function, which in term gets called with the current continuation as argument. Our example program uses \texttt{call/cc} to save and later reuse a continuation inside an arithmetic operation.
 
@@ -734,7 +751,7 @@ Calling \texttt{cont} substitutes the continuation that we see in the code above
 
 Figure~\ref{cpstrans} shows CPS translations for all LJSP expressions. In the equations, $\cpstrans{e} k$ stands for the CPS translation of expression $e$ with continuation $k$.
 
-The transformation for both the \texttt{define} and \texttt{lambda} expressions CPS translate the body of the function with a continuation passed to the function in a new parameter called $f_{cont}$ in the equations and \texttt{cont_n} in the code. This parameter has a correspondence in the translation for proc in the next equation: it is the $\lambda x_k.k(x_k)$ that gets added to the application when translating. The translation for primitive operations consists of two equations in the diagram, one equation to convert operations with more than one operands into multiple operations with two operands each and one equation to convert it to Continuation-Passing Style. Note that unlike the translation of regular function applications, the application of primitive operations does not include the additional continuation parameter just mentioned, as primitive operations are allowed to return.
+The transformation for both the \texttt{define} and \texttt{lambda}-expressions CPS translate the body of the function with a continuation passed to the function in a new parameter called $f_{cont}$ in the equations and \texttt{cont_n} in the code. This parameter has a correspondence in the translation for proc in the next equation: it is the $\lambda x_k.k(x_k)$ that gets added to the application when translating. The translation for primitive operations consists of two equations in the diagram, one equation to convert operations with more than one operands into multiple operations with two operands each and one equation to convert it to Continuation-Passing Style. Note that unlike the translation of regular function applications, the application of primitive operations does not include the additional continuation parameter just mentioned, as primitive operations are allowed to return.
 
 This stage makes one additional change to the code that solves a problem that arises when other code wants to call a CPS-translated function: The function requires a continuation that it can call with its result, but the calling code is not necessarily in Continuation-Passing Style and requires the function it calls to return an ordinary return value. Therefore, after CPS-Translating the program, the LJSP compiler makes a copy of each function in the program with the suffix \texttt{_copy} added to its name. These new functions take the same number of arguments as the original version they copied minus one (the new continuation parameter added to the functions in the program). The body of the copied functions, however, is replaced by a call to the original function plus the identity function as continuation. 
 
@@ -928,7 +945,7 @@ def get_n_adder(n):
 \subsection{Conversion to IR (Intermediate Representation)}
 This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates and converts it into the Intermediate Representation of the LJSP compiler. While not simple, this is a rather uninteresting stage, as its work mainly consists of converting AST objects from LJSP AST classes to IR AST classes. One significant change this stage does make to the code is that it wraps the expression that LJSP programs can have besides function definitions in its own function called \texttt{expression}.
 
-After passing through this stage, the code is in a sequential style consisting of a list of statements. This is opposed to the style of LJSP, where expressions are arranged as a tree. This turns let expressions of the form \texttt{let i=v in e} into the imperative equivalent of \texttt{i=v;e}.
+After passing through this stage, the code is in a sequential style consisting of a list of statements. This is opposed to the style of LJSP, where expressions are arranged as a tree. This turns let-expressions of the form \texttt{let i=v in e} into the imperative equivalent of \texttt{i=v;e}.
 
 % TODO LIB give examples of this 
 
@@ -1479,9 +1496,9 @@ def define: Parser[SDefine] =
 After the completion of this stage, the following primitive operations will have been removed: 
 \begin{itemize}
 \item The arithmetic negation operator \texttt{neg}. In most other languages, \texttt{-} is used for this. This operator is reduced to a subtraction from zero; the expression \texttt{(neg x)} gets converted to \texttt{(- 0 x)}.
-\item The boolean negation operator \texttt{not}. This is often written as \texttt{!} in computer science or $\neg$ in mathematics. If expressions of the form \texttt{(if (not $e_1$) $e_2$ $e_3$)} have their true and false branch swapped and get reduced to \texttt{(if $e_1$ $e_3$ $e_2$)}.
-\item The boolean \texttt{and}. Expressions of the form \texttt{(if (and $e_1$ $e_2$) $e_3$ $e_4$)} are converted to two nested if expressions: \texttt{(if $e_1$ (if $e_2$ $e_3$ $e_4$) $e_4$)}
-\item The boolean \texttt{or}: If expressions of the form \texttt{(if (or $e_1$ $e_2$) $e_3$ $e_4$)} get converted to two nested if expressions: \texttt{(if $e_1$ $e_3$ (if $e_2$ $e_3$ $e_4$))}, analoguously to \texttt{and} conversion
+\item The boolean negation operator \texttt{not}. This is often written as \texttt{!} in computer science or $\neg$ in mathematics. If-expressions of the form \texttt{(if (not $e_1$) $e_2$ $e_3$)} have their true and false branch swapped and get reduced to \texttt{(if $e_1$ $e_3$ $e_2$)}.
+\item The boolean \texttt{and}. Expressions of the form \texttt{(if (and $e_1$ $e_2$) $e_3$ $e_4$)} are converted to two nested if-expressions: \texttt{(if $e_1$ (if $e_2$ $e_3$ $e_4$) $e_4$)}
+\item The boolean \texttt{or}: If-expressions of the form \texttt{(if (or $e_1$ $e_2$) $e_3$ $e_4$)} get converted to two nested if-expressions: \texttt{(if $e_1$ $e_3$ (if $e_2$ $e_3$ $e_4$))}, analoguously to \texttt{and} conversion
 \item \texttt{>=}. Expressions of the form \texttt{(>= $e_1$ $e_2$)} are reduced to the expression \texttt{(not (< $e_1$ $e_2$))} which then gets reduced recursively according to the rule to remove \texttt{not}s explained above.
 \item \texttt{<=}, equivalent to \texttt{>=} above.
 \end{itemize}
@@ -1523,9 +1540,9 @@ In the mathematical notation used in the Design Chapter, this can be expressed a
 &\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k &&\eqdef \cpstrans{e_1} \lambda x.(\text{let}~c~=~\lambda p.k(p)~\text{in}~(\text{if}\ x\ \cpstrans{e_2}c\ \cpstrans{e_3}c) \\
 \end{alignat*}
 
-This version of the CPS-translation of if expressions creates a lambda ($\lambda p.k(p)$ in the equation above) and CPS-translates $e_2$ and $e_3$ with this lambda as their continuation. Because this is a lambda in the context of the program, not in the context of the compiler, it requires the additional \texttt{cps_tail_trans} function.
+This version of the CPS-translation of if-expressions creates a lambda ($\lambda p.k(p)$ in the equation above) and CPS-translates $e_2$ and $e_3$ with this lambda as their continuation. Because this is a lambda in the context of the program, not in the context of the compiler, it requires the additional \texttt{cps_tail_trans} function.
 
-In contrast, the CPS-translation of if expressions in the current version of the compiler is shown in Fig. \ref{ifcpstranscurrent}.
+In contrast, the CPS-translation of if-expressions in the current version of the compiler is shown in Fig. \ref{ifcpstranscurrent}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -1544,7 +1561,7 @@ Or expressed in mathematical notation:
 &\cpstrans{(\text{if}\ e_1\ e_2\ e_3)} k &&\eqdef \cpstrans{e_1} \lambda x.(\text{if}\ x\ \cpstrans{e_2}k\ \cpstrans{e_3}k) \\
 \end{alignat*}
 
-This version applies the continuation function k twice. This avoids the introduction of the \texttt{lambda} necessary in the previous version, but comes at the cost of code duplication: The AST subtree saved in k will be used in both branches of the if expression. We will return to this trade off in the Evaluation Chapter where the reasoning behind the choice for the second version will be explained. It is, however, important to mention here that \texttt{cps_tail_trans} can not be avoided completely: When CPS-translating \texttt{SDefine} and \texttt{SLambda} expressions that receive their continuations in a parameter, it is necessary to use \texttt{cps_tail_trans}, as these parameters are again on the level of the program, not on the one of the compiler.
+This version applies the continuation function k twice. This avoids the introduction of the \texttt{lambda} necessary in the previous version, but comes at the cost of code duplication: The AST subtree saved in k will be used in both branches of the if-expression. We will return to this trade off in the Evaluation Chapter where the reasoning behind the choice for the second version will be explained. It is, however, important to mention here that \texttt{cps_tail_trans} can not be avoided completely: When CPS-translating \texttt{SDefine} and \texttt{SLambda}-expressions that receive their continuations in a parameter, it is necessary to use \texttt{cps_tail_trans}, as these parameters are again on the level of the program, not on the one of the compiler.
 
 
 \subsection{Hoisting}
@@ -1629,7 +1646,7 @@ case IFunctionCallByVar(hl_var, params) => {
 \label{iconvasmjs2}
 \end{figure}
 
-The third part to calling functions using function tables in asm.js is finding the correct index to the function table determined in the code snipped above. This is done when expanding IR \texttt{make-hl} expressions to asm.js code that allocates memory and creates the closure. The code for that makes use of a function called \texttt{fname_to_ftable_index} that goes through all function tables and returns the index of the function in the function table it is in.
+The third part to calling functions using function tables in asm.js is finding the correct index to the function table determined in the code snipped above. This is done when expanding IR \texttt{make-hl}-expressions to asm.js code that allocates memory and creates the closure. The code for that makes use of a function called \texttt{fname_to_ftable_index} that goes through all function tables and returns the index of the function in the function table it is in.
 
 Finally, this stage introduces return statements to all functions. If the last statement in the function is an expression, that expression is returned. If, however, the last statement is an \texttt{if}-statement, a variable is created that is assigned the last expression of both if-branches and returned after the if statement\footnote{The simpler solution of returning inside the if-branches does not conform to the asm.js specification.}
 
@@ -1933,7 +1950,7 @@ Another aspect of the compiler that could be improved is related to the fact tha
 
 % TODO LIB ast transformations would be nicer if the compiler generated the subtrees from short code snippets instead of creating the objects manually. maybe some other people have done work on this
 
-A further mistake that was made in the beginning and was later corrected was the unnecessary introduction of \texttt{lambda}s to the code during CPS-translation. This seemed to be a good idea from a theoretical perspective looking at the CPS-translation equations, but in practise, it turned out to be very slow. Specifically in the case of \texttt{if} expressions, described in detail in the CPS-translation section of the Implementation Chapter, it turned out that the trade-off between speed and code duplication did not exist in reality. Introducing additional \texttt{lambda}s made the code not just slower, but eventually also longer, because calling them requires lengthy construction of closures.
+A further mistake that was made in the beginning and was later corrected was the unnecessary introduction of \texttt{lambda}s to the code during CPS-translation. This seemed to be a good idea from a theoretical perspective looking at the CPS-translation equations, but in practise, it turned out to be very slow. Specifically in the case of \texttt{if}-expressions, described in detail in the CPS-translation section of the Implementation Chapter, it turned out that the trade-off between speed and code duplication did not exist in reality. Introducing additional \texttt{lambda}s made the code not just slower, but eventually also longer, because calling them requires lengthy construction of closures.
 
 Much of the initial difficulty in developing the compiler was in understanding the concept of Continuation-Passing Style and a lot of time was spent on finishing the three main front end stages: CPS-translation, closure conversion and hoisting. After that part of the project was completed, reading and understanding the asm.js specification turned out to be another challenge as the material on asm.js is limited and quite terse.
 % TODO LIB maybe say that LLVM IR was also hard to figure out
