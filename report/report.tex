@@ -565,7 +565,7 @@ This is a small stage that expands all \texttt{let} expressions that define $n$ 
 \begin{alignat*}{2}
 &\mathcal{L}\llbracket (\text{let}\ ((idn_1\ e_1)\ (idn_2\ e_2)\dots &&\eqdef (\text{let}\ ((idn_1\ e_1))\ (\text{let}\ ((idn_2\ e_2)) \dots \\
 &\hspace{1cm} (idn_n\ e_n))\ e)\rrbracket &&\hspace{1cm}(\text{let}\ ((idn_n\ e_n))\ e)))\\
-&\mathcal{L}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{L}$ applied to all expressions in e}\\
+&\mathcal{L}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{L}$ applied to all expressions in e}
 \end{alignat*}
 \caption{\texttt{letn} conversion}
 \label{letnconversion}
@@ -574,14 +574,26 @@ This is a small stage that expands all \texttt{let} expressions that define $n$ 
 \subsection{Prim op reduction}
 \begin{figure}[ht]
 \begin{alignat*}{2}
-&\mathcal{L}\llbracket (\text{let}\ ((idn_1\ e_1)\ (idn_2\ e_2)\dots &&\eqdef (\text{let}\ ((idn_1\ e_1))\ (\text{let}\ ((idn_2\ e_2)) \dots \\
+&\mathcal{P}\llbracket (\text{let}\ ((idn_1\ e_1)\ (idn_2\ e_2)\dots &&\eqdef (\text{let}\ ((idn_1\ e_1))\ (\text{let}\ ((idn_2\ e_2)) \dots \\
 &\hspace{1cm} (idn_n\ e_n))\ e)\rrbracket &&\hspace{1cm}(\text{let}\ ((idn_n\ e_n))\ e)))\\
-&\mathcal{P}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{P}$ applied to all expressions in e}\\
+&\mathcal{P}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{P}$ applied to all expressions in e}
 \end{alignat*}
 \caption{Prim op reduction}
 \label{primopreduction}
 \end{figure}
 This stage reduces a number of primitive operations to a combination of other primitive operations. This reduces work in back end stages, as only as limited subset of primitive operations that are part of the LJSP grammar need to get converted to the respective language that the back end generates. One example a primitive operation that the parser recognises but that back end stages do not have to handle is the negation operator $-$ that switches the sign of a double. Prim op reduction reduces expressions of the form $-x$ to simple subtraction: $0-x$. The other primitive operations that Prim op reduction removes from the AST are given in \ref{primopreduction}.
+
+\subsection{Function Variable Wrapping}
+\begin{figure}[ht]
+\begin{alignat*}{2}
+&\mathcal{W}\llbracket y \rrbracket && \eqdef \lambda p_1,\dots~.(y~p_1,\dots)\\
+&&&\hspace{1cm}\text{if}~y~\text{is the name of a function}\\
+&\mathcal{W}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{W}$ applied to all expressions in e}
+\end{alignat*}
+\caption{Function Variable Wrapping}
+\label{fvarwrapping}
+\end{figure}
+This stage wraps @@@@ % example: def succ, let v1 = lambda... let v2 = succ, (v2 (v1 1)), b/c after closure conversion, lambdas need to be called differently
 
 \subsection{CPS-Translation}
 This stage converts the program to continuation-passing style (CPS). Because it is the central stage of the compilation pipeline, we will first explain continuation-passing style in general before describing the particularities of the CPS-translation in the LJSP compiler.
@@ -714,7 +726,7 @@ Calling \texttt{cont} substitutes the continuation that we see in the code above
 &&&\hspace{1cm}(\text{let}\ f=(prim\ x_1, x_2)\ \text{in}\ k(f))\\
 %
 &\cpstrans{(\text{let}\ ((idn\ e_1))\ e_2)} k &&\eqdef \cpstrans{e_1} \lambda x_1. \\
-&&&\hspace{1 cm}(\text{let}\ idn = x_1\ \text{in}\ \cpstrans{e_2} \lambda x_2.(k(x_2)))\\
+&&&\hspace{1 cm}(\text{let}\ idn = x_1\ \text{in}\ \cpstrans{e_2} \lambda x_2.(k(x_2)))
 \end{alignat*}
 \caption{CPS translations of LJSP expressions}
 \label{cpstrans}
@@ -776,7 +788,7 @@ These copied functions later function as entry points to the code. This is so th
 &\mathcal{C}\llbracket (func\ p_1, \dots, p_n) \rrbracket &&\eqdef (func\  \mathcal{C}\llbracket p_1 \rrbracket, \dots, \mathcal{C}\llbracket p_n \rrbracket)\\
 &\mathcal{C}\llbracket (closure\ p_1, \dots, p_n) \rrbracket &&\eqdef (\mathcal{C}\llbracket closure\rrbracket.code\ \mathcal{C}\llbracket closure\rrbracket.env\\\
 &&&\hspace{1cm}\mathcal{C}\llbracket p_1\rrbracket, \dots, \mathcal{C}\llbracket p_n\rrbracket)\\
-&\mathcal{C}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{C}$ applied to all expressions in e}\\
+&\mathcal{C}\llbracket e \rrbracket && \eqdef e\text{ with $\mathcal{C}$ applied to all expressions in e}
 \end{alignat*}
 \caption{Closure Conversion}
 \label{cloconv}
