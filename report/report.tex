@@ -50,11 +50,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
-% TODO LIB explain why both C and LLVM IR as targets. initially: LLVM IR to emscripten, for LLVM IR it turned to be easier to go via C, then: going from C was easier and equivalent to going from LLVM IR
-% TODO LIB consistent names for stages
-% TODO LIB the main idea of this paper is <this>, maybe in abstract
 
-% TODO END proofread
+% TODO LIB consistent names for stages
+
 
 % TODO END nicer title page
 \maketitle
@@ -77,12 +75,11 @@ Jan Söndermann \\
 \begin{center}
 \textbf{Abstract}
 \end{center}
+Over the course of the last decade, JavaScript has turned from an insignificant scripting language to one of the most widespread and commonly used programming languages in existence. The ubiquity of web browsers paired with the exclusivity of JavaScript in web programming have caused the language to be used in increasingly complex applications. This has made performance a top priority for browser developers.
 
-Over the course of the last decade, JavaScript has turned from an insignificant scripting language to one of the most widespread and commonly used programming languages in existence. The ubiquity of web browsers paired with the exclusivity of JavaScript in web programming have caused the language to be used in more and more complex applications. This has made performance a top priority for browser developers.
+The speed at which JavaScript code can be executed has improved greatly over the last few years, but can still be limiting when building larger web applications. One of the most hotly discussed topics in the community of JavaScript developers in 2013 was the release of asm.js, a small, statically typed subset of JavaScript that can be compiled to efficient machine code. Asm.js promises huge speed gains over plain JavaScript when used as the compilation target for other languages.
 
-The speed at which JavaScript code can be executed has increased greatly over the last few years, but can still be limiting to larger web applications. One of the most hotly discussed topics in the community of JavaScript developers was the release of asm.js, a statically typed subset of JavaScript that can be compiled to efficient machine code. Asm.js promises huge speed gains over plain JavaScript when used as the compilation target for other languages.
-
-To evaluate this new technology, we design a language called LJSP and build a compiler that compiles LJSP to asm.js. We further implement a ray tracer that serves as a benchmark for different reimplementations of small parts of the ray tracer in asm.js.
+To evaluate this new technology and see if asm.js can live up to the hype surrounding it, we design a language called LJSP and build a compiler that compiles LJSP to asm.js. We further implement a ray tracer that serves as a benchmark for different reimplementations of small parts of the ray tracer in asm.js.
 
 \newpage
 
@@ -90,6 +87,7 @@ To evaluate this new technology, we design a language called LJSP and build a co
 \textbf{Acknowledgements}
 \end{center}
 I would like to thank my supervisor Dr. Christian Urban for supervising my project and for providing me with both guidance and freedom over the course of the year.
+% TODO LIB more
 \newpage
 
 \tableofcontents
@@ -100,11 +98,11 @@ I would like to thank my supervisor Dr. Christian Urban for supervising my proje
 \chapter{Introduction}
 One of the main trends of today's Internet is the shift from traditionally offline or standalone programs to online applications on the web. This phenomenon, often called "Web 2.0", is exemplified in the success of web applications such as GMail and Facebook. 
 
-This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language that is supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, reflect this success: in 2013, JavaScript led this list by a substantial margin \cite{githubarchive, topgithub}\footnote{Running the query given at \cite{topgithub} adjusted to include the entire year of 2013 yields $498467$ repositories for JavaScript and $395097$ for Ruby on second place}.
+This success of the web has brought with it the rise of the programming language it is build on: JavaScript, the only language supported by all major browsers. Statistics, such as the number of repositories created on GitHub (a popular code sharing website) using JavaScript, reflect this success. In 2013, JavaScript led this list by a substantial margin \cite{githubarchive, topgithub}\footnote{Running the query given at \cite{topgithub} adjusted to include the entire year of 2013 yields $498467$ repositories for JavaScript and $395097$ for Ruby on the second place.}.
 
-Since JavaScript is no longer confined to being used for simple animations and input-validation tasks, the complexity of web apps has increased tremendously. Modern JavaScript frameworks, such as Ember.js link or Meteor use the full register of functionality the language offers and are just as complex as traditional web frameworks that use other languages such as Ruby or Python.
+Since JavaScript is no longer confined to being used for simple animations and input-validation tasks, the complexity of web apps has increased tremendously. Modern JavaScript frameworks, such as Ember.js or Meteor use the full register of functionality the language offers. These JavaScript frameworks are just as complex as traditional web frameworks that use other languages such as Ruby or Python.
 
-Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially designed for. There is a widespread consensus that the language has many shortcomings. Brendan Eich, the creator of JavaScript, writes \cite{brendeich} about its early history:
+Unfortunately, this proliferation of JavaScript has taken the language far beyond the tasks it was initially designed for. Additionally, there is a widespread consensus that the language has many shortcomings in its design. Brendan Eich, the creator of JavaScript, writes \cite{brendeich} about its early history:
 \begin{quote}
 In April 1995 I joined Netscape in order to "add Scheme to the browser." [...]
 
@@ -123,18 +121,17 @@ If I had done classes in JavaScript back in May 1995, I would have been told tha
 Criticism of JavaScript has mostly focussed on two areas:
 \begin{itemize}
 % TODO END fix line break
-\item Inconsistencies and mistakes in the design of the language. Examples given for this often include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \mbox{\texttt{typeof x === 'undefined'}} avoid comparing against a redefined \texttt{undefined}. Further problems include unusual scoping and confusing automatic casts. For a long list of problems with JavaScript, see \cite{jsgoodparts}.
-\item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinary difficult task for browser developers. This is due to the weak typing and generally extremely dynamic nature of JavaScript.
+\item Inconsistencies and mistakes in the design of the language. Common examples given for this include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but doesn't include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \mbox{\texttt{typeof x === 'undefined'}} avoid comparing against a redefined \texttt{undefined}. Further problems include unusual scoping and confusing automatic casts. For a long list of problems with JavaScript, see \cite{jsgoodparts}.
+\item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinarily difficult task for browser developers. This is due to the weak typing and generally extremely dynamic nature of JavaScript.
 \end{itemize}
 
-
-Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular book "JavaScript: The Good Parts" \cite{jsgoodparts}). Another response has been to create new languages that compile to JavaScript, such as the very popular CoffeeScript, Microsoft's TypeScript and Google's Dart.
+Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular book "JavaScript: The Good Parts" \cite{jsgoodparts}). Another response has been to create new languages that compile to JavaScript, such as the languages described in the 'Similar Languages' section of the Background Chapter.
 
 The second problem has been partly remedied by a new generation of JavaScript engines spearheaded by Google's V8, released in 2008 as part of Google Chrome. The other browser makers, including Mozilla soon followed by rewriting their own JavaScript engines. These new engines often brought impressive speed gains.
 
 In early 2013, Mozilla released asm.js, a project that claims to take these two approaches to their logical conclusion. It defines an extremely limited, statically typed subset of JavaScript that can be executed very quickly. This subset is intended as compilation targets for high level languages.
 
-The goal of this project is twofold
+The goal of our project is twofold
 \begin{itemize}
 \item To design such a high level and provide a compiler for it that compiles the language to asm.js.
 \item To test the performance of this new language that we called LJSP and compare it to plain JavaScript.
@@ -142,21 +139,25 @@ The goal of this project is twofold
 
 To achieve the second goal, the project includes a ray tracer in JavaScript, parts of which were rewritten in LJSP and compiled to asm.js. Rendering time of a 3D scene functioned as a benchmark that made it possible to evaluate the results of the project.
 
-Over the course of the project, a LJSP to asm.js was implemented. This compiler was later extended to also compile LJSP to C and LLVM IR, which in turn were compiled to asm.js code using Emscripten, a program descibed in the next chapter. The different versions of asm.js code were then compared using the included ray tracer.
+Over the course of the project, a LJSP to asm.js compiler was implemented. This compiler was later extended to also compile LJSP to C and LLVM IR, which in turn were compiled to asm.js code using Emscripten, a program descibed in the next chapter. The different versions of asm.js code were then compared using the included ray tracer.
+
 
 \chapter{Background}
-This chapter will describe the background and context of the LJSP project. It will give technical details of the technologies involved in the compiler and justify the motivation for starting this project.
+This chapter will describe the background and context of the LJSP project. It will give technical details of the technologies involved and justify the motivation for starting this project. It will also describe similar and related work done by others.
 
-\section{asm.js}
+\section{Relevant technologies}
+This section will give an overview of the programs and platforms used in the LJSP project.
+
+\subsection{asm.js}
 Asm.js is a small subset of JavaScript that can be compiled to very fast machine code. Benchmarks \cite{asmjsbenchmark} show running times around twice the speed of native code. To showcase the speed of asm.js, researches at Mozilla compiled the Unreal gaming engine to asm.js, producing smooth and stutter free rendering inside the browser \cite{unreal}.
 
 After its release, asm.js has generated enormous interest in the community in places such as \cite{hnthread}. The goal of LJSP is to evaluate the performance achievable with a language that compiles to asm.js and find out if the hype surrounding it is justified. This section will describe the concepts behind asm.js and give a technical description of its specification. The Implementation chapter below will build on this description to explain the asm.js code that the LJSP compiler outputs.
 
-Asm.js is designed as a very limited subset of JavaScript that includes information typically not included in JavaScript code. If the author of a function written as asm.js compatible code adds a statement that makes the function as compatible, and the browser of the user viewing a website that includes this code supports asm.js, the JavaScript engine of the browser can use that additional information to compile the code to very efficient machine code.
+Asm.js is designed as a very limited subset of JavaScript that includes information typically not included in JavaScript code. If the author of asm.js compatible code adds a statement that marks the code as compatible, and the browser of the user viewing a website that includes this code supports asm.js, the JavaScript engine of the browser can use that additional information to compile the code to very efficient machine code. This compilation happens ahead of running the program (this is sometimes called Ahead-of-time-compilation).
 
-The way to opt-in to this optimisation is to add a \texttt{"use asm";} statement to the top of the function\footnote{The syntax for this opt-in is copied from the popular and widespread \texttt{"use strict";} that makes JavaScript engines less lenient when parsing JavaScript code.}. Supporting browsers (currently only Firefox) will then compile the code and output a notice such as "\texttt{successfully compiled asm.js code (total compilation time 25ms)}" in the case of successful compilation to the console when encountering this function.
+The way to opt-in to this optimisation is to add a \texttt{"use asm";} statement to the top of the function that contains the code\footnote{The syntax for this opt-in is copied from the popular and widespread \texttt{"use strict";} directive that makes JavaScript engines less lenient when parsing JavaScript code.}. Supporting browsers (currently only Firefox) will then compile the code and output a string such as "\texttt{successfully compiled asm.js code (total compilation time 25ms)}" in the case of successful compilation to the console when loading this function.
 
-Most of the additional information that asm.js forces the programmer to include in his programs that would typically not be part of idiomatic JavaScript is type information. Unlike JavaScript, asm.js is statically typed, meaning every variable has a type inferable at compile time. The following examples will illustrate this difference. We start with a small function in standard JavaScript).
+Most of the additional information that asm.js forces the programmer to include in his programs that would typically not be part of idiomatic JavaScript is type information. Unlike JavaScript, asm.js is statically typed, meaning every variable has a type inferable at compile time. The following examples will illustrate this difference. We start with a small function in standard JavaScript shown in Fig. \ref{jssimplefunc}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -164,13 +165,13 @@ function add(a, b) {
     return a + b;
 }
 \end{lstlisting}
-\caption{A simple function in JavaScript}
+\caption{A simple addition function in JavaScript}
 \label{jssimplefunc}
 \end{figure}
 
-The name of this function suggests that it was probably conceived to add two numbers. It could, however, be called with \texttt{add("hello ", "world");} and would yield the string \texttt{"hello world"}. Neither is it restricted in the type of numbers it accepts: it can be called with an arbitrary combination of integers and floating point numbers.
+The name of this function suggests that it was probably conceived to add two numbers. It could, however, be called with \texttt{add("hello ", "world");} and would yield the concatenated string \texttt{"hello world"}. Neither is it restricted in the type of numbers it accepts: it can be called with an arbitrary combination of integers and floating point numbers.
 
-The same function restricted to integers in asm.js would look as follows:
+The same function restricted to integers in asm.js would look as shown in Fig. \ref{asmjsadder}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -185,15 +186,15 @@ function add_ints(a, b) {
 \label{asmjsadder}
 \end{figure}
 
-The additional lines 2 and 3 are the type information mentioned above. They declare both parameters \texttt{a} and \texttt{b} to be of type int. In other languages such as C, this would be written as \texttt{int a, int b}. In valid asm.js, all parameters to every function get a type assigned in this way.
+The additional lines 2 and 3 are the kind of type information mentioned above. They declare both parameters \texttt{a} and \texttt{b} to be of type int. In other languages such as C, the parameters would be written as \texttt{int a, int b}. In valid asm.js, all parameters to every function get a type assigned at the very top of the function. The somewhat strange syntax for this type declaration is explained in detail in the next few paragraphs.
 
-The other change from the original JavaScript version to the asm.js version of the add function is the addition of a bitwise or with 0 to the result of the addition in line 5. This is necessary because of the other main feature of asm.js besides the possibility of compiling it efficiently. 
+The other change from the original JavaScript version to the asm.js version of the addition function is the inclusion of a bitwise OR\footnote{The pipe symbol \texttt{|} is used for bitwise OR in JavaScript} with 0 to the result of the sum in line 5. This is necessary because of the other main feature of asm.js besides the possibility of compiling it efficiently:
 
 The asm.js specification \cite{asmjsspec} guarantees that valid asm.js code evaluates to the same result regardless of whether or not the browser has asm.js support. If we consider the situation where the browser does have asm.js support and the function \texttt{add_ints} defined in the example above is called with two very large integers, the compiled, native code would add these two large ints and cause an integer overflow. If, however, the browser does not support asm.js and treats the code as normal JavaScript, adding two integers large enough that normally an overflow would occur causes the result to be cast to a floating point number according to the JavaScript specification.
 
-The bitwise or in the line \texttt{return (a + b)|0;} ensures that even in the case of missing asm.js support, the result returned by the function would still be an overflowed integer. The reason for this is that following the JavaScript specification, the bitwise or with 0 coerces the result to be of type int. These expressions are therefore known as "type coercions" and asm.js makes heavy use of them.
+The bitwise OR in the line \texttt{return (a + b)|0;} ensures that even in the case of missing asm.js support, the result returned by the function would still be an overflowed integer. The reason for this is that following the JavaScript specification, the bitwise OR with 0 coerces the result to be of type int. These expressions are therefore known as "type coercions" and asm.js makes heavy use of them.
 
-To illustrate type coercions with an example, consider the following interactive JavaScript session:
+To illustrate type coercions with an example, consider the interactive JavaScript session shown in Fig. \ref{jstypecoercion}.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -208,9 +209,11 @@ To illustrate type coercions with an example, consider the following interactive
 
 $2147483647$ is equal to $2^{31}-1$, the largest value that can be saved in a 32 bit signed integer variable. If we add one to this value without any coercion, the result is transparently cast to a double and returned. If, however, we include a type coercion, the result overflows to $-2^{31}$.
 
-In the remaining part of this section, will give an overview of the asm.js specification with a restriction on the parts that are relevant to the LJSP compiler. For reasons of length, this overview will leave out information that is unimportant for the project and is not meant as a general introduction to asm.js.
+Asm.js uses type coercions both to ensure that the code produces the same result in all circumstances and as type annotations for parameters as Fig. \ref{asmjsadder} demonstrated.
 
-Asm.js code is organised in asm.js modules which consist of a function that includes the \texttt{"use asm";} statement mentioned at the beginning of this section. As parameters, it can take a stdlib object that makes it possible to import certain functions from the JavaScript standard library into the asm.js module and an \texttt{ArrayBuffer}\footnote{In JavaScript, \texttt{ArrayBuffer} objects represent blocks of memory.} object often called "heap". Besides this, it can also include:
+In the remaining part of this section, will give an overview of the asm.js specification with a restriction on the parts that are relevant to the LJSP compiler. For reasons of space, this overview will leave out information that is unimportant for our project and is not meant as a general introduction to all the specifics of asm.js.
+
+Asm.js code is organised in asm.js modules which are made up of a surrounding function that includes the \texttt{"use asm";} directive mentioned at the beginning of this section. As parameters, it can take a \texttt{stdlib} object that makes it possible to import certain functions from the JavaScript standard library into the asm.js module and an \texttt{ArrayBuffer}\footnote{In JavaScript, \texttt{ArrayBuffer} objects represent blocks of memory.} object often called "heap". Besides this, the function can include:
 \begin{itemize}
 \item Global variables
 \item Functions
@@ -220,15 +223,15 @@ Asm.js code is organised in asm.js modules which consist of a function that incl
 
 Valid asm.js functions include enough type information to be statically typable as explained above. They can declare variables, perform arithmetic operations on these variables, branch using \texttt{if} statements, read from and write to the heap and call functions either by name or by looking them up in a function table.
 
-Function tables in asm.js are arrays of functions. These arrays must be of a length equal to a power of two. When using a function table to call a function, the variable that is used as index must be masked bitwise to ensure that function table lookup never failes with an out of bounds error \cite{asmjspdf}. This is a complex idea best illustrated with an example. Assume our code includes a function table \texttt{ftable} that contains $8$ functions, and a variable \texttt{x} that holds the index to a function in \texttt{ftable} that we would like to call. This call could be achieved with the statement \texttt{ftable[x \& 7](param1, param2, ...);}. The bitwise AND with $7$ (equal to \texttt{ftable.length - 1}) ensures that regardless of the value \texttt{x} holds, no out of bounds error can occur. The reason asm.js allows multiple function tables is because all functions in a table must have the exact same type signature in parameters and return types.
+Function tables in asm.js are arrays of functions. These arrays must be of a size equal to a power of two. When using a function table to call a function, the variable that is used as index must be masked bitwise to ensure that function table lookup never failes with an out of bounds error \cite{asmjspdf}. This is a complex idea best illustrated with an example. Suppose our code includes a function table \texttt{ftable} that contains $8$ functions, and a variable \texttt{x} that holds the index to a function in \texttt{ftable} that we would like to call. This call could be achieved with the statement \texttt{ftable[x \& 7](param1, param2, ...);}. The bitwise AND with $7$, or $111_2$ in binary, ensures that regardless of the value \texttt{x} holds, no out of bounds error can occur, as the result of the bitwise AND will always be between 0 and 7. The reason asm.js allows multiple function tables is because all functions in a table must have the exact same type signature in parameters and return types.
 
 The return statement at the end can make functions defined inside the module visible to the outside.
 
-Concluding this section, we will explain the \texttt{ArrayBuffer} object mentioned above and the way that asm.js modules interact with it. In JavaScript, \texttt{ArrayBuffer} objects represet a block of memory that can hold any kind of data. It is, however, not possible to access this memory directly using the \texttt{ArrayBuffer} object. Instead, a subclass of another class, \texttt{ArrayBuffer}View is created as a view on the \texttt{ArrayBuffer}. These views all interpret the memory held in the \texttt{ArrayBuffer} to be of a specific type. The example below, created with the Chrome JavaScript console, illustrates these classes and their usage.
+Concluding this section, we will explain the \texttt{ArrayBuffer} object mentioned above and the way that asm.js modules interact with it. In JavaScript, \texttt{ArrayBuffer} objects represet blocks of memory that can hold any kind of data. It is, however, not possible to access this memory directly using the \texttt{ArrayBuffer} object. Instead, a subclass of another class, \texttt{ArrayBufferView} is created as a view on the \texttt{ArrayBuffer}. These views all interpret the memory held in the \texttt{ArrayBuffer} to be of a specific type. The example given in Fig. \ref{arraybufferexample}, created with the Chrome JavaScript console, illustrates these classes and their usage.
 
 \begin{figure}[ht]
 \begin{lstlisting}
-> var buf = new ArrayBuffer(12);
+> var buf = new ArrayBuffer(12);  // 12 bytes
 > var i16view = new Int16Array(buf);
 > var i32view = new Int32Array(buf);
 
@@ -252,40 +255,51 @@ Concluding this section, we will explain the \texttt{ArrayBuffer} object mention
 \label{arraybufferexample}
 \end{figure}
 
-In line 1 of Figure \ref{arraybufferexample}, an \texttt{ArrayBuffer} that holds 12 bytes of memory gets created. In lines 2 and 3, we create two views to this \texttt{ArrayBuffer}. Both are of type integer, but \texttt{i16view} interprets the memory to be made up of ints with 2 bytes (16 bits), whereas \texttt{i32view} is a view that interprets the buffer as ints with length 4 (32 bits). This explains the result of the next two statements in lines 5 and 8: i16view is an array of length 6, because the 12 bytes of the \texttt{ArrayBuffer} get grouped into 6 ints of length 2 each. Equivalently i32view: its length is $12/4 = 3$.
+In line 1 of Fig. \ref{arraybufferexample}, an \texttt{ArrayBuffer} that holds 12 bytes of memory gets created. In lines 2 and 3, we create two views to this \texttt{ArrayBuffer}. Both are of type integer, but \texttt{i16view} interprets the memory to be made up of ints with 2 bytes (16 bits), whereas \texttt{i32view} is a view that interprets the buffer as ints with length 4 (32 bits). This explains the result of the next two statements in lines 5 and 8: i16view is an array of length 6, because the 12 bytes of the \texttt{ArrayBuffer} get grouped into 6 ints of length 2 each. Equivalently i32view: its length is $12/4 = 3$.
 
-In line 11, the four byte view is used to write two numbers to the array. The result of this is confirmed in lines 13 and 14 which reflect that change. Line 15 proves that the views do not hold any data by themselves but are all views to the underlying \texttt{ArrayBuffer}. Note how the value $65536 = 2^{16}$ overflows from the less significant two bytes at \texttt{i16view[2]} to the next two bytes.
+In line 11, the four byte view is used to write two numbers to the array. The result of this is confirmed in lines 13 and 14 which reflect that change. Line 15 proves that the views do not hold any data by themselves but are all views to the same underlying \texttt{ArrayBuffer}. Note how the value $65536 = 2^{16}$ overflows from the less significant two bytes at \texttt{i16view[2]} to the next two bytes.
 
-The fact that views interpret the underlying bits to be of a specific type is again exemplified by line 19 which does not, as one might expect, return \texttt{[42.0, 65536.0, 0]}, but instead interprets the bits of the two integers as 32 bit floats.
+The fact that views interpret the underlying bits to be of a specific type is again exemplified by line 19 which does not, as one might expect, return \texttt{[42.0, 65536.0, 0]}, but instead interprets the bits of the two integers as 32 bit floats. This produces the scrambled values returned by the statement.
 
-Similarly to function table calles explained above, accessing the values in an \texttt{ArrayBuffer} requires addtional safeguards to make sure the result is not undefined. According to the asm.js spec, array dereference expressions must be of the form \texttt{x[(e \& mask) {>}> i]} with \texttt{mask} being equal to the number of bytes in the \texttt{ArrayBuffer}\footnote{Which must be a multiple of $4096$} and \texttt{i} being equal to the number of bytes the data type of the view used for the access is based on (e.g. $4$ in the case of \texttt{Int32View}). In combination, they prevent out-of-bounds accesses by discarding bits larger than the length of the array and shifting the index to the right size for the view. In practise, the mask turned out not to be required for heap access expressions for Firefox to accept the code as valid asm.js.
+Similarly to function table calles explained above, accessing the values in an \texttt{ArrayBuffer} requires addtional safeguards to make sure the result is not undefined. According to the asm.js spec, array dereference expressions must be of the form \texttt{x[(e \& mask) {>}> i]} with \texttt{mask} being equal to the number of bytes in the \texttt{ArrayBuffer}\footnote{Which must be a multiple of $4096$} minus $1$ and \texttt{i} being equal to the number of bytes the data type of the view used for the access is based on (e.g. $4$ in the case of \texttt{Int32View}). In combination, they prevent out-of-bounds accesses by discarding bits larger than the length of the array and shifting the index to the right size for the view. In practise, the mask turned out not to be required in heap access expressions for Firefox to accept the code as valid asm.js.
 
-\section{LLVM and Emscripten}
-% TODO LIB give examples of LLVM IR code
+\subsection{LLVM and Emscripten}
 In order to gather more data with which the performance of the compiler could be compared, the project was extended to also interact with LLVM and Emscripten. LLVM is a compiler project that includes and has spawned a large number of tools and programs related to the compilation of programs. At its core, it defines an intermediate representation called LLVM IR and an optimizer for this language. This intermediate representation aims to be a shared interface for front ends that parse programming languages and compile them to LLVM IR and back ends that take LLVM IR code and produce native code for a specific architecture such as x86 or arm. 
 
 While a large number of these front and back ends for various languages and architectures have been written, only one is relevant to the LJSP project: a LLVM IR to JavaScript compiler called Emscripten. Emscripten was written by the same group of researches that invented asm.js; in fact, asm.js was created to fill a need the Emscripten developers had for a better compilation target. They describe the challenges of writing a compiler from LLVM IR, a low-level language, to JavaScript, a high-level language in \cite{emscriptenpapar}.
 
 The LJSP compiler emits both C and LLVM IR code. This generated code can be compiled with Emscripten to asm.js. The Evaluation Chapter will compare the running time of this code that Emscripten emits with the asm.js code that LJSP generates directly.
 
-\section{Ray Tracing}
-Ever since the first computers were built, programmers have sought ways to generate pictures with programs. Especially with the rise of computer games, this has become a heavily researched area. Ray tracing is one such technique to generate images from description of 3D scenes. Because generating these images is a computationally intensive task, it is suited to be used as benchmark.
+\subsection{Ray Tracing}
+Ever since the first computers were built, programmers have sought ways to generate pictures with programs. Especially with the rise of computer games, this has become a heavily researched area. Ray tracing is one such technique to generate images from description of 3D scenes. Because generating these images is a computationally intensive task, it is suited to be used for benchmarking.
 
-Before we describe the details of ray tracing, we have introduce two terms that we will refer to in our explanation: A \textbf{3D Scene} is an arrangement of objects at specific coordinates in 3D space. Object can include shapes such as spheres, cubes or planes, lights and a camera. The \textbf{camera} is not a visible object, but instead gives the perspective an angle from which the scene will be rendered. This is also commonly referred to as "eye". \textbf{Rendering} denotes the process of generating an image from a 3D scene and the program that does this is called a renderer.
+Before we can describe the details of ray tracing, we have to introduce two terms that we will refer to in our explanation: A \textbf{3D Scene} is an arrangement of objects at specific coordinates in 3D space. Object can include shapes such as spheres, cubes or planes, lights and a camera. The \textbf{camera} is not a visible object, but instead gives the perspective an angle from which the scene will be rendered. \textbf{Rendering} denotes the process of generating an image from a 3D scene and the program that does this is called a renderer.
 
-Ray tracing produces relatively impressive results with simple techniques. It works by shooting rays from the eye into the scene. The ray tracer then traces these rays and determines whether they hit an object in the scene. If they do, the process of shooting rays into the scene is repeated recursively with the intersection point as the origin of the rays to achieve photorealistic effects such as reflection. If they don't, black or some other background colour is displayed.
+Ray tracing produces relatively impressive results with simple techniques. It works by shooting rays from the camera into the scene. The ray tracer then traces these rays and determines whether they hit an object in the scene. If they do, the process of shooting rays into the scene is repeated recursively with the intersection point as the origin of the rays to achieve photorealistic effects such as reflection. If they don't, black or some other background colour is displayed.
 
-%\section{Similar Languages}
-% TODO HOME lisps that compile to js but also coffeescript, dart, etc.
+\section{Similar Languages}
+Because of the problems with the JavaScript language mentioned in the Introduction, a large number of programming languages that compile to JavaScript or replace it altogether have been developed. These languages all try to fix some of JavaScript's problems.
+
+The most successful of these language is CoffeeScript\footnote{http://coffeescript.org/}. CoffeeScript is a relatively thin layer on top of JavaScript and it is often easy for the programmer to predict for a snippet of CoffeeScript what the result of compiling it to JavaScript will look like. In fact, this is one of the features that the makers of CoffeeScript advertise their language with, but it also means that the language can only fix the more superficial problems with JavaScript's syntax, but it does nothing about execution speed.
+
+Another such language is TypeScript\footnote{http://www.typescriptlang.org/}, developed and published by Microsoft. As its name suggests, TypeScript adds static type information to JavaScript. Like CoffeeScript, TypeScript compiles to JavaScript. This means that while the type information included with TypeScript programs can be used at compile time to catch mistakes in the program that violate its types, it is no longer available at run time to speed up execution.
+
+The third major language in this family of languages that compile to JavaScript is Dart\footnote{https://www.dartlang.org/}, developed and published by Google. Unlike TypeScript, Dart featurs its own syntax separate from JavaScript's. While Dart can be compiled to JavaScript, Google also offers a virtual machine that can execute Dart code directly. Dart currently does not seem to have a lot of traction.
+
+Besides these industrial strength languages intended for serious development, there is a large number of compilers for LISP-dialects to JavaScript. Examples for this king of language are Outlet\footnote{https://github.com/jlongster/outlet}, Parenjs\footnote{https://bitbucket.org/ktg/parenjs/overview} and LiScript\footnote{https://github.com/viclib/liscript}. These projects implement LISPs of varying complexity and generate JavaScript code.
+
+The languages mentioned above languages are all similar to LJSP in that they compile to JavaScript. Unlike LJSP, however, they compile to high-level, often very readable JavaScript. This is not the goal of the LJSP project, which was motivated by the prospect of using asm.js as a compilation target.
+
+One language that does compile to asm.js code is Low-Level JavaScript (LLJS)\footnote{http://mbebenita.github.io/LLJS/}, a project that, like asm.js, was developed by people at Mozilla. LLJS's is strongly reminiscant of C with structs and manual memory management. Due to the limitations of asm.js, LLJS as well is quite limited in what can be expressed with it and does not seem to have seen a lot of adoption so far.
 
 \chapter{Specification}
-This chapter will introduce the LJSP language, first with a simple example and later with a number of formal descriptions. It will also give a formal grammar of the Intermediate Representation used in the compiler.
+This chapter will introduce the LJSP language itself, first with a simple example and later with a number of formal descriptions. It will also give a formal grammar of the Intermediate Representation used in the compiler described further below.
 
 \section{LJSP}
 
 LJSP is a dialect of LISP, a language known for its unique syntax. It is a functional language that includes functions as first class objects. A LJSP program is made up of a number of \texttt{define}s that define functions and an optional expression that can call these functions.
 
-With one small exception, LJSP is a subset of Scheme\footnote{The exception is LJSP's \texttt{neg} operator, which negates the sign of a number. Scheme uses \texttt{-} for that purpose.}, which is another dialect of LISP. This property has been very useful when testing LJSP code, because it made it possible to evaluate LJSP programs using existing Scheme interpreters.
+With one small exception, LJSP is a subset of Scheme\footnote{The exception is LJSP's \texttt{neg} operator, which negates the sign of a number. Scheme uses \texttt{-} for this purpose.}, which is another dialect of LISP. This property was very useful in the testing of LJSP code, because it made it possible to evaluate LJSP programs using existing Scheme interpreters.
 
 After ray tracing was chosen as benchmark, LJSP's grammar was designed with the purpose of expressing the kind of functions used in a ray tracer. This is why it includes a large number of primitive operations, including \texttt{sqrt}, \texttt{min/max} and \texttt{neg}, but currently no lists.
 
@@ -312,16 +326,16 @@ The LJSP code is a natural expression of this mathematical definition. It is mad
 \label{ljspexample}
 \end{figure}
 
-Figure \ref{ljspexample2} shows another example of LJSP code. This program defines a simple function \texttt{apl} that takes two parameters and applies the first to the second parameter. In the expression, the successor function is then defined using a \texttt{lambda} and \texttt{apl} gets called with that function and the value $3$.
+
+
+Figure \ref{ljspexample2} shows another example of a LJSP program. This program defines a simple function \texttt{apply_func} that takes two parameters and applies the first to the second parameter. In the expression, the successor function is then defined and \texttt{apply_func} gets called with that successor function and the value $3$.
 
 \begin{figure}[ht]
 \begin{lstlisting}
-; applies f to d
-(define (apl f d) (f d))
+(define (apply_func f n) (f n))
+(define (succ n) (+ n 1))
 
-; let f=succ in f(3)
-(let ((f (lambda (x) (+ x 1)))) 
-     (apl f 3))
+(apply_func succ 3)
 \end{lstlisting}
 \caption{Example of functions as first class objects}
 \label{ljspexample2}
@@ -336,7 +350,7 @@ The grammar of LJSP in Extended Backus-Naur Form is given below.
 
 <defines> ::= <define> <defines> | $\epsilon$
 
-<define> ::= `(define (' <ident> <params> `)' <expr> `)'
+<define> ::= `(define (' <ident> <paramsPlus> `)' <expr> `)'
 
 <expr> ::= <double>
 \alt <ident>
@@ -368,7 +382,7 @@ The grammar of LJSP in Extended Backus-Naur Form is given below.
 <args> ::= <expr> | <expr> <args>
 \end{grammar}
 
-The front end stages of the compiler (explained in detail in the Design Chapter) make use of a number of functions that are not part of the LJSP grammar, i.e. not meant for programmers writing code in LJSP. These functions are used internally, but they do appear in LJSP code that the front end stages generate. The grammar below shows these internal functions.
+The front end stages of the compiler (explained in detail in the Design Chapter) make use of a number of functions that are not part of LJSP's grammar, i.e. not meant for programmers writing code in LJSP. These functions are used internally, but they do appear in LJSP code that the front end stages generate. These internal functions are shown below.
 
 \begin{grammar}
 <expr> ::= <env>
@@ -386,8 +400,9 @@ The front end stages of the compiler (explained in detail in the Design Chapter)
 
 
 \section{Semantics of LJSP}
-In this section, we formally define the semantics of the LJSP language. In the expressions below, $i$ stands for an identifier, $v$ stands for a generic value, $e$ stands for an expression, $c$ stands for a context that an expression is evaluated within, $d$ stands for a double value and $\Lambda$ stands for a \texttt{(lambda...)}-expression.
+In this section, we formally define the semantics of the LJSP language. In the expressions below, $i$ stands for an identifier, $v$ stands for a generic value, $e$ stands for an expression, $c$ stands for a context that an expression is evaluated in, $d$ stands for a double value and $\Lambda$ stands for a \texttt{(lambda...)}-expression.
 
+% TODO END make sure this breaks properly
 \subsection{Small-Step Semantics}
 \begin{gather*}
 \inference[var]{}{\langle i, c \rangle~\rightarrow~\langle v, c\rangle}~\text{if}~c(i) = v\\\\
@@ -412,8 +427,6 @@ In this section, we formally define the semantics of the LJSP language. In the e
 %
 \inference[prim_op2]{}{\langle (prim~d_1,~\dots,~d_n), c \rangle~\rightarrow~\langle d, c \rangle}~\text{if}~prim(d_1,~\dots,~d_n) = d\\\\
 %
-\end{gather*}
-\begin{gather*}
 \inference[if]{\langle e_1, c \rangle~\rightarrow~\langle e_1', c' \rangle}{\langle (\text{if}\ e_1, e_2, e_3), c \rangle~\rightarrow~\langle (\text{if}\ e_1', e_2, e_3), c' \rangle}\\
 %
 \inference[$\text{if}_{false}$]{}{\langle (\text{if}\ \text{\#f}, e_2, e_3), c \rangle~\rightarrow ~\langle e_3, c \rangle}\\
@@ -446,7 +459,7 @@ The Intermediate Representation (IR) of the LJSP compiler is a separate language
 
 \subsection{Grammar}
 
-The grammar of the IR is given below, again in Extended Backus-Naur Form.
+The grammar of the IR is given below, again in Extended Backus-Naur Form. It uses some of the rules defined in the grammar for LJSP above.
 
 \begin{grammar}
 <iModule> ::= <iFunctions>
@@ -486,8 +499,7 @@ The grammar of the IR is given below, again in Extended Backus-Naur Form.
 
 
 \chapter{Design}
-% TODO LIB Design chapter: History of development
-This chapter will describe the design of the LJSP compiler. It will give an abstract, theoretical description of all the subsystems that make up the compiler. The next chapter will then describe the concrete implementation of these subsystems. Together, these two chapters will give the reader a full understanding of the inner workings of the LJSP compiler.
+This chapter will describe the design of the LJSP compiler. It will give an abstract, theoretical description of all the subsystems that make up the compiler. The next chapter will then explain the concrete implementation details of these subsystems. Together, these two chapters aim to provide the reader with a full understanding of the LJSP compiler.
 
 \section{Architecture of the Compiler}
 The compiler is made up of two major components: A hierarchy of classes that get instantiated to create an internal representation of the program called the Abstract Syntax Tree (AST) and a large number of compilation stages that perform various transformation on this AST to bring it into a form closer to the desired output.
@@ -509,8 +521,9 @@ As its name suggests, the Abstract Syntax Tree is a Tree representation of the c
 \label{astexample}
 \end{figure}
 
-All nodes in the Abstract Syntax Tree are objects. These objects are instances of classes that very closely reflect the grammar of the language the program that the AST represents is written in. This means that every language used in the LJSP compiler (LJSP itself, the Intermediate Representation described in the next section and all output languages) have their own hierarchy of AST classes. Some compilation stages manipulate the AST without changing the types of the objects its made up of and some convert the AST from one class hierarchy to another. 
-% TODO LIB explain this better
+All nodes in the Abstract Syntax Tree are objects. These objects are instances of classes that very closely reflect the grammar of the language the program that the AST represents is written in. This means that every language used in the LJSP compiler (LJSP itself, the Intermediate Representation described in the next section and all output languages) has its own hierarchy of AST classes. Some compilation stages manipulate the AST without changing the types of the objects it is made up of and some convert the AST from one class hierarchy to another. 
+
+The compiler initially included a limited number of front end stages, no intermediate stages and asm.js as its only back end. When the C back end was added, the Intermediate Representation was introduced to remove code duplication between the asm.js and the new C back end. From there, both the front end and back end stages grew in number. Additional front end stages were included to add functionality to the LJSP language and more back ends were added to compile LJSP to other programming languages such as LLVM IR. 
 
 \subsection{Compilation Stages}
 Because compiling a program from one programming language to another is often a very complex transformation, most compilers break up this transformation into a number of stages\footnote{We will use the terms "stage", "conversion" and "translation" interchangably.} that each accomplish a small part of this overall transformation. While these stages can vary quite significantly in complexity ranging from simple expansions of specific expressions (an example would be converting expressions of the form \hbox{\texttt{1 + 2 + 3 + 4}} to \hbox{\texttt{((1 + 2) + 3) + 4}}) to more complex transformations such as CPS-translation, they are all of managable complexity when compared to the overall goal of transforming from the input to the output language.
@@ -554,9 +567,17 @@ The stages of the compiler can be grouped into three sections:
 \section{Detailed Description of the Compilation Stages}
 We will now describe all the stages of the LJSP compiler in detail. For many stages, this will include a set of equations to define the stages in a precise way. In these equations, $y$ will stands for a variable, $d$ for a double constant and $f$ for a fresh identifier. Functions of the form $\mathcal{A}\llbracket e \rrbracket$ will denote transformation $\mathcal{A}$ applied to expression $e$. This syntax is borrowed from \cite{sysftal}.
 
-% TODO LIB Page 27, 5.2.1: you "announce" that you will be explaining parsing there, but then you refer to the Implementation Chapter. I feel cheated ;o) ; mention parser combinators
 \subsection{Parsing}
-This very first stage takes the textual representation of the program and converts it to an Abstract Syntax Tree that the subsequent stages manipulate. It does so according to the grammar of LJSP described in the Specification Chapter. Because of its syntax, LJSP is a very easy language to parse, which makes this a relatively simple stage. The details of parsing will be described in the Implementation Chapter.
+Parsing is the first stage in the tree of compilation stages in the LJSP compiler. It takes the textual representation of the program and builds an equivalent Abstract Syntax Tree. It does so according to the grammar of the LJSP language described in the Specification Chapter.
+
+The LJSP compiler implements parsing using parser combinators that combine parsers for simpler expressions to form parsers for more complex expressions. This reflects the way that LJSP's grammar is written down. Fig. \ref{grammardefine} shows the grammar rule for \texttt{define}-expressions. This is one of the more complex expressions and it combines three simpler rules: \textit{$\langle$ident$\rangle$}, \textit{$\langle$params$\rangle$} and \textit{$\langle$expr$\rangle$}.
+\begin{figure}[ht]
+\begin{grammar}
+<define> ::= `(define (' <ident> <params> `)' <expr> `)'
+\end{grammar}
+\caption{Grammar rule for \texttt{define}s}
+\label{grammardefine}
+\end{figure}
 
 \subsection{\texttt{letn} expansion}
 This is a small stage that expands all \texttt{let}-expressions that define $n$ @variables@ into $n$ \texttt{let}-expressions that all define one variable each. Applying \texttt{letn} conversion to the expression \texttt{(let ((a 1) (b 2)) (+ a b))} would yield \texttt{(let ((a 1)) (let ((b 2)) (+ a b)))}. While not strictly necessary, this conversion greatly simplifies later stages such as CPS-translation, as they do not have to consider the possibility of multiple $(idn\ e)$ blocks inside \texttt{lets}. Equations for this stage are given in Fig. \ref{letnconversion}.
@@ -945,9 +966,7 @@ def get_n_adder(n):
 \subsection{Conversion to IR (Intermediate Representation)}
 This stage takes the LJSP Abstract Syntax Tree that the hoisting stage generates and converts it into the Intermediate Representation of the LJSP compiler. While not simple, this is a rather uninteresting stage, as its work mainly consists of converting AST objects from LJSP AST classes to IR AST classes. One significant change this stage does make to the code is that it wraps the expression that LJSP programs can have besides function definitions in its own function called \texttt{expression}.
 
-After passing through this stage, the code is in a sequential style consisting of a list of statements. This is opposed to the style of LJSP, where expressions are arranged as a tree. This turns let-expressions of the form \texttt{let i=v in e} into the imperative equivalent of \texttt{i=v;e}.
-
-% TODO LIB give examples of this 
+After passing through this stage, the code is in a sequential style consisting of a list of statements. This is opposed to the style of LJSP, where expressions are arranged as a tree and an expression contains all its sub-expressions. For example, let-expressions of the form \texttt{let i=v in ...} into the imperative equivalent of \texttt{i=v; ...}.
 
 \subsection{Redundant Assignment Removal}
 This is an optimisation stage that removes instructions from the IR Abstract Syntax Tree without affecting the meaning of the program. It is based on the observation that every variable only gets assigned to once. After being assigned a value, a variable can occur many times on the right hand sight of an assignment, but never on the left hand sight again.
@@ -978,9 +997,9 @@ z = x * x   # y has been replaced by x
 \subsection{Conversion to asm.js}
 This stage converts the IR code obtained after the intermediate stages to asm.js code. Because the Intermediate Representation (IR) of the LJSP compiler was designed to be similar enough to asm.js to be easily compilable, most of the work that used to be done in this stage could be moved to "Conversion to IR".
 
-The main difference between IR and asm.js code is memory management, which is necessary in asm.js. The memory model of the asm.js code that the compiler generates will be described in detail below.
+One of the main differences between IR and asm.js code is memory management, which is necessary in asm.js. The memory model of the asm.js code that the compiler generates will be described in detail below.
 
-% TODO LIB more!
+This stage also makes a number of smaller changes to the code such as the addition of return statements at the end of functions as well as computing and adding function tables, that make it possible to save functions in variables and call these variables later.
 
 \subsection{Conversion to C}
 Like "Conversion to IR", this is again a stage that changes the types of the objects in the Abstract Syntax Tree. Unlike the previous stage, this is one of the most complex stages of the entire compiler. This is due to the fact that C is a statically typed language with explicit memory management, whereas the Intermediate Representation includes no type or memory information. This, in turn, means that the "Conversion to C" stage needs to derive the type of every variable that appears in the code.
@@ -1008,7 +1027,6 @@ function f(a) {
 \end{figure}
 
 The types used in the C code that the LJSP compiler outputs will be described in adequate detail in the Implementation Chapter.
-% TODO LIB add list of types in implementation chapter
 
 \subsection{Conversion to Emscripten C}
 This stage makes a number of manipulations to the C code generated by the previous stage to make it suitable to be processed and compiled by Emscripten. These changes include:
@@ -1019,7 +1037,6 @@ This stage makes a number of manipulations to the C code generated by the previo
 \end{itemize}
 
 \subsection{Conversion to LLVM IR}
-% TODO LIB possibly talk about how LLVM IR is SSA code and C variables are accessed via pointer, how this language adds another layer of pointers that are saved in registers
 This stage takes as its input the C AST generated by the "Conversion to C" stage. The reason for this is that LLVM IR code is very close to C. This stage makes use of the typing information derived in the last stage.
 
 As LLVM IR is a low level language, this stage consists of expanding each C statement to multiple LLVM IR statements. It makes no structural change to the code, but introduces a large number of new, temporary variables.
@@ -1054,7 +1071,9 @@ Line 2 casts \texttt{\%t1} and saves the result in \texttt{\%t2}. Typecasts in L
 Line 3 stores the result of the typecast in the memory that variable \texttt{\%a} points to. Again, compare \texttt{i8***} in LLVM IR to \texttt{void**} in C.
 
 \subsection{Conversion to Numbered LLVM IR}
-This last stage modifies the LLVM IR code generated by the previous stage so that variables introduced when converting to LLVM IR get renamed to sequential numbers, i.e. \texttt{\%0}, \texttt{\%1}, \texttt{\%2}, \dots This is the syntax that LLVM IR requires for unnamed values that do not get stored in memory.
+This last stage modifies the LLVM IR code generated by the previous stage so that variables introduced when converting to LLVM IR get renamed to sequential numbers, i.e. \texttt{\%0}, \texttt{\%1}, \texttt{\%2}, \dots This is the syntax that LLVM IR requires for unnamed temporaries that do not get stored in memory.
+
+This stage exists for aesthetic reasons only, as the code it outputs is easier to read than the code that the previous stage generates, especially if optimisations are run on the LLVM IR with a command such as \texttt{opt -std-compile-opts -S <file>}. This is due to the fact that when rearranging and changing instructions during optimisation, LLVM can ignore unnamed temporaries and simply reintroduce a set of sequential variables as necessary. 
 
 \section{Design of the Ray Tracer}
 After giving a brief sketch of the idea behind ray tracing in the Background Chapter, this section will explain in detail the capabilities of the ray tracer included in LJSP and the mathematical theory behind the calculations necessary for ray tracing.
@@ -1446,9 +1465,6 @@ Both operands are first cast from a \texttt{void*} to a \texttt{double*}, before
 
 As mentioned in the section on the memory layout of the C code generated by the compiler, there are a few small differences between the code that the "Conversion to C" stage and the "Conversion to Emscripten C" emit. "Conversion to Emscripten C" removes the \texttt{expression} and \texttt{main} functions. They are unnecessary, because Emscripten compiles the C code to an asm.js module which will have its functions called by some other piece of code. "Conversion to Emscripten C" further replaces calls to \texttt{malloc} to \texttt{jalloc} and adds a call to \texttt{free_all} to \texttt{_copy} functions, as mentioned above, and adds the line \texttt{\#include "jalloc.c"} to the preprocessor block to make this function available. The last change it makes is adding another copy of every function that ends in \texttt{_copy} with the suffix \texttt{_call_by_value}. These new functions take the same number of parameters as the original functions, but their parameters are of type \texttt{double} instead of \texttt{double*}. This is necessary for the same reason the \texttt{_copy} functions are necessary for: The calling code has no access to the memory handling of the module that Emscripten generates and can not allocate any memory that the double pointers could point to. This is instead done by the new \texttt{_call_by_value} functions.
 
-% TODO LIB somewhere else: During the development of the LJSP compiler, edge cases like this arose frequently and had to be solved with small hacks.
-% also: types?
-
 \section{Structure of the Compiler}
 The LJSP compiler itself is written in Scala and spread out over a number of files. The code of the compiler follows a logical structure that separates the code into modules and that makes it easy to find related modules. The necessity for a clear structure became evident quickly during the development of the compiler, as it was often necessary to edit multiple parts of the code simultaneously.
 
@@ -1568,8 +1584,6 @@ This version applies the continuation function k twice. This avoids the introduc
 The hoisting transformation makes use of an internal class named \texttt{HoistedExpression}. This class is used to accumulate hoisted functions when recursively traversing the Abstract Syntax Tree.
 
 In earlier versions of the compiler, this was implemented using Scala tuples, but using a dedicated class was found to improve readability. 
-
-%\subsection{Conversion to IR}
 
 
 \subsection{Redundant Assignment Removal}
@@ -1708,7 +1722,7 @@ Although the file containing this stage is the largest of all the files containi
 
 % TODO LIB give expansions for all C statements
 
-% TODO HOME in design section, explain why LLVM IR code gets renumbered, does this have any effect on the running time?
+
 
 \section{Code Generation}
 Generating or emitting code in text form is the reverse of parsing. It's the process of taking an Abstract Syntax Tree and converting it to the textual representation of the programming language. Because of this relationship between parsing and code generation, the latter is sometimes called "unparsing" \cite{nanopass}.
@@ -1882,9 +1896,8 @@ One advantageous feature that made testing asm.js code possible is that, as ment
 This chapter will evaluate the results and findings of the project and put them into the context of what we set out to examine.
 \section{Benchmarks}
 
-The overall goal of this project was to evaluate asm.js and the promises about performance that were made during its launch. To achieve this, we compare four different implementations of the same function used in a ray tracer, one in plain JavaScript and three in asm.js. The results of this benchmark are given in table \ref{benchmarks}. It gives the amount of time in seconds it took to render a 3D scene using each of the four different implementations of \texttt{raySphereIntersectionPoint} five times. It further gives the average of the five running times of each method. Fig. \ref{benchmarksgraph} shows shows the average running times of the four rendering methods in a graph.
+The overall goal of this project was to evaluate asm.js and the promises about performance that were made during its launch. To achieve this, we compare four different implementations of the same function used in a ray tracer and described in the Implementation Chapter, one in plain JavaScript and three in asm.js. The results of this benchmark are given in table \ref{benchmarks}. It gives the amount of time in seconds it took to render a 3D scene using each of the four different implementations of \texttt{raySphereIntersectionPoint} five times. It further gives the average of the five running times of each method. Fig. \ref{benchmarksgraph} shows shows the average running times of the four rendering methods in a graph.
 
-% TODO LIB explain which method is which column
 \begin{figure}[ht]
 \begin{center}
   \begin{tabular}{ l | l | l | l | l }
@@ -1938,7 +1951,10 @@ It is still surprising to us, however, that asm.js performs so badly in our use 
 
 \section{Evaluating the Compiler}
 
-While originally only conceived to compile LJSP to asm.js, the compiler was later extended to compile LJSP to C and LLVM IR as well. This decision was made after seeing the first benchmarks and was motivated by a desire to get a fuller picture of asm.js running times. Because Emscripten includes heavy optimisation, we thought it might produce code that runs faster than the code generated by the LJSP, which later turned out not to be the case.
+% TODO LIB somewhere else: During the development of the LJSP compiler, edge cases like this arose frequently and had to be solved with small hacks.
+% also: types?
+
+While originally only conceived to compile LJSP to asm.js, the compiler was later extended to compile LJSP to C and LLVM IR as well. This decision was made after seeing the first benchmarks and was motivated by a desire to get a fuller picture of asm.js running times. Because Emscripten includes heavy optimisation, we thought it might produce code that runs faster than the code generated by the LJSP, which later turned out not to be the case. The reason both C and LLVM IR are included as back ends is a remnant of the development of the compiler. When developing the LLVM IR back end, we chose to first output C code, which is easier to generate because it is closer to the Intermediate Representation. We then compiled the C code this back end generated to LLVM IR using clang\footnote{clang is the C compiler of the LLVM project.}. Using the output of clang as a reference, we added a second back end for LLVM IR to the LJSP compiler that imitates the output that clang generates. Because the LJSP compiler performs no optimisations when compiling from C to LLVM IR, the code these two back ends generate is equivalent in the operations it performs with the generated LLVM IR being more low-level and explicit. When compiling to asm.js using Emscripten, we used the output generated by the C back end and the \texttt{emcc} binary that comes with the Emscripten distribution.
 
 Projects that grow beyond their initial scope on often turn into an unorganised patchwork. We are generally happy with how the compiler turned out after all extensions. It was, however, necessary to rewrite and refactor significant parts of the program at various points during the project to accomodate for new requirements. An example of this is the Intermediate Representation and the related stages that were not part of the first version of the compiler. They only became necessary after C was implemented as an additional compilation target, to remove code duplication among asm.js and C conversion and combine the shared changes that both stages made to the AST into one parent stage.
 
@@ -1948,12 +1964,9 @@ The biggest design mistake made during the development of the LJSP compiler was 
 
 Another aspect of the compiler that could be improved is related to the fact that there is a substantial number of stages that only change expressions of a small number of types while leaving the remaining expressions unaltered: "Reduction of Primitive Operations" only touches prim ops, "Closure Conversion" only changes lambas and applications. To traverse the entire Abstract Syntax Tree, these stages need to handle every kind of expression, however, so that subexpressions can be examined. Closure converting the expression \texttt{(if $e_1$ $e_2$ $e_3$)}, for example, leaves the if untouched but gets called recursively for all three subexpressions $e_1$, $e_2$ and $e_3$. Separating the AST-traversing algorithm from the changes that every stage early on would have made the code much more concise. Sarkar, Waddell, and Dybvig describe \cite{nanopass} a mechanism they call "pass expander" that automatically generates code to handle expressions in each stage that don't change.
 
-% TODO LIB ast transformations would be nicer if the compiler generated the subtrees from short code snippets instead of creating the objects manually. maybe some other people have done work on this
-
 A further mistake that was made in the beginning and was later corrected was the unnecessary introduction of \texttt{lambda}s to the code during CPS-translation. This seemed to be a good idea from a theoretical perspective looking at the CPS-translation equations, but in practise, it turned out to be very slow. Specifically in the case of \texttt{if}-expressions, described in detail in the CPS-translation section of the Implementation Chapter, it turned out that the trade-off between speed and code duplication did not exist in reality. Introducing additional \texttt{lambda}s made the code not just slower, but eventually also longer, because calling them requires lengthy construction of closures.
 
 Much of the initial difficulty in developing the compiler was in understanding the concept of Continuation-Passing Style and a lot of time was spent on finishing the three main front end stages: CPS-translation, closure conversion and hoisting. After that part of the project was completed, reading and understanding the asm.js specification turned out to be another challenge as the material on asm.js is limited and quite terse.
-% TODO LIB maybe say that LLVM IR was also hard to figure out
 
 In conclusion, we are satisfied with the results that the project has achieved. Our initial requirements were met and the question we set out with was answered. The results the project generated could be developed further in ways that we will describe in the next chapter.
 
@@ -1978,9 +1991,6 @@ The next step in evaluating asm.js would be to extend LJSP's grammar so that the
 Another addition to the project that would have to be made soon, should development on it continue, is an interpreter for the Intermediate Representation. This would then make it possible to include the intermediate stages in the stages covered by the testing framework.
 
 Finally, more intermediate stages could be added that optimise the generated code more heavily such as tail call elimination. The intermediate representation that is already part of the compiler offers a suitable framework for adding such stages. This would depend on the addition proposed in the previous paragraph, as these new stages would have to be tested to be reliable. Especially optimisation stages are prone to contain errors and keeping these new stages as small as possible, as described in \cite{nanopass2} would make testing and debugging them easier.
-
-% TODO LIB in evaluation: stress that handwritten is benchmark, not javascript
-
 
 \chapter{User Guide}
 
@@ -2008,15 +2018,12 @@ The first of these files is the JavaScript file containing the asm.js code for r
 The second file contains the asm.js code generated by Emscripten (the forth of the four buttons renders the scene using this implementation). To generate this file, an Emscripten compatible C version of the \texttt{raySphereIntersectionPoint} has to be generated using the LJSP compiler by calling \texttt{scala -cp ljsp/ ljsp.Ljsp --emC -i ray_tracer/ljsp_code.scm -o rtc.c} from the root of the repository. This generated a file called \texttt{rtc.c}, also included with the repository. To compile this file and save the result in \texttt{ray_tracer/emcc_output.js}, which is where the ray tracer expects the Emscripten code, call Emscripten with this command: \texttt{emcc -O2 -s EXPORTED_FUNCTIONS="['_raySphereIntersectionPoint_copy_call_by_value', '_vectorsDotProduct_copy_call_by_value']" -s NO_EXIT_RUNTIME=1 rtc.c -o ray_tracer/emcc_output.js}. For this command to work, Emscripten must be installed and \texttt{emcc} in the \texttt{PATH}. For instructions on how to install Emscripten, please see the Emscripten tutorial\footnote{https://github.com/kripken/emscripten/wiki/Tutorial}.
 
 \section{Testing}
-Running tests can be achieved by executing \texttt{python run_tests.py} on the command line. This requires Python 2 to be installed. The testing framework further depends on Racket and LLVM to be installed on the machine. \texttt{run_tests.py} contains two constants \texttt{RACKET_PATH} and \texttt{LLI_PATH} that point to the executables of racket and lli. These constants need to be adjusted to contain the correct paths.
-% TODO LIB better explanation, links to racket, llvm
-% http://download.racket-lang.org/
-% http://llvm.org/releases/download.html
+Running tests can be achieved by executing \texttt{python run_tests.py} on the command line. This requires Python 2 to be installed. The testing framework further depends on Racket and LLVM to be installed on the machine. \texttt{run_tests.py} contains two constants \texttt{RACKET_PATH} and \texttt{LLI_PATH} that point to the executables of racket\footnote{Racket can be downloaded at http://download.racket-lang.org/} and lli\footnote{lli is the LLVM IR interpreter that comes with the LLVM project which can be downloaded at http://llvm.org/releases/download.html}. These constants need to be adjusted to contain the correct paths.
 
-% TODO END make this beautiful, maybe two column format
+
 \newpage
-
 \chapter{Bibliography}
+% TODO END make this beautiful, maybe two column format
 \begin{thebibliography}{1}
     \bibitem{githubarchive} {\em GitHub Archive} http://www.githubarchive.org/ accessed on 28.3.2014.
     \bibitem{topgithub} {\em Top Github Languages for 2013 (so far)} http://adambard.com/blog/top-github-languages-for-2013-so-far/ accessed on 28.3.2014
