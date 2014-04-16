@@ -9,6 +9,10 @@ To print usage:
 
     scala -cp ljsp/ ljsp.Ljsp   
 
+To compile a simple example program:
+
+    scala -cp ljsp/ ljsp.Ljsp "(define (fib n) (if (or (= n 0) (= n 1)) 1 (+ (fib (- n 1)) (fib (- n 2)))))(fib 6)"
+
 To generate ray tracer asm.js module:
 
     scala -cp ljsp/ ljsp.Ljsp --asmjs -i ray_tracer/ljsp_code.scm -o ray_tracer/gen_code.js
