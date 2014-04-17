@@ -25,7 +25,7 @@
 \usepackage{titlesec}
 \titleformat{\chapter}[hang] 
 {\normalfont\huge\bfseries}{\thechapter}{1em}{} 
-
+% For front page
 \usepackage[left=1.9in, right=1.9in, top=1.4in, bottom=1.0in]{geometry}
 
 % No new page after chapter
@@ -37,10 +37,7 @@
   \secdef\@chapter\@schapter}
 \makeatother
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 % Commands to make CPS equations easier to write
 \newcommand{\eqdef}{\stackrel{\text{def}}{=}}%
@@ -2043,7 +2040,11 @@ Running tests can be achieved by executing \texttt{python run_tests.py} on the c
 
 \newpage
 \chapter{Bibliography}
-% TODO TODAY make this beautiful, maybe two column format
+
+% Hide additional title
+\begingroup
+\renewcommand{\chapter}[2]{}% for other classes
+
 \begin{thebibliography}{1}
     \bibitem{githubarchive} {\em GitHub Archive} http://www.githubarchive.org/ accessed on 28.3.2014.
     \bibitem{topgithub} {\em Top Github Languages for 2013 (so far)} http://adambard.com/blog/top-github-languages-for-2013-so-far/ accessed on 28.3.2014
@@ -2069,5 +2070,5 @@ Running tests can be achieved by executing \texttt{python run_tests.py} on the c
     \bibitem{asmjsadditions} David Herman on future plans for asm.js https://news.ycombinator.com/item?id=5228042 accessed on 13.4.2014
     \bibitem{whybothers} Vyacheslav Egorov, March 2013 {\em Why asm.js bothers me} http://mrale.ph/blog/2013/03/28/why-asmjs-bothers-me.html accessed on 13.4.2014
 \end{thebibliography}
-
+\endgroup
 \end{document}
