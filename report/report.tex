@@ -15,7 +15,7 @@
 \usepackage{semantic}
 % Source code listings
 \usepackage{listings}
-\lstset{frame=single, numbers=left, basicstyle=\ttfamily}
+\lstset{breaklines=true, frame=single, numbers=left, basicstyle=\ttfamily}
 % Diagrams
 \usepackage{graphicx}
 % Graph
@@ -49,9 +49,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
-
-% TODO TODAY make appendix
-
 
 % Title Page
 % This was taken from the template provided by the department
@@ -139,8 +136,7 @@ If I had done classes in JavaScript back in May 1995, I would have been told tha
 
 Criticism of JavaScript has mostly focussed on two areas:
 \begin{itemize}
-% TODO END fix line break
-\item Inconsistencies and mistakes in the design of the language. Common examples given for this include the confusion around JavaScript's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but does not include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \mbox{\texttt{typeof x === 'undefined'}} avoid comparing against a redefined \texttt{undefined}. Further problems include unusual scoping and confusing automatic casts. For a long list of problems with JavaScript, see \cite{DBLP:books/daglib/0020447}.
+\item Inconsistencies and mistakes in the design of the language. Common examples given for this include the confusion around Java\-Script's large number of falsy values (\texttt{0},  \texttt{''}, \texttt{NaN}, \texttt{false}, \texttt{null} and \texttt{undefined}) and its set of reserved keywords, which includes a large number of words not in use by the language but does not include \texttt{NaN} and \texttt{undefined}. This makes it necessary to test for \texttt{undefined}ness using \mbox{\texttt{typeof x === 'undefined'}} avoid comparing against a redefined \texttt{undefined}. Further problems include unusual scoping and confusing automatic casts. For a long list of problems with JavaScript, see \cite{DBLP:books/daglib/0020447}.
 \item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinarily difficult task for browser developers. This is due to the weak typing and generally extremely dynamic nature of JavaScript.
 \end{itemize}
 
@@ -421,7 +417,6 @@ The front end stages of the compiler (explained in detail in the Design Chapter)
 \section{Semantics of LJSP}
 In this section, we formally define the semantics of the LJSP language. In the expressions below, $i$ stands for an identifier, $v$ stands for a generic value, $e$ stands for an expression, $c$ stands for a context that an expression is evaluated in, $d$ stands for a double value and $\Lambda$ stands for a \texttt{(lambda...)}-expression.
 
-% TODO END make sure this breaks properly
 \subsection{Small-Step Semantics}
 \begin{gather*}
 \inference[var]{}{\langle i, c \rangle~\rightarrow~\langle v, c\rangle}~\text{if}~c(i) = v\\\\
@@ -1507,9 +1502,8 @@ The code is structured as follows:
 \begin{itemize}
 \item The entry point of the compiler can be found in \texttt{main.scala}. This files contains functionality to parse the command-line arguments that the LJSP compiler gets called with. Based on these arguments, it calls the appropriate methods to achieve the desired results.
 \item All classes that make up the Abstract Syntax tree can be found in \texttt{AST.scala}. We decided against splitting up this file into a separate file for each language used in the LJSP compiler (LJSP, IR, C, etc.) as that would have lead to unnecessary fragmentation of the code.
-% TODO END line break
 \item The compilation stages that make up the LJSP compiler can be found in files with file names starting with a number, e.g. \texttt{03_cps_translation.scala}, optionally followed by a letter that indicates which stages precede and follow it. These files all contain exactly one object with a name equal to the name of the file without the number (\texttt{object cps_translation} in the example of CPS-translation) which in turn contains all the methods used in conversion. 
-% TODO END line break
+
 \item The functions that convert ASTs back to specific languages can be found in files that have file names starting with \texttt{code_generation_}. There are five such files in total, one each for every programming language that the LJSP compiler converts to or from: LJSP, IR, asm.js, C and LLVM IR.
 \item The file \texttt{run_tests.py} contains the testing framework described further down in the Testing Chapter. All other files related to testing can be found in the \texttt{test/} folder.
 \item The ray tracer and all files related to it reside in the \texttt{ray_tracer/} folder.
@@ -1608,8 +1602,7 @@ This version applies the continuation function k twice. This avoids the introduc
 
 
 \subsection{Hoisting}
-% TODO END line break
-The hoisting transformation makes use of an internal class named \texttt{HoistedExpression}. This class is used to accumulate hoisted functions when recursively traversing the Abstract Syntax Tree.
+The hoisting stage uses an inter\-nal class named \texttt{Hoisted\-Expression}. This class is used to accumu\-late hoi\-sted functions when recursively traversing the Abstract Syntax Tree.
 
 In earlier versions of the compiler, this was implemented using Scala tuples, but using a dedicated class was found to improve readability. 
 
@@ -1786,8 +1779,7 @@ All files related to ray tracing can be found in the \texttt{ray_tracer/} direct
 \begin{itemize}
 \item \texttt{ray_tracer.html}, this is the html file that loads all the JavaScript files and includes an interface that the user can use to interact with the code
 \item \texttt{ray_tracer.js}, this file contains the ray tracer itself
-% TODO END line break
-\item \texttt{ljsp_code.scm}, this file contains an implementation of two functions:\texttt{raySphereIntersectionPoint} and \texttt{vectorsDotProduct} in LJSP
+\item \texttt{ljsp_code.scm}, this file contains an implementation of two functions: \texttt{raySphereIntersectionPoint} and \texttt{vectorsDotProduct} in LJSP
 \item The remaining JavaScript files contain different versions of the two functions defined in \texttt{ljsp_code.scm} and are explained in detail below
 \end{itemize}
 
@@ -1842,8 +1834,7 @@ The \texttt{render} function ends with a list of statements that make up the mai
 
 \subsubsection{Implementation of different rendering methods}
 
-% TODO END line break
-The \texttt{render} function takes one parameter that determines the rendering method. The implementation of this is shown in the code snippet given in Figure \ref{irenderer2}, which shows an abridged version of the \texttt{raySphereIntersectionPoint} function.
+The \texttt{render} function takes one parameter that determines the rendering method. The implementation of this is shown in the code snippet given in Figure \ref{irenderer2}, which shows an abridged version of the \texttt{raySphere\-Intersection\-Point} function.
 
 \begin{figure}[ht]
 \begin{lstlisting}
@@ -2003,9 +1994,6 @@ It is still surprising to us, however, that asm.js performs so badly in our use 
 
 \section{Evaluating the Compiler}
 
-% TODO LIB somewhere else: During the development of the LJSP compiler, edge cases like this arose frequently and had to be solved with small hacks.
-% also: types?
-
 While originally only conceived to compile LJSP to asm.js, the compiler was later extended to compile LJSP to C and LLVM IR as well. This decision was made after seeing the first benchmarks and was motivated by a desire to get a fuller picture of asm.js running time. Because Emscripten includes heavy optimisations, we thought it might produce ray tracing code that runs faster than the code generated by the LJSP, which turned out not to be the case. 
 
 The reason both C and LLVM IR are included as back ends is a remnant of the development process of the compiler. When developing the LLVM IR back end, we chose to first output C code, which is easier to generate because it is closer to the Intermediate Representation. We then compiled the C code this back end generated to LLVM IR using clang\footnote{clang is the C compiler of the LLVM project.}. Using the output of clang as a reference, we added a second back end for LLVM IR to the LJSP compiler that imitated the output that clang generates. Because the LJSP compiler performs no optimisations when compiling from C to LLVM IR, the code these two back ends generate is equivalent in the operations it performs with the generated LLVM IR being more low-level and explicit. When compiling to asm.js using Emscripten, we used the output generated by the C back end and the \texttt{emcc} binary that comes with the Emscripten distribution. While we could have compiled the LLVM IR code generated by the LJSP compiler, both would yield the same result and C turned out to be somewhat easier to work with.
@@ -2070,8 +2058,15 @@ The HTML file depends on a number of JavaScript files, all of which are included
 
 The first of these files is the JavaScript file containing the asm.js code for rendering the scene using asm.js code generated by the LJSP compiler (the rendering method activated by the third of the four buttons). This file is called \texttt{ray_tracer/gen_code.js} and can be generated by executing the following command from the root of the repository: \texttt{scala -cp ljsp/ ljsp.Ljsp {-}-asmjs -i ray_tracer/ljsp_code.scm -o ray_tracer/gen_code.js}. Please note that the LJSP compiler must have been successfully compiled, before it can be used. See the first section of this chapter for details on how to do this.
 
-% TODO END line break
-The second file contains the asm.js code generated by Emscripten (the forth of the four buttons renders the scene using this implementation). To generate this file, an Emscripten compatible C version of the code in \texttt{ljsp_code.scm} has to be generated using the LJSP compiler by calling \texttt{scala -cp ljsp/ ljsp.Ljsp {-}-emC -i ray_tracer/ljsp_code.scm -o rtc.c} from the root of the repository. This generates a file called \texttt{rtc.c}, also included with the repository. To compile this file and save the result in \texttt{ray_tracer/emcc_output.js}, which is where the ray tracer expects the Emscripten code, call Emscripten with the following command: \texttt{emcc -O2 -s EXPORTED_FUNCTIONS="['_raySphereIntersectionPoint_copy_call_by_value', '_vectorsDotProduct_copy_call_by_value']" -s NO_EXIT_RUNTIME=1 rtc.c -o ray_tracer/emcc_output.js}. For this command to work, Emscripten must be installed and \texttt{emcc} in the directories of the system's \texttt{PATH}. For instructions on how to install Emscripten, please see the Emscripten tutorial\footnote{https://github.com/kripken/emscripten/wiki/Tutorial}.
+The second file contains the asm.js code generated by Emscripten (the forth of the four buttons renders the scene using this implementation). To generate this file, an Emscripten compatible C version of the code in \texttt{ljsp_code.scm} has to be generated using the LJSP compiler by running \texttt{scala -cp ljsp/ ljsp.Ljsp {-}-emC -i ray_\-tra\-cer/ljsp_\-code.scm -o rtc.c} from the root of the repository. This generates a file called \texttt{rtc.c}, also included with the repository. To compile this file and save the result in \texttt{ray_tracer/emcc_output.js}, which is where the ray tracer expects the Emscripten code, call Emscripten with the command shown in Figure \ref{emcccompile}. For this command to work, Emscripten must be installed and \texttt{emcc} in the directories of the system's \texttt{PATH}. For instructions on how to install Emscripten, please see the Emscripten tutorial\footnote{https://github.com/kripken/emscripten/wiki/Tutorial}.
+
+\begin{figure}[ht]
+\begin{lstlisting}
+emcc -O2 -s EXPORTED_FUNCTIONS="['_raySphereIntersectionPoint_copy_call_by_value', '_vectorsDotProduct_copy_call_by_value']" -s NO_EXIT_RUNTIME=1 rtc.c -o ray_tracer/emcc_output.js
+\end{lstlisting}
+\caption{Running Emscripten on the generated code}
+\label{emcccompile}
+\end{figure}
 
 \section{Testing}
 Running tests can be achieved by executing \texttt{python run_tests.py} on the command line. This requires Python to be installed. The testing framework further depends on Racket and LLVM. \texttt{run_tests.py} contains two constants \texttt{RACKET_PATH} and \texttt{LLI_PATH} that have to point to the executables of racket\footnote{Racket can be downloaded at http://download.racket-lang.org/} and lli\footnote{lli is the LLVM IR interpreter that comes with the LLVM project which can be downloaded at http://llvm.org/releases/download.html}. These constants need to be adjusted to contain the correct paths.
