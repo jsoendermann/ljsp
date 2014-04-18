@@ -11,6 +11,12 @@ report/report.log
 report/report.pdf
 report/report.toc
 
+report/appendix.aux
+report/appendix.log
+report/appendix.out
+report/appendix.pdf
+report/appendix.toc
+
 report/.texpadtmp/*
 
 report/stagesflowchart.eps
