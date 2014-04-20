@@ -82,7 +82,6 @@
 \end{center}
 \restoregeometry
 
-% TODO END word count on this page
 \begin{center}
 \textbf{Originality avowal}
 \end{center}
@@ -95,6 +94,8 @@ I grant the right to King's College London to make paper and electronic copies o
 Jan Söndermann \\
 \today
 \end{flushright}
+
+Word count of this report: 21741
 \newpage
 			
 \begin{center}
@@ -149,7 +150,7 @@ Criticism of JavaScript has mostly focussed on two areas:
 \item Slow execution speed. Writing fast interpreters for JavaScript has been an extraordinarily difficult task for browser developers. This is due to the weak typing and generally extremely dynamic nature of JavaScript.
 \end{itemize}
 
-Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular book "JavaScript: The Good Parts" \cite{DBLP:books/daglib/0020447}). Another response has been to create new languages that compile to JavaScript, such as the languages described in the 'Similar Languages' section of the Background Chapter.
+Programmers have responded to the first problem in ways that include limiting themselves to a subset of JavaScript that excludes the inconsistent and badly-designed parts (cf. the very popular book "Java\-Script: The Good Parts" \cite{DBLP:books/daglib/0020447}). Another response has been to create new languages that compile to JavaScript, such as the languages described in the 'Similar Languages' section of the Background Chapter.
 
 The second problem has been partly remedied by a new generation of JavaScript engines spearheaded by Google's V8, released in 2008 as part of Google Chrome. The other browser makers, including Mozilla soon followed by rewriting their own JavaScript engines. These new engines often brought impressive speed gains.
 
@@ -314,7 +315,7 @@ Besides these industrial strength languages intended for serious development, th
 
 The languages mentioned above are similar to LJSP in that they compile to JavaScript. Unlike LJSP, however, they compile to high-level, often very readable JavaScript. This is not the goal of the LJSP project, which was motivated by the prospect of using asm.js as a compilation target.
 
-One language that does compile to asm.js code is Low-Level JavaScript (LLJS)\footnote{http://mbebenita.github.io/LLJS/}, a project that, like asm.js, was developed by people at Mozilla. LLJS's is strongly reminiscent of C with structs and manual memory management. Due to the limitations of asm.js, LLJS as well is quite limited in what can be expressed with it and does not seem to have seen a lot of adoption so far.
+One language that does compile to asm.js code is Low-Level Java\-Script (LLJS)\footnote{http://mbebenita.github.io/LLJS/}, a project that, like asm.js, was developed by people at Mozilla. LLJS's is strongly reminiscent of C with structs and manual memory management. Due to the limitations of asm.js, LLJS as well is quite limited in what can be expressed with it and does not seem to have seen a lot of adoption so far.
 
 \chapter{Specification}
 This chapter will introduce the LJSP language itself, first with a simple example and later with a number of formal descriptions. It will also give a formal grammar of the Intermediate Representation used in the compiler described further below.
@@ -455,7 +456,8 @@ In this section, we formally define the semantics of the LJSP language. In the e
 \inference[$\text{if}_{false}$]{}{\langle (\text{if}\ \text{\#f}, e_2, e_3), c \rangle~\rightarrow ~\langle e_3, c \rangle}\\
 %
 \inference[$\text{if}_{true}$]{}{\langle (\text{if}\ \text{\#t}, e_2, e_3), c \rangle~\rightarrow~\langle e_2, c \rangle}
-\end{gather*}\\
+\end{gather*}
+
 
 \subsection{Big-Step Semantics}
 
@@ -1639,7 +1641,7 @@ def rar(statements) = statements match {
 This function calls itself recursively for each statement in the list, discarding it if it is a redundant assignment and renaming the variable on the left hand side in those cases.
 
 \subsection{Conversion to asm.js}
-Besides the rather simple task of converting IR AST classes to their equivalent in the asm.js AST class hierarchy (\texttt{IStaticValue} to \texttt{AStaticValue}, \texttt{IFunctionCallByName} to \texttt{AFunctionCallByName}, etc.), this stage makes a number of other major changes to the code.
+Besides the rather simple task of converting IR AST classes to their equivalent in the asm.js AST class hierarchy (\texttt{IStaticValue} to \texttt{AStatic\-Value}, \texttt{IFunctionCallByName} to \texttt{AFunctionCallByName}, etc.), this stage makes a number of other major changes to the code.
 
 The first is the generation of function tables. The part of the code that accomplishes this is given in Figure \ref{iconvasmjs1}, again slightly edited.
 
@@ -1796,8 +1798,8 @@ All files related to ray tracing can be found in the \texttt{ray_tracer/} direct
 The user interacts with the ray tracer using the web page contained in \texttt{ray_tracer.html}. This html interface includes a canvas on which the rendered 3D scene will be drawn, four buttons that offer the user a choice of rendering methods as well as a way to display the time it took to render the image. Figure \ref{raytracinginterface} shows this html interface.
 
 \begin{figure}[p]
-\includegraphics[scale=0.7]{raytracinginterface.eps}
-\caption{The ray tracer interface}
+\includegraphics[scale=0.65]{raytracinginterface.eps}
+\caption{The interface of the ray tracer}
 \label{raytracinginterface}
 \end{figure}
 
@@ -2026,7 +2028,7 @@ This chapter will recapitulate the report and summarise the scope and findings o
 
 With this project, we set out to evaluate asm.js as a compilation target for a LISP-dialect called LJSP. We wrote a compiler for LJSP that compiles to asm.js and also implemented a ray tracer in JavaScript to have a benchmark that would allow us to compare different versions of the code.
 
-The initial result of asm.js code being much slower than plain JavaScript were surprising and going against our expectations. Although we were able to much improve the asm.js code generated by our compiler, this performance gap did not go away. 
+The initial result of asm.js code being much slower than plain Java\-Script were surprising and going against our expectations. Although we were able to much improve the asm.js code generated by our compiler, this performance gap did not go away. 
 
 To get another data point, we extended our compiler to also be able to generate C and LLVM IR code from LJSP so that we could then pass this output on to the Emscripten compiler. The results this generated again surprised us by being much slower than any other version of the ray tracer the project includes.
 
